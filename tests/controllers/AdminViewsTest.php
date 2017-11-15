@@ -117,12 +117,10 @@ class AdminViewsTest extends TestBaseClassView
      */
     public function testUserViews($name,$view){
         // use Admin user
-        $uid = 1;
+        $uid = self::$superUserId;
         // non-adminuser for some views
         if(in_array($name,['setUserPermissions','setUserTemplates'])){
-            // FIXME need to crate another user
-            $this->markTestSkipped();
-            $uid = 2;
+            $uid = self::$noPermissionsUser->primaryKey;
         }
         $view['route'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
         $this->openAndFindViewTag($name, $view);
@@ -155,11 +153,10 @@ class AdminViewsTest extends TestBaseClassView
     public function testAdminClickViews($name,$view){
         // FIXME need to crate another user
         //$this->markTestSkipped();
-        $uid = 1;
-        $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
+        $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>self::$noPermissionsUser->primaryKey]);
         $url = $this->getUrl($view);
         $this->openView($url);
-        self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.$uid))->click();
+        self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.self::$noPermissionsUser->primaryKey))->click();
         $this->findViewTag($name,$view);
 
     }

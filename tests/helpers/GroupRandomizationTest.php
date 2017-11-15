@@ -56,18 +56,6 @@ class GroupRandomizationTest extends TestBaseClassWeb
         }
     }
 
-    /**
-     * Selenium setup.
-     */
-    public function setUp()
-    {
-        if (empty(getenv('DOMAIN'))) {
-            die('Must specify DOMAIN environment variable to run this test, like "DOMAIN=localhost/limesurvey" or "DOMAIN=limesurvey.localhost".');
-        }
-
-        //$capabilities = DesiredCapabilities::phantomjs();
-        //$this->webDriver = RemoteWebDriver::create('http://localhost:4444/', $capabilities);
-    }
 
     /**
      * 
@@ -97,13 +85,9 @@ class GroupRandomizationTest extends TestBaseClassWeb
     {
         self::$testHelper->activateSurvey(self::$surveyId);
 
-        $domain = getenv('DOMAIN');
-        if (empty($domain)) {
-            $domain = '';
-        }
 
         $urlMan = \Yii::app()->urlManager;
-        $urlMan->setBaseUrl('http://' . $domain . '/index.php');
+        $urlMan->setBaseUrl('http://' . self::$domain . '/index.php');
         $url = $urlMan->createUrl(
             'survey/index',
             array(

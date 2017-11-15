@@ -78,7 +78,7 @@ class User extends LSActiveRecord
     public function rules()
     {
         return array(
-            array('users_name, password, email', 'required'),
+            array('users_name, password, email,full_name', 'required'),
             array('users_name','unique'),
             array('email', 'email'),
             array('full_name', 'LSYii_Validators'), // XSS if non super-admin

@@ -20,6 +20,7 @@ use Facebook\WebDriver\WebDriverExpectedCondition;
 use Facebook\WebDriver\Exception\TimeOutException;
 use Facebook\WebDriver\Chrome\ChromeDriver;
 use Facebook\WebDriver\Chrome\ChromeOptions;
+use User;
 
 /**
  * Class TestBaseClassWeb
@@ -37,6 +38,17 @@ class TestBaseClassWeb extends TestBaseClass
      */
     protected static $webDriver;
 
+    /** @var int $superUserId */
+    protected static $superUserId = 1;
+
+    /** @var string $noPermissionsUserPassword */
+    protected static $noPermissionsUserPassword = 'myHardPassword';
+
+    /** @var string $noPermissionsUserUsername */
+    protected static $noPermissionsUserUsername = 'noPermissionsUser';
+
+    /** @var User $noPermissionsUser */
+    protected static $noPermissionsUser;
     /**
      * @var string
      */
@@ -49,7 +61,22 @@ class TestBaseClassWeb extends TestBaseClass
             self::$domain = getenv('DOMAIN');
         }
         self::setUpWebDriver();
+        self::tearDownTestUsers();
+        self::setUpNoPermissionsUser();
         self::deleteLoginTimeout();
+    }
+
+    private static function setUpNoPermissionsUser(){
+        $user = new User();
+        $user->users_name =self::$noPermissionsUserUsername;
+        $user->email = 'no-permissions@example.com';
+        $user->full_name = 'Iha Veno Permissioons';
+        $user->setPassword(self::$noPermissionsUserPassword);
+        if($user->save()){
+            self::$noPermissionsUser = $user;
+        }else{
+            throw new \Exception('Could not create User: '.serialize($user->errors));
+        }
     }
 
     private static function setUpWebDriver(){
@@ -67,6 +94,14 @@ class TestBaseClassWeb extends TestBaseClass
     {
         parent::tearDownAfterClass();
         self::$webDriver->quit();
+        self::tearDownTestUsers();
+    }
+
+    private static function tearDownTestUsers(){
+        $noPermissionsUser = User::findByUsername(self::$noPermissionsUserUsername);
+        if($noPermissionsUser){
+            $noPermissionsUser->delete();
+        }
     }
 
     /**
