@@ -44,7 +44,7 @@ class AdminViewsTest extends TestBaseClassView
 
     public function addUsersViews()
     {
-        return require __DIR__."/../data/views/adminUsersViews.php";
+        return require __DIR__ ."/../data/views/adminUsersViews.php";
     }
     public function addParticipantsViews()
     {
@@ -60,6 +60,8 @@ class AdminViewsTest extends TestBaseClassView
     {
         return require __DIR__."/../data/views/adminClickViews.php";
     }
+
+
 
     /**
      * @param string $name
@@ -92,12 +94,6 @@ class AdminViewsTest extends TestBaseClassView
             $surveyFile = self::$surveysFolder . '/limesurvey_survey_'.$view['import_id'].'.lss';
             self::importSurvey($surveyFile);
 
-
-        } elseif (empty(self::$surveyId)) {
-            // This situation can happen if we test only one data entry,
-            // using --filter="testAdminSurveyViews#13" (for data entry 13).
-            $surveyFile = self::$surveysFolder . '/../data/surveys/limesurvey_survey_454287.lss';
-            self::importSurvey($surveyFile);
 
         }
         $view['route'] = ReplaceFields($view['route'], ['{SID}'=> self::$testSurvey->primaryKey]);
@@ -171,9 +167,8 @@ class AdminViewsTest extends TestBaseClassView
 
         } catch (\Exception $e){
             $screenshot = self::$webDriver->takeScreenshot();
-            $filename = self::$screenshotsFolder .'/ehee.png';
+            $filename = self::$screenshotsFolder .'/'.$name.'.png';
             file_put_contents($filename, $screenshot);
-
         }
 
     }

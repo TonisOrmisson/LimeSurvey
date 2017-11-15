@@ -14,7 +14,6 @@
 namespace ls\tests;
 
 use Facebook\WebDriver\Remote\DesiredCapabilities;
-use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\WebDriver;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverExpectedCondition;
@@ -29,11 +28,6 @@ use Facebook\WebDriver\Chrome\ChromeOptions;
  */
 class TestBaseClassWeb extends TestBaseClass
 {
-    /**
-     * @var int web server port
-     * TODO this should be in configuration somewhere
-     */
-    protected static $webPort = 4444;
 
     /** @var  string $url current url */
     protected $url;
@@ -58,9 +52,6 @@ class TestBaseClassWeb extends TestBaseClass
 
         self::$domain = getenv('DOMAIN');
 
-        //$capabilities = DesiredCapabilities::phantomjs();
-        //$port = self::$webPort;
-
         $base = \Yii::app()->getBasePath();
 
         $caps = new DesiredCapabilities();
@@ -72,9 +63,6 @@ class TestBaseClassWeb extends TestBaseClass
         self::$webDriver = ChromeDriver::start($caps);
 
         self::deleteLoginTimeout();
-
-        //self::$webDriver = RemoteWebDriver::create("http://localhost:{$port}/", $capabilities);
-        //self::$webDriver->manage()->window()->maximize();
     }
 
     public static function tearDownAfterClass()

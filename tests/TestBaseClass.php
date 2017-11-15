@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 
 class TestBaseClass extends TestCase
 {
+    const DEFAULT_SURVEY_FILE = 'limesurvey_survey_454287.lss';
+
     /**
      * @var TestHelper
      */
@@ -32,6 +34,7 @@ class TestBaseClass extends TestCase
     /** @var  integer */
     protected static $surveyId;
 
+
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
@@ -43,8 +46,12 @@ class TestBaseClass extends TestCase
         self::$tempFolder = __DIR__.'/tmp';
         self::$screenshotsFolder = self::$tempFolder.'/screenshots';
         self::$testHelper->importAll();
-
         self::$testHelper->connectToOriginalDatabase();
+
+        // Load the default survey
+        $surveyFile = self::$surveysFolder . '/'.self::DEFAULT_SURVEY_FILE;
+        self::importSurvey($surveyFile);
+
     }
 
 

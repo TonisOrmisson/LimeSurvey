@@ -21,6 +21,7 @@ use Facebook\WebDriver\WebDriverExpectedCondition;
  */
 class TestBaseClassView extends TestBaseClassWeb
 {
+    const DEFAULT_SURVEY_FILE = 'limesurvey_survey_454287.lss';
 
     /**
      * 
@@ -39,7 +40,6 @@ class TestBaseClassView extends TestBaseClassWeb
         }
 
         self::adminLogin($username, $password);
-
     }
 
     protected function openAndFindViewTag($name, $view){
@@ -56,7 +56,7 @@ class TestBaseClassView extends TestBaseClassWeb
     protected function findViewTag($name, $view)
     {
         $element = null;
-        $filename = null;
+        $filename = self::$screenshotsFolder. '/'.$name.'.png';
 
         try {
             $element = self::$webDriver->wait(2)->until(
@@ -67,10 +67,9 @@ class TestBaseClassView extends TestBaseClassWeb
         } catch (\Exception $e) {
             //throw new Exception($e->getMessage());
             $screenshot = self::$webDriver->takeScreenshot();
-            file_put_contents(self::$screenshotsFolder. '/'.$name.'.png', $screenshot);
+            file_put_contents($filename, $screenshot);
         }
-        //$body = $this->webDriver->findElement(WebDriverBy::tagName('body'));
-        //var_dump($body->getText());
+
         $this->assertNotEmpty(
             $element,
             'Possible screenshot at ' . $filename . PHP_EOL .
