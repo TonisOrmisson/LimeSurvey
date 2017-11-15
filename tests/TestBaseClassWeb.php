@@ -35,6 +35,9 @@ class TestBaseClassWeb extends TestBaseClass
      */
     protected static $webPort = 4444;
 
+    /** @var  string $url current url */
+    protected $url;
+
     /**
      * @var WebDriver $webDriver
      */

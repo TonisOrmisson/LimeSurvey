@@ -14,6 +14,8 @@
 namespace ls\tests\controllers;
 
 use ls\tests\TestBaseClassView;
+use Facebook\WebDriver\WebDriverBy;
+use PHPUnit\Runner\Exception;
 
 /**
  * Class AdminViewsTest
@@ -54,6 +56,11 @@ class AdminViewsTest extends TestBaseClassView
         return require __DIR__."/../data/views/adminGeneralSettingsViews.php";
     }
 
+    public function addAdminClickViews()
+    {
+        return require __DIR__."/../data/views/adminClickViews.php";
+    }
+
     /**
      * @param string $name
      * @param array$view
@@ -66,7 +73,7 @@ class AdminViewsTest extends TestBaseClassView
             $this->assertTrue(true);
             return;
         }
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
     }
 
     /**
@@ -94,7 +101,7 @@ class AdminViewsTest extends TestBaseClassView
 
         }
         $view['route'] = ReplaceFields($view['route'], ['{SID}'=> self::$testSurvey->primaryKey]);
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
     }
 
     /**
@@ -104,7 +111,7 @@ class AdminViewsTest extends TestBaseClassView
      */
     public function testSettingsViews($name, $view)
     {
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
     }
 
     /**
@@ -122,7 +129,7 @@ class AdminViewsTest extends TestBaseClassView
             $uid = 2;
         }
         $view['route'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
     }
 
     /**
@@ -132,7 +139,7 @@ class AdminViewsTest extends TestBaseClassView
      */
     public function testGeneralSettingsViews($name, $view)
     {
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
     }
 
     /**
@@ -141,6 +148,33 @@ class AdminViewsTest extends TestBaseClassView
      * @dataProvider addParticipantsViews
      */
     public function testParticipantsViews($name,$view){
-        $this->findViewTag($name, $view);
+        $this->openAndFindViewTag($name, $view);
+    }
+
+    /**
+     * @param string $name
+     * @param array$view
+     * @dataProvider addAdminClickViews
+     */
+    public function testAdminClickViews($name,$view){
+        // FIXME need to crate another user
+        //$this->markTestSkipped();
+        $uid = 2;
+        $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
+        $url = $this->getUrl($view);
+        $this->openView($url);
+
+
+        try{
+            self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.$uid))->click();
+            return $this->findViewTag($name,$view);
+
+        } catch (\Exception $e){
+            $screenshot = self::$webDriver->takeScreenshot();
+            $filename = self::$screenshotsFolder .'/ehee.png';
+            file_put_contents($filename, $screenshot);
+
+        }
+
     }
 }

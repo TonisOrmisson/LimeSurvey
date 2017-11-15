@@ -42,6 +42,12 @@ class TestBaseClassView extends TestBaseClassWeb
 
     }
 
+    protected function openAndFindViewTag($name, $view){
+        $this->url = $this->getUrl($view);
+        $this->openView($this->url);
+        return $this->findViewTag($name,$view);
+    }
+
 
     /**
      * @param string $name
@@ -49,8 +55,6 @@ class TestBaseClassView extends TestBaseClassWeb
      */
     protected function findViewTag($name, $view)
     {
-        $url = $this->getUrl($view);
-        $this->openView($url);
         $element = null;
         $filename = null;
 
@@ -74,7 +78,7 @@ class TestBaseClassView extends TestBaseClassWeb
                 'FAILED viewing %s on route %s, full url %s',
                 $name,
                 $view['route'],
-                $url
+                $this->url
             )
         );
     }

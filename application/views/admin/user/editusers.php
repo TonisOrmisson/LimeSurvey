@@ -1,6 +1,7 @@
 <?php
 /* @var $this AdminController */
 /* @var $dataProvider CActiveDataProvider */
+/* @var $model User */
 
 // DO NOT REMOVE This is for automated testing to validate we see that page
 echo viewHelper::getViewTestTag('usersIndex');
