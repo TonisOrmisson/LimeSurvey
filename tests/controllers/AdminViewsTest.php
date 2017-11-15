@@ -13,6 +13,7 @@
 
 namespace ls\tests\controllers;
 
+use Facebook\WebDriver\Interactions\WebDriverActions;
 use ls\tests\TestBaseClassView;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverExpectedCondition;
@@ -163,7 +164,8 @@ class AdminViewsTest extends TestBaseClassView
             )
         );
         $clickable = self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.self::$noPermissionsUser->primaryKey));
-        $clickable->click();
+        $actions = new WebDriverActions(self::$webDriver);
+        $actions->moveToElement($clickable)->click()->perform();
         $this->findViewTag($name,$view);
 
     }
