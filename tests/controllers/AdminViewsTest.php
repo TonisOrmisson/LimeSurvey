@@ -159,17 +159,8 @@ class AdminViewsTest extends TestBaseClassView
         $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
         $url = $this->getUrl($view);
         $this->openView($url);
-
-
-        try{
-            self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.$uid))->click();
-            return $this->findViewTag($name,$view);
-
-        } catch (\Exception $e){
-            $screenshot = self::$webDriver->takeScreenshot();
-            $filename = self::$screenshotsFolder .'/'.$name.'.png';
-            file_put_contents($filename, $screenshot);
-        }
+        self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.$uid))->click();
+        $this->findViewTag($name,$view);
 
     }
 }
