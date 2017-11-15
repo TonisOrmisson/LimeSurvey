@@ -13,6 +13,7 @@
 
 namespace ls\tests\controllers;
 
+use Facebook\WebDriver\Interactions\WebDriverActions;
 use ls\tests\TestBaseClassView;
 use Facebook\WebDriver\WebDriverBy;
 use PHPUnit\Runner\Exception;
@@ -156,7 +157,9 @@ class AdminViewsTest extends TestBaseClassView
         $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>self::$noPermissionsUser->primaryKey]);
         $url = $this->getUrl($view);
         $this->openView($url);
-        self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.self::$noPermissionsUser->primaryKey))->click();
+        $clickable = self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.self::$noPermissionsUser->primaryKey));
+        $actions = new WebDriverActions(self::$webDriver);
+        $actions->moveToElement($clickable)->click()->perform();
         $this->findViewTag($name,$view);
 
     }
