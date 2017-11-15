@@ -155,7 +155,7 @@ class AdminViewsTest extends TestBaseClassView
     public function testAdminClickViews($name,$view){
         // FIXME need to crate another user
         //$this->markTestSkipped();
-        $uid = 2;
+        $uid = 1;
         $view['clickId'] = ReplaceFields($view['route'],['{UID}'=>$uid]);
         $url = $this->getUrl($view);
         $this->openView($url);

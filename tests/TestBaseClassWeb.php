@@ -40,29 +40,27 @@ class TestBaseClassWeb extends TestBaseClass
     /**
      * @var string
      */
-    protected static $domain;
+    protected static $domain = 'localhost';
 
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-
-        if (empty(getenv('DOMAIN'))) {
-            die('Must specify DOMAIN environment variable to run this test, like "DOMAIN=localhost/limesurvey" or "DOMAIN=limesurvey.localhost".');
+        if(getenv('DOMAIN')){
+            self::$domain = getenv('DOMAIN');
         }
+        self::setUpWebDriver();
+        self::deleteLoginTimeout();
+    }
 
-        self::$domain = getenv('DOMAIN');
-
+    private static function setUpWebDriver(){
         $base = \Yii::app()->getBasePath();
-
         $caps = new DesiredCapabilities();
         $chromeOptions = new ChromeOptions();
         $chromeOptions->addArguments(['--headless', 'window-size=1024,768']);
         $caps->setCapability(ChromeOptions::CAPABILITY, $chromeOptions);
-
         putenv(sprintf('webdriver.chrome.driver=/%s/../chromedriver', $base));
         self::$webDriver = ChromeDriver::start($caps);
 
-        self::deleteLoginTimeout();
     }
 
     public static function tearDownAfterClass()
