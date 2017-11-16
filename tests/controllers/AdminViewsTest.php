@@ -166,7 +166,7 @@ class AdminViewsTest extends TestBaseClassView
         );
         $clickable = self::$webDriver->findElement(WebDriverBy::id('set-user-permissions-'.self::$noPermissionsUser->primaryKey));
         $actions = new WebDriverActions(self::$webDriver);
-        $actions->moveToElement($clickable)->sendKeys(WebDriverKeys::ENTER)->perform();
+        $actions->moveToElement($clickable)->sendKeys($clickable,WebDriverKeys::ENTER)->perform();
         $this->findViewTag($name,$view);
 
     }
