@@ -48,7 +48,6 @@ class TestBaseClassView extends TestBaseClassWeb
         return $this->findViewTag($name,$view);
     }
 
-
     /**
      * @param string $name
      * @param array $view

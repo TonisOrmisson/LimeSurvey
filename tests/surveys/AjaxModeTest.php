@@ -13,23 +13,6 @@ use Facebook\WebDriver\Exception\NoSuchElementException;
 class AjaxModeTest extends TestBaseClassWeb
 {
     /**
-     * Import survey in tests/surveys/.
-     */
-    public static function setUpBeforeClass()
-    {
-        parent::setUpBeforeClass();
-        self::$webDriver->manage()->timeouts()->implicitlyWait(3);
-    }
-
-    /**
-     * 
-     */
-    public static function teardownAfterClass()
-    {
-        parent::teardownAfterClass();
-    }
-
-    /**
      * 
      */
     public function testAjaxModeRecordsAnswer()

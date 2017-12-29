@@ -20,18 +20,17 @@ var LS = LS || {  onDocumentReady: {} };
 /* Set a variable to test if browser have HTML5 form ability
  * Need to be replaced by some polyfills see #8009
  */
-hasFormValidation= typeof document.createElement( 'input' ).checkValidity == 'function';
+window.hasFormValidation= typeof document.createElement( 'input' ).checkValidity == 'function';
 
 /* See function */
 fixAccordionPosition();
 
-$(document).on('ready  pjax:success', function(){
+$(document).on('ready pjax:scriptcomplete', function(){
 
     initializeAjaxProgress();
     tableCellAdapters();
     linksInDialog();
     doToolTip();
-    renderBootstrapSwitch();
 
     $('button,input[type=submit],input[type=button],input[type=reset],.button').button();
     $('button,input[type=submit],input[type=button],input[type=reset],.button').addClass("limebutton");
@@ -120,23 +119,6 @@ $(document).on('ready  pjax:success', function(){
         expires: 5000
         });
     });
-
-    if ($("#question_type_button").not('.none').length > 0 && $("#question_type_button").attr('type')!='hidden')
-    {
-
-       qTypeDropdownInit();
-        $("#question_type_button").change(function(event){
-            OtherSelection(this.value);
-        });
-        $("#question_type_button").change();
-    }
-    else
-    {
-        $("#question_type.none").change(function(event){
-            OtherSelection(this.value);
-        });
-        $("#question_type.none").change();
-    }
 
     /**
      * Confirmation modal
@@ -227,100 +209,41 @@ $(document).on('ready  pjax:success', function(){
         $(this).find('.modal-body-text').html($(e.relatedTarget).data('message'));
     });
 
+    window.setTimeout(renderBootstrapSwitch, 250);
+
 });
 
 function renderBootstrapSwitch(){
-    try{
-        $('[data-is-bootstrap-switch]').bootstrapSwitch('destroy');
-    } catch(e){}
-
     $('[data-is-bootstrap-switch]').bootstrapSwitch();
 }
 
 function surveyQuickActionTrigger(){
-    $url = $(this).data('url');
-    $.ajax({
-        url : $url,
-        type : 'GET',
-        dataType : 'html',
 
+    var $self = $(this);
+    $.ajax({
+        url : $self.data('url'),
+        type : 'GET',
+        dataType : 'json',
+        data: {currentState: $self.data('active')},
         // html contains the buttons
-        success : function(html, statut){
-            $('#survey-action-container').animate({
-                "height": "toggle", "opacity": "toggle"
-            });
+        success : function(data, statut){
+            var newState = parseInt(data.newState);
+            console.ls.log('quickaction resolve', data);
+            console.ls.log('quickaction new state', newState);
+            $self.data('active', newState);
+            if(newState === 1){
+                $('#survey-action-container').slideDown(500);
+            } else {
+                $('#survey-action-container').slideUp(500);
+            }
             $('#survey-action-chevron').find('i').toggleClass('fa-caret-up').toggleClass('fa-caret-down');
+            
         },
         error :  function(html, statut){
             alert('error');
         }
     });
 };
-
-
-function qTypeDropdownInit()
-{
-    var onDocumentReadyAdminCoreq = function () {
-        $("#question_type_button .questionType").each(function(index,element){
-            $(element).qtip({
-                style: {
-                    classes: 'qtip-bootstrap'
-                },
-                content: getToolTip($(element).text()),
-                position: {
-                    my : 'center right',
-                    at: 'center left',
-                    target: $('label[for=question_type]'),
-                    viewport: $(window),
-                    adjust: {
-                        x: 0
-                    }
-
-                }
-            });
-
-        });
-        $('.questionType').on('mouseenter', function(e){
-            //alert($(this).attr('class'));
-            $('.questionType').qtip('hide');
-            $(this).qtip('option', 'position.target', $(this).qtip('show'));
-        });
-
-        $('.questionType').on('mouseleave', function(e){
-            $(this).qtip('hide');
-        });
-    };
-
-    $(document).on('ready  pjax:complete', onDocumentReadyAdminCoreq);
-}
-
-
-var aToolTipData = {
-
-};
-
-var qDescToCode;
-var qCodeToInfo;
-
-function getToolTip(type){
-    var code = qDescToCode[''+type];
-    var multiple = 0;
-    if (code=='S') multiple = 2;
-
-    if (code == ":") code = "COLON";
-    else if(code == "|") code = "PIPE";
-    else if(code == "*") code = "EQUATION";
-
-    if (multiple > 0){
-        returnval = '';
-        for(i=1;i<=multiple;i++){
-            returnval = returnval + "<img src='" + imgurl + "/screenshots/"+code+i+".png' /><br /><br />";
-        }
-        return returnval;
-    }
-
-    return "<img src='" + imgurl + "/screenshots/"+code+".png' />";
-}
 
 //We have form validation and other stuff..
 
@@ -717,7 +640,7 @@ function linksInDialog()
 {
     $(function () {
         var iframe = $('<iframe id="dialog" title='+$(this).attr("title")+' allowfullscreen></iframe>');
-        var dialog = $("<div></div>").append(iframe).appendTo("#pjax-content").dialog({
+        var dialog = $("<div class='hidden'></div>").append(iframe).appendTo("#pjax-content").dialog({
             autoOpen: false,
             modal: false,
             resizable: true,
@@ -757,11 +680,11 @@ function initializeAjaxProgress()
             'minHeight': 0,
             'resizable': false
         });
-    $('#ajaxprogress').bind('ajaxStart', function()
+    $('#ajaxprogress').on('ajaxStart', function()
     {
         $(this).dialog('open');
     });
-    $('#ajaxprogress').bind('ajaxStop', function()
+    $('#ajaxprogress').on('ajaxStop', function()
     {
 
         $(this).dialog('close');
@@ -770,14 +693,14 @@ function initializeAjaxProgress()
 
 /**
  * Adapt cell to have a click on cell do a click on input:radio or input:checkbox (if unique)
- * Using delegate the can be outside document.ready
+ * Using node delegation they can be outside document.ready
  */
 function tableCellAdapters()
 {
-    $('table.activecell').delegate('tbody td input:checkbox,tbody td input:radio,tbody td label,tbody th input:checkbox,tbody th input:radio,tbody th label',"click", function(e) {
+    $('table.activecell').on("click", 'tbody td input:checkbox,tbody td input:radio,tbody td label,tbody th input:checkbox,tbody th input:radio,tbody th label', function(e) {
         e.stopPropagation();
     });
-    $('table.activecell').delegate('tbody td,tbody th',"click", function() {
+    $('table.activecell').on("click", 'tbody td,tbody th', function() {
         if($(this).find("input:radio,input:checkbox").length==1)
         {
           $(this).find("input:radio").click();
@@ -935,6 +858,11 @@ LS.ajaxHelperOnSuccess = function(response) {
     // Error popup
     else if (response.error) {
         notifyFader(response.error.message, 'well-lg bg-danger text-center');
+    }
+    // Put HTML into element.
+    else if (response.outputType == 'jsonoutputhtml') {
+        $('#' + response.target).html(response.html);
+        doToolTip();
     }
     // Success popup
     else if (response.success) {

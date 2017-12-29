@@ -18,7 +18,6 @@ class MultipleChoiceNextPreviousTest extends TestBaseClassWeb
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-        self::$webDriver->manage()->timeouts()->implicitlyWait(5);
     }
 
     /**
@@ -49,7 +48,6 @@ class MultipleChoiceNextPreviousTest extends TestBaseClassWeb
         foreach ($questionObjects as $q) {
             $questions[$q->title] = $q;
         }
-
 
         try {
 

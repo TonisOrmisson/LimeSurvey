@@ -21,6 +21,10 @@ use Facebook\WebDriver\Exception\TimeOutException;
 use Facebook\WebDriver\Chrome\ChromeDriver;
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use User;
+use Facebook\WebDriver\Firefox\FirefoxDriver;
+use Facebook\WebDriver\Firefox\FirefoxProfile;
+use Facebook\WebDriver\Firefox\FirefoxPreferences;
+use Facebook\WebDriver\Exception\WebDriverCurlException;
 
 /**
  * Class TestBaseClassWeb
@@ -57,8 +61,10 @@ class TestBaseClassWeb extends TestBaseClass
     public static function setUpBeforeClass()
     {
         parent::setUpBeforeClass();
-        if(getenv('DOMAIN')){
-            self::$domain = getenv('DOMAIN');
+
+        if (empty(getenv('DOMAIN'))) {
+            echo 'Must specify DOMAIN environment variable to run this test, like "DOMAIN=localhost/limesurvey" or "DOMAIN=limesurvey.localhost".';
+            exit(12);
         }
         self::setUpWebDriver();
         self::tearDownTestUsers();
@@ -88,6 +94,19 @@ class TestBaseClassWeb extends TestBaseClass
         putenv(sprintf('webdriver.chrome.driver=/%s/../chromedriver', $base));
         self::$webDriver = ChromeDriver::start($caps);
 
+        self::$domain = getenv('DOMAIN');
+
+        self::$webDriver = self::$testHelper->getWebDriver();
+
+        if (empty(self::$webDriver)) {
+            throw new \Exception('Could not connect to remote web driver');
+        }
+
+        // Implicit timout so we don't have to wait manually.
+        self::$webDriver->manage()->timeouts()->implicitlyWait(5);
+
+        // Anyone can preview surveys.
+        self::$testHelper->enablePreview();
     }
 
     public static function tearDownAfterClass()

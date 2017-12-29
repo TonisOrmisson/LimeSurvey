@@ -1,8 +1,5 @@
 //globals formId
-import _ from 'lodash';
 import Vue from 'vue';
-import Vuex from 'vuex';
-import VueLocalStorage from 'vue-localstorage';
 import Sidebar from './components/sidebar.vue';
 import Topbar from './components/topbar.vue';
 import ParameterTable from './components/parameter-table.vue';
@@ -10,10 +7,10 @@ import getAppState from './store/vuex-store.js';
 import LOG from './mixins/logSystem.js';
 
 
-Vue.use(Vuex);
-Vue.use(VueLocalStorage);
-Vue.use(LOG);
+//Ignore phpunits testing tags
+Vue.config.ignoredElements = ['x-test']
 
+Vue.use(LOG);
 Vue.mixin({
     methods: {
         updatePjaxLinks: function () {
@@ -37,23 +34,27 @@ $(document).on('ready', function () {
             methods: {
                 controlWindowSize() {
                     const
-                        menuOffset = $('nav.navbar').outerHeight(),
-                        menuHeight = $('.menubar.surveymanagerbar').outerHeight(),
-                        footerHeight = $('footer').outerHeight(),
-                        windowHeight = _.max([screen.availHeight, screen.height]),
-                        innerMenuHeight = $('#breadcrumb-container').outerHeight(),
-                        inSurveyViewHeight = (windowHeight - (menuOffset + (2 * menuHeight) + (2 * footerHeight))),
-                        generalContainerHeight = inSurveyViewHeight - (innerMenuHeight);
-
+                        inSurveyOffset = 230,
+                        menuHeight = $('.menubar').outerHeight(),
+                        windowHeight = $('html').height(),
+                        inSurveyViewHeight = (windowHeight - inSurveyOffset),
+                        generalContainerHeight = inSurveyViewHeight - (menuHeight);
                     this.$store.commit('changeInSurveyViewHeight', inSurveyViewHeight);
                     this.$store.commit('changeGeneralContainerHeight', generalContainerHeight);
                 }
             },
             created() {
                 this.controlWindowSize();
-
                 window.addEventListener('resize', () => {
                     this.controlWindowSize();
+                });
+
+                $(document).on('vue-resize-height',  ()=>{
+                    this.controlWindowSize();
+                });
+
+                $(document).on('vue-sidebar-collapse',  ()=>{
+                    this.$store.commit('changeIsCollapsed', true);
                 });
             },
             mounted() {
@@ -64,33 +65,63 @@ $(document).on('ready', function () {
                 const maxHeight = ($('#in_survey_common').height() - 35) || 400;
                 this.$store.commit('changeMaxHeight', maxHeight);
                 this.updatePjaxLinks();
-                $(document).on('click', 'ul.pagination>li>a', function () {
+                
+                $(document).on('click', 'ul.pagination>li>a',  ()=>{
                     this.updatePjaxLinks();
                 });
+                
+                $(document).on('vue-redraw',  ()=>{
+                    this.$forceUpdate();
+                    this.updatePjaxLinks();
+                });
+                window.singletonPjax();
+
+                $(document).trigger('vue-reload-remote');
+                
+                window.setInterval(function(){
+                    $(document).trigger('vue-reload-remote');
+                }, (60*5*1000));
             }
         });
         global.vueGeneralApp = vueGeneralApp;
     }
-
-    $(document).on('pjax:send', () => {
-        $('<div id="pjaxClickInhibitor"></div>').appendTo('body');
-        $('.ui-dialog.ui-corner-all.ui-widget.ui-widget-content.ui-front.ui-draggable.ui-resizable').remove();
-        $('#pjax-file-load-container').find('div').css({
-            'width': '20%',
-            'display': 'block'
-        });
-    });
-    $(document).on('pjax:success', () => {
-        $('#pjaxClickInhibitor').fadeOut(400, function(){$(this).remove();});
-        $('#pjax-file-load-container').find('div').css('width', '100%');
-        setTimeout(function () {
-            $('#pjax-file-load-container').find('div').css({
-                'width': '0%',
-                'display': 'none'
-            });
-        }, 2200);
-    });
 });
+
+let reloadcounter = 5;
+
+$(document).off('pjax:send.aploading').on('pjax:send.aploading', (e) => {
+    $('<div id="pjaxClickInhibitor"></div>').appendTo('body');
+    $('.ui-dialog.ui-corner-all.ui-widget.ui-widget-content.ui-front.ui-draggable.ui-resizable').remove();
+    $('#pjax-file-load-container').find('div').css({
+        'width': '20%',
+        'display': 'block'
+    });
+    reloadcounter--;
+});
+
+$(document).off('pjax:error.aploading').on('pjax:error.aploading', (event) => {
+    console.log(event);
+});
+
+$(document).off('pjax:complete.aploading').on('pjax:complete.aploading', (e) => {
+    if(reloadcounter === 0){
+        location.reload();
+    }
+});
+$(document).off('pjax:scriptcomplete.aploading').on('pjax:scriptcomplete.aploading', (e) => {
+    $('#pjax-file-load-container').find('div').css('width', '100%');
+    $('#pjaxClickInhibitor').fadeOut(400, function(){$(this).remove();});     
+    $(document).trigger('vue-resize-height');
+    $(document).trigger('vue-reload-remote');
+    // $(document).trigger('vue-sidemenu-update-link');
+    setTimeout(function () {
+        $('#pjax-file-load-container').find('div').css({
+            'width': '0%',
+            'display': 'none'
+        });
+    }, 2200);
+});
+
 
 // const topmenu = new Vue(
 //   {  
