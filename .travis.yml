@@ -8,11 +8,14 @@ php:
     - 7.0
     - 7.1
     - 5.6
+services:
+  - postgresql
 before_script:
     # Test
     #- sudo apt-get update
     #- sudo apt-get upgrade
-
+    # add postgreSQl databse
+    - psql -c 'create database limesurvey;' -U postgres
     # disable xdebug to speed up tests
     - phpenv config-rm xdebug.ini
     # Install LimeSurvey.
@@ -30,7 +33,8 @@ before_script:
     - chmod -R 777 tests/tmp
     - chmod -R 777 tests/tmp/runtime
     - php application/commands/console.php install admin password TravisLS no@email.com verbose
-    - cp application/config/config-sample-mysql.php application/config/config.php
+    #- cp application/config/config-sample-mysql.php application/config/config.php
+    - cp application/config/config-sample-pgsql.php application/config/config.php
     # Enable debug=2 in config file. OBS: This assumes debug is on line 59.
     - sed -i '59s/.*/        "debug"=>2,/' application/config/config.php
 
