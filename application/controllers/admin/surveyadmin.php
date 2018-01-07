@@ -747,6 +747,7 @@ class SurveyAdmin extends Survey_Common_Action
 
         $iSurveyID = (int) $iSurveyID;
         $survey = Survey::model()->findByPk($iSurveyID);
+        $activator = new SurveyActivator();
 
         Yii::app()->user->setState('sql_'.$iSurveyID, ''); // If user has set some filters for responses from statistics on a previous activation, it must be wiped out
         $aData = array();
