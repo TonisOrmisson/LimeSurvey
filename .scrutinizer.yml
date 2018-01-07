@@ -6,9 +6,18 @@ build:
     nodes:
         tests: true
 filter:
-    paths: [application/*]
-    excluded_paths: 
+filter:
+    paths: ["application/*"]
+    excluded_paths:
         - 'application/views/*'
+        - 'application/helpers/adodb/*'
+        - 'application/helpers/Zend/*'
+        - 'application/libraries/admin/http/*'
+        - 'application/libraries/admin/Services_JSON.php'
+        - 'application/libraries/admin/pclzip/*'
+        - 'application/extensions/*'
+        - 'application/third_party/*'
+        - 'application/tests/*'
     dependency_paths:
         - 'framework/'
         - 'application/helpers/adodb/*'
@@ -33,31 +42,6 @@ tools:
         config:
             level:            psr2
             lowercase_keywords: false
-        filter:
-            excluded_paths:
-                - 'framework/*'
-                - 'locale/*'
-                - 'docs/*'
-                - 'fonts/*'
-                - 'third_party/*'
-                - 'application/helpers/adodb/*'
-                - 'application/helpers/Zend/*'        
-                - 'application/libraries/admin/http/*'
-                - 'application/libraries/admin/Services_JSON.php'
-                - 'application/libraries/admin/pclzip/*'
-                - 'application/extensions/*'
-                - 'application/views/*'
-                - 'application/third_party/*'
-                - 'images/*'
-                - 'styles/*'
-                - 'styles-public/*'
-                - 'templates/*'
-                - 'themes/*'
-                - 'tmp/*'
-                - 'upload/*'
-                - 'tests/*'
-                - 'application/tests/*'
-                
 coding_style:
     php:    
         braces:
