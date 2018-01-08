@@ -316,6 +316,10 @@ class SurveyAdmin extends Survey_Common_Action
 
     public function changetemplate($iSurveyID, $template)
     {
+        if (!Permission::model()->hasSurveyPermission($iSurveyID, 'surveyactivation', 'update')) {
+            die('No permission');
+        }
+
         $iSurveyID  = sanitize_int($iSurveyID);
         $sTemplate  = sanitize_paranoid_string($template);
 
@@ -327,6 +331,8 @@ class SurveyAdmin extends Survey_Common_Action
         $oTemplateConfiguration->template_name = $sTemplate;
         $oTemplateConfiguration->save();
 
+        // This will force the generation of the entry for survey group
+        TemplateConfiguration::checkAndcreateSurveyConfig($iSurveyID);
     }
 
     public function togglequickaction()
@@ -334,7 +340,7 @@ class SurveyAdmin extends Survey_Common_Action
         $quickactionstate = (int) SettingsUser::getUserSettingValue('quickaction_state');
 
         switch ($quickactionstate) {
-            // 
+            //
             case null:
                 $save = SettingsUser::setUserSetting('quickaction_state', 1);
                 break;
@@ -428,8 +434,8 @@ class SurveyAdmin extends Survey_Common_Action
             $aData['showLastQuestion'] = false;
         }
         $aData['templateapiversion'] = Template::model()->getTemplateConfiguration(null, $iSurveyID)->getApiVersion();
-        
-        
+
+
         $this->_renderWrappedTemplate('survey', array(), $aData);
     }
 
@@ -1536,6 +1542,9 @@ class SurveyAdmin extends Survey_Common_Action
         return $aData;
     }
 
+    /**
+     * @param integer $iSurveyID
+     */
     private function _getGeneralTemplateData($iSurveyID)
     {
         $aData = [];
@@ -1817,11 +1826,11 @@ class SurveyAdmin extends Survey_Common_Action
         foreach ($aSurveyParameters as $oSurveyParameter) {
             $row = $oSurveyParameter->attributes;
             $row['questionTitle'] = $oSurveyParameter->question->title;
-            
+
             if ($oSurveyParameter->targetsqid != '') {
                 $row['subQuestionTitle'] = $oSurveyParameter->subquestion->title;
             }
-            
+
             $row['qid'] = $oSurveyParameter->targetqid;
             $row['sqid'] = $oSurveyParameter->targetsqid;
             $aData['rows'][] = $row;
@@ -2006,6 +2015,8 @@ class SurveyAdmin extends Survey_Common_Action
             // Update survey permissions
             Permission::model()->giveAllSurveyPermissions(Yii::app()->session['loginID'], $iNewSurveyid);
 
+            // This will force the generation of the entry for survey group
+            TemplateConfiguration::checkAndcreateSurveyConfig($iNewSurveyid);
             $createSample = ((int) App()->request->getPost('createsample', 0)) === 1;
 
             // Figure out destination
@@ -2036,6 +2047,8 @@ class SurveyAdmin extends Survey_Common_Action
             false,
             false
         );
+
+
 
         }
     }
@@ -2092,9 +2105,9 @@ class SurveyAdmin extends Survey_Common_Action
      * @param string|array $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'survey', $aViewUrls = array(), $aData = array())
+    protected function _renderWrappedTemplate($sAction = 'survey', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData);
+        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
 }

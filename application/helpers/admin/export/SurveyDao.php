@@ -86,7 +86,7 @@ class SurveyDao
      * or both,  the $minRecord and $maxRecord variables must be provided.
      * If none are then all responses are loaded.
      *
-     * @param Survey $survey
+     * @param SurveyObj $survey
      * @param int $iMinimum
      * @param int $iMaximum
      * @param string $sFilter An optional filter for the results, i  string or arry of string
@@ -95,7 +95,7 @@ class SurveyDao
      */
     public function loadSurveyResults(SurveyObj $survey, $iMinimum, $iMaximum, $sFilter = '', $completionState = 'all', $aFields = array(), $aResponsesId = array())
     {
-
+        $responsesTableName = '{{survey_'.$survey->id.'}}';
         $aSelectFields = Yii::app()->db->schema->getTable('{{survey_'.$survey->id.'}}')->getColumnNames();
         // Get info about the survey
         if (!empty($aFields)) {
@@ -103,9 +103,9 @@ class SurveyDao
         }
         // Allways add Table prefix : see bug #08396 . Don't use array_walk for PHP < 5.3 compatibility
         foreach ($aSelectFields as &$sField) {
-                    $sField = $survey->responsesTableName.".".$sField;
+            $sField = $responsesTableName.".".$sField;
         }
-        $oRecordSet = Yii::app()->db->createCommand()->from($survey->responsesTableName);
+        $oRecordSet = Yii::app()->db->createCommand()->from($responsesTableName);
         if (tableExists('tokens_'.$survey->id) && array_key_exists('token', SurveyDynamic::model($survey->id)->attributes) && Permission::model()->hasSurveyPermission($survey->id, 'tokens', 'read')) {
             $oRecordSet->leftJoin($survey->tokensTableName.' tokentable', 'tokentable.token='.$survey->tokensTableName.'.token');
             $aTokenFields = Yii::app()->db->schema->getTable($survey->tokensTableName)->getColumnNames();
@@ -117,8 +117,8 @@ class SurveyDao
             //$aSelectFields[]='{{survey_' . $survey->id . '}}.token';
         }
         if ($survey->info['savetimings'] == "Y") {
-            $oRecordSet->leftJoin($survey->timi." survey_timings", $survey->responsesTableName.".id = survey_timings.id");
-            $aTimingFields = Yii::app()->db->schema->getTable($survey->hasTimingsTable)->getColumnNames();
+            $oRecordSet->leftJoin("{{survey_".$survey->id."_timings}} survey_timings", "{{survey_".$survey->id."}}.id = survey_timings.id");
+            $aTimingFields = Yii::app()->db->schema->getTable("{{survey_".$survey->id."_timings}}")->getColumnNames();
             foreach ($aTimingFields as &$sField) {
                             $sField = "survey_timings.".$sField;
             }
@@ -131,7 +131,7 @@ class SurveyDao
             'min'=>$iMinimum,
             'max'=>$iMaximum
         );
-        $selection = $survey->responsesTableName.'.id >= :min AND '.$survey->responsesTableName.'.id <= :max';
+        $selection = $responsesTableName.'.id >= :min AND '.$responsesTableName.'.id <= :max';
         $oRecordSet->where($selection, $aParams);
 
         if (empty($aResponsesId)) {
@@ -158,14 +158,11 @@ class SurveyDao
             }
         }
 
-
-//var_dump($aParams); die();
-
         if (is_string($sFilter) && $sFilter) {
-                    $oRecordSet->andWhere($sFilter);
+            $oRecordSet->andWhere($sFilter);
         } elseif (is_array($sFilter) && count($sFilter)) {
             foreach ($sFilter as $filter) {
-                            $oRecordSet->andWhere($filter);
+                $oRecordSet->andWhere($filter);
             }
         }
 
@@ -181,7 +178,7 @@ class SurveyDao
                 // Do nothing, all responses
                 break;
         }
-        $oRecordSet->order = $survey->responsesTableName.'.id ASC';
+        $oRecordSet->order = $responsesTableName.'.id ASC';
         $survey->responses = $oRecordSet->select($aSelectFields)->query();
     }
 }

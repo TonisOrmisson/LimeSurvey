@@ -246,7 +246,7 @@ class Survey extends LSActiveRecord
     /**
      * Expires a survey. If the object was invoked using find or new surveyId can be ommited.
      * @param int $surveyId
-     * @return bool
+     * @return boolean|null
      */
     public function expire($surveyId = null)
     {
@@ -579,7 +579,7 @@ class Survey extends LSActiveRecord
 
 
     /**
-     * Returns true in a token table exists for survey
+     * Returns true in a survey participants table exists for survey
      * @return boolean
      */
     public function getHasTokensTable()
@@ -1792,9 +1792,10 @@ return $s->hasTokensTable; });
 
     /**
      * Returns true if this survey has any question of type $type.
-     * @param char $type Question type, like 'L', 'T', etc.
+     * @param string $type Question type, like 'L', 'T', etc.
      * @param boolean $includeSubquestions If true, will also check the types of subquestions.
      * @return boolean
+     * @throws CException
      */
     public function hasQuestionType($type, $includeSubquestions = false)
     {

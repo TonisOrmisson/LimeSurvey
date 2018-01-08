@@ -222,6 +222,7 @@ class Survey_Common_Action extends CAction
 
     /**
      * @inheritdoc
+     * @param string $_viewFile_
      */
     public function renderInternal($_viewFile_, $_data_ = null, $_return_ = false)
     {
@@ -314,19 +315,24 @@ class Survey_Common_Action extends CAction
      * @param string $sAction Current action, the folder to fetch views from
      * @param array|string $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
+     * @param string|boolean $sRenderFile File to be rendered as a layout. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = '', $aViewUrls = array(), $aData = array())
+    protected function _renderWrappedTemplate($sAction = '', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
         // Gather the data
         $aData = $this->_addPseudoParams($aData); //// the check of the surveyid should be done in the Admin controller it self.
 
         $basePath = (string) Yii::getPathOfAlias('application.views.admin.super');
-
-        if (!empty($aData['surveyid'])) {
-            $aData['oSurvey'] = Survey::model()->findByPk($aData['surveyid']);
-            $renderFile = $basePath.'/layout_insurvey.php';
+        
+        if ($sRenderFile == false) {
+            if (!empty($aData['surveyid'])) {
+                $aData['oSurvey'] = Survey::model()->findByPk($aData['surveyid']);
+                $renderFile = $basePath.'/layout_insurvey.php';
+            } else {
+                $renderFile = $basePath.'/layout_main.php';
+            }
         } else {
-            $renderFile = $basePath.'/layout_main.php';
+            $renderFile = $basePath.'/'.$sRenderFile;
         }
 
         $content = $this->renderCentralContents($sAction, $aViewUrls, $aData);
@@ -364,7 +370,7 @@ class Survey_Common_Action extends CAction
     private function _notifications()
     {
             $aMessage = App()->session['arrayNotificationMessages'];
-            if(!is_array($aMessage)) $aMessage = array();
+            if (!is_array($aMessage)) $aMessage = array();
             unset(App()->session['arrayNotificationMessages']);
             return $this->getController()->renderPartial("notifications/notifications", array('aMessage'=>$aMessage));
     }

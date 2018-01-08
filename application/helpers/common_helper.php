@@ -433,8 +433,8 @@ function getGroupOrder($surveyid, $gid)
 /**
 * Queries the database for the maximum sort order of a question.
 * 
-* @param mixed $gid
-* @param mixed $surveyid
+* @param integer $gid
+* @param integer|null $surveyid
 * @return integer
 */
 function getMaxQuestionOrder($gid, $surveyid)
@@ -683,6 +683,7 @@ function longestString($new_string, $longest_length)
 *
 *
 * @param string $gid - the currently selected gid/group
+* @param integer $surveyid
 *
 * @return string string is returned containing <option></option> formatted list of groups to current survey
 */
@@ -1295,7 +1296,7 @@ function validateEmailAddress($sEmailAddress)
 * Validate an list of email addresses - either as array or as semicolon-limited text
 * @return string List with valid email addresses - invalid email addresses are filtered - false if none of the email addresses are valid
 *
-* @param mixed $aEmailAddressList  Email address to check
+* @param string $aEmailAddressList  Email address to check
 * @returns array
 */
 function validateEmailAddresses($aEmailAddressList)
@@ -2175,18 +2176,6 @@ function HTMLEscape($str)
 }
 
 /**
-* Escapes a text value for db
-*
-* @param string $value
-* @return string
-*/
-function dbQuoteAll($value)
-{
-    return Yii::app()->db->quoteValue($value);
-}
-
-
-/**
 * This function strips UTF-8 control characters from strings, except tabs, CR and LF
 * - it is intended to be used before any response data is saved to the response table
 *
@@ -2703,7 +2692,7 @@ function tableExists($sTableName)
 }
 
 // Returns false if the survey is anonymous,
-// and a token table exists: in this case the completed field of a token
+// and a survey participants table exists: in this case the completed field of a token
 // will contain 'Y' instead of the submitted date to ensure privacy
 // Returns true otherwise
 function isTokenCompletedDatestamped($thesurvey)
@@ -2875,7 +2864,7 @@ function hasResources($id, $type = 'survey')
 /**
  * Creates a random sequence of characters
  *
- * @param mixed $length Length of resulting string
+ * @param integer $length Length of resulting string
  * @param string $pattern To define which characters should be in the resulting string
  * @return string
  */
@@ -2971,7 +2960,7 @@ function filterForAttributes($fieldname)
     }
 
 /**
-* Retrieves the attribute field names from the related token table
+* Retrieves the attribute field names from the related survey participants table
 *
 * @param mixed $iSurveyID  The survey ID
 * @return array The fieldnames
@@ -3008,7 +2997,7 @@ function getParticipantAttributes($iSurveyID)
 
 
 /**
-* Retrieves the attribute names from the related token table
+* Retrieves the attribute names from the related survey participants table
 *
 * @param mixed $surveyid  The survey ID
 * @param boolean $bOnlyAttributes Set this to true if you only want the fieldnames of the additional attribue fields - defaults to false
@@ -4960,4 +4949,27 @@ function regenerateCSRFToken()
     $cookie = new CHttpCookie('YII_CSRF_TOKEN', '');
     $cookie->expire = time() - 3600;
     Yii::app()->request->cookies['YII_CSRF_TOKEN'] = $cookie;
+}
+
+/**
+* A function to remove ../ or ./ from paths to prevent directory traversal
+*
+* @param mixed $path
+*/
+function get_absolute_path($path)
+{
+    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+    $parts = array_filter(explode(DIRECTORY_SEPARATOR, $path), 'strlen');
+    $absolutes = array();
+    foreach ($parts as $part) {
+        if ('.' == $part) {
+            continue;
+        }
+        if ('..' == $part) {
+            array_pop($absolutes);
+        } else {
+            $absolutes[] = $part;
+        }
+    }
+    return implode(DIRECTORY_SEPARATOR, $absolutes);
 }

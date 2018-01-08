@@ -24,7 +24,7 @@ const globalTourObject = function(){
             
             const baseUrl = (getBasedUrls || forceGet) ? '?r=admin/' : 'admin/';
             const conatainsIndex = (/\/index.php\/?/.test(window.location.href));
-            const returnUrl = window.LS.data.baseUrl+(conatainsIndex ? '/index.php/' : '/')+baseUrl+url+combineParams(params);
+            const returnUrl = window.LS.data.baseUrl+(conatainsIndex ? '/index.php' : '/')+baseUrl+url+combineParams(params);
 
             return returnUrl;
 
@@ -42,6 +42,8 @@ const globalTourObject = function(){
                 step.onNext  = step.onNext  ? eval(step.onNext)  : undefined;
                 step.onShow  = step.onShow  ? eval(step.onShow)  : undefined;
                 step.onShown = step.onShown ? eval(step.onShown) : undefined;
+                step.onHide = step.onHide ? eval(step.onHide) : undefined;
+                step.onHidden = step.onHidden ? eval(step.onHidden) : undefined;
                 if(window.debugState.backend) { console.ls.log(step); }
                 return step;
             });

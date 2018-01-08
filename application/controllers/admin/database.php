@@ -92,7 +92,6 @@ class database extends Survey_Common_Action
     /**
      * Database::index()
      *
-     * @param mixed $sa
      * @return
      */
     public function index()
@@ -142,7 +141,6 @@ class database extends Survey_Common_Action
      * @param string $specialtype  Special type (i.e. for  'Other')
      * @param mixed $language     Language (defaults are language specific)
      * @param mixed $defaultvalue    The default value itself
-     * @param boolean $ispost   If defaultvalue is from a $_POST set this to true to properly quote things
      */
     public function _updateDefaultValues($qid, $sqid, $scale_id, $specialtype, $language, $defaultvalue)
     {
@@ -539,13 +537,13 @@ class database extends Survey_Common_Action
         $criteria->compare('qid', $this->iQuestionID);
         $validAttributes = \LimeSurvey\Helpers\questionHelper::getQuestionAttributesSettings($sQuestionType);
         // If the question has a custom template, we first check if it provides custom attributes
-        //~ $oAttributeValues = QuestionAttribute::model()->find("qid=:qid and attribute='question_template'",array('qid'=>$cqr->qid));
-        //~ if (is_object($oAttributeValues && $oAttributeValues->value)){
-            //~ $aAttributeValues['question_template'] = $oAttributeValues->value;
-        //~ }else{
-            //~ $aAttributeValues['question_template'] = 'core';
-        //~ }
-        //~ $validAttributes    = Question::getQuestionTemplateAttributes($validAttributes, $aAttributeValues, $cqr );
+        $oAttributeValues = QuestionAttribute::model()->find("qid=:qid and attribute='question_template'", array('qid'=>$cqr->qid));
+        if (is_object($oAttributeValues) && $oAttributeValues->value) {
+            $aAttributeValues['question_template'] = $oAttributeValues->value;
+        } else {
+            $aAttributeValues['question_template'] = 'core';
+        }
+        $validAttributes = Question::getQuestionTemplateAttributes($validAttributes, $aAttributeValues, $cqr);
         foreach ($validAttributes as  $validAttribute) {
             $criteria->compare('attribute', '<>'.$validAttribute['name']);
         }
@@ -817,7 +815,7 @@ class database extends Survey_Common_Action
         $oSurvey = Survey::model()->findByPk($iSurveyID);
         $languagelist = $oSurvey->additionalLanguages;
         $languagelist[] = $oSurvey->language;
-        
+
         Yii::app()->loadHelper('database');
 
         if (Permission::model()->hasSurveyPermission($iSurveyID, 'surveylocale', 'update')) {
@@ -839,7 +837,7 @@ class database extends Survey_Common_Action
                     $endtext = $this->oFixCKeditor->fixCKeditor($endtext);
                     $dateformat = Yii::app()->request->getPost('dateformat_'.$langname);
                     $numberformat = Yii::app()->request->getPost('numberformat_'.$langname);
-                    
+
                     if (!empty($short_title)) {
                         $data['surveyls_title'] = $short_title;
                     }
@@ -908,11 +906,11 @@ class database extends Survey_Common_Action
                 $datetimeobj = new date_time_converter($expires, $formatdata['phpdate'].' H:i'); //new Date_Time_Converter($expires, $formatdata['phpdate'].' H:i');
                 $expires = $datetimeobj->convert("Y-m-d H:i:s");
             }
-            
+
             //$oSurvey, $fieldArray, $newValue
             $oSurvey->expires = $expires;
             $oSurvey->startdate = $startdate;
-            
+
 
 
             $oSurvey->assessments = $this->_filterEmptyFields($oSurvey, 'assessments');
@@ -960,7 +958,7 @@ class database extends Survey_Common_Action
             }
 
             $oSurvey->googleanalyticsstyle = $this->_filterEmptyFields($oSurvey, 'googleanalyticsstyle');
-            
+
             $tokenlength = $this->_filterEmptyFields($oSurvey, 'tokenlength');
             $oSurvey->tokenlength = (int) (($tokenlength < 5 || $tokenlength > 36) ? 15 : $tokenlength);
 
@@ -1023,10 +1021,10 @@ class database extends Survey_Common_Action
                     'data' => [
                         'success' => true,
                         'updated'=> $updatedFields,
-                        'DEBUG' => ['POST'=>$_POST, 
-                                    'reloaded'=>$oSurvey->attributes, 
-                                    'aURLParams' => $aURLParams, 
-                                    'initial'=>isset($aOldAttributes) ? $aOldAttributes : '', 
+                        'DEBUG' => ['POST'=>$_POST,
+                                    'reloaded'=>$oSurvey->attributes,
+                                    'aURLParams' => $aURLParams,
+                                    'initial'=>isset($aOldAttributes) ? $aOldAttributes : '',
                                     'afterApply'=>isset($aAfterApplyAttributes) ? $aAfterApplyAttributes : '']
                     ],
                 ),
@@ -1120,6 +1118,9 @@ class database extends Survey_Common_Action
         cleanLanguagesFromSurvey($iSurveyID, implode(" ", $oSurvey->additionalLanguages));
         fixLanguageConsistency($iSurveyID, implode(" ", $oSurvey->additionalLanguages));
 
+        // This will force the generation of the entry for survey group
+        TemplateConfiguration::checkAndcreateSurveyConfig($iSurveyID);
+
 
         if ($oSurvey->save()) {
             Yii::app()->setFlashMessage(gT("Survey settings were successfully saved."));
@@ -1147,7 +1148,7 @@ class database extends Survey_Common_Action
         } else {
             $this->updatedFields[] = $fieldArrayName;
         }
-        
+
         $newValue = trim($newValue);
 
         $options = $this->updateableFields[$fieldArrayName];

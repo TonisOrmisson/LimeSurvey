@@ -248,17 +248,20 @@ class InstallerController extends CController
                 $sDatabasePwd = $oModel->dbpwd;
                 $sDatabasePrefix = $oModel->dbprefix;
                 $sDatabaseLocation = $oModel->dblocation;
+                $sDatabaseEngine = $oModel->dbengine;
                 $sDatabasePort = '';
+                Yii::app()->session['dbengine'] = $oModel->dbengine;
                 if (strpos($sDatabaseLocation, ':') !== false) {
                     list($sDatabaseLocation, $sDatabasePort) = explode(':', $sDatabaseLocation, 2);
                 } else {
                     $sDatabasePort = $this->_getDbPort($sDatabaseType, $sDatabasePort);
                 }
                 $bDBConnectionWorks = false;
-                $aDbConfig = compact('sDatabaseType', 'sDatabaseName', 'sDatabaseUser', 'sDatabasePwd', 'sDatabasePrefix', 'sDatabaseLocation', 'sDatabasePort');
+                $aDbConfig = compact('sDatabaseType', 'sDatabaseName', 'sDatabaseUser', 'sDatabasePwd', 'sDatabasePrefix', 'sDatabaseLocation', 'sDatabasePort','sDatabaseEngine');
                 $bDBExists = $this->dbTest($aDbConfig, $aData);
                 if ($this->_dbConnect($aDbConfig, $aData)) {
                     $bDBConnectionWorks = true;
+
                 } else {
                     $oModel->addError('dblocation', gT('Connection with database failed. Please check database location, user name and password and try again.'));
                     $oModel->addError('dbpwd', '');
@@ -310,7 +313,7 @@ class InstallerController extends CController
                         exit();
                     }
 
-                    if (in_array($oModel->dbtype, array('mysql', 'mysqli'))) {
+                    if ($oModel->isMysql) {
                         //for development - use mysql in the strictest mode  
                         if (Yii::app()->getConfig('debug') > 1) {
                             $this->connection->createCommand("SET SESSION SQL_MODE='STRICT_ALL_TABLES,ANSI'")->execute();
@@ -324,7 +327,7 @@ class InstallerController extends CController
                     }
 
                     // Setting date format for mssql driver. It seems if you don't do that the in- and output format could be different
-                    if (in_array($oModel->dbtype, array('mssql', 'sqlsrv', 'dblib'))) {
+                    if ($oModel->isMSSql) {
                         @$this->connection->createCommand('SET DATEFORMAT ymd;')->execute();
                         @$this->connection->createCommand('SET QUOTED_IDENTIFIER ON;')->execute();
                     }
@@ -386,7 +389,8 @@ class InstallerController extends CController
     /**
      * Installer::stepCreateDb()
      * Create database.
-     * @return
+     * @return void
+     * @throws Exception
      */
     public function stepCreateDb()
     {
@@ -406,6 +410,7 @@ class InstallerController extends CController
         // unset database name for connection, since we want to create it and it doesn't already exists
         $aDbConfig['sDatabaseName'] = '';
         $this->_dbConnect($aDbConfig, $aData);
+
 
         $aData['adminoutputForm'] = '';
         // Yii doesn't have a method to create a database
@@ -446,7 +451,7 @@ class InstallerController extends CController
 
         //$this->load->dbforge();
         if ($bCreateDB) {
-//Database has been successfully created
+            //Database has been successfully created
             $sDsn = $this->_getDsn($sDatabaseType, $sDatabaseLocation, $sDatabasePort, $sDatabaseName, $sDatabaseUser, $sDatabasePwd);
             $this->connection = new DbConnection($sDsn, $sDatabaseUser, $sDatabasePwd);
 
@@ -1204,8 +1209,9 @@ class InstallerController extends CController
         $sDatabasePwd = Yii::app()->session['dbpwd'];
         $sDatabasePrefix = Yii::app()->session['dbprefix'];
         $sDatabaseLocation = Yii::app()->session['dblocation'];
+        $sDatabaseEngine = Yii::app()->session['dbengine'];
 
-        return compact('sDatabaseLocation', 'sDatabaseName', 'sDatabasePort', 'sDatabasePrefix', 'sDatabasePwd', 'sDatabaseType', 'sDatabaseUser');
+        return compact('sDatabaseLocation', 'sDatabaseName', 'sDatabasePort', 'sDatabasePrefix', 'sDatabasePwd', 'sDatabaseType', 'sDatabaseUser','sDatabaseEngine');
     }
 
     /**
@@ -1233,8 +1239,12 @@ class InstallerController extends CController
             }
             $this->connection->active = true;
             $this->connection->tablePrefix = $sDatabasePrefix;
+            $this->setMySQLDefaultEngine($sDatabaseEngine);
+
+
             return true;
         } catch (Exception $e) {
+            throw $e;
             return false;
         }
     }
@@ -1275,7 +1285,7 @@ class InstallerController extends CController
                     Yii::app()->end();
                 } else {
                     // Use same exception than Yii ? unclear
-                    throw new DbConnection('CDbConnection failed to open the DB connection.', (int) $e->getCode(), $e->errorInfo);
+                    throw new Exception('CDbConnection failed to open the DB connection.', (int) $e->getCode(), $e->errorInfo);
                 }
             }
             return false;
@@ -1311,6 +1321,17 @@ class InstallerController extends CController
             if (!extension_loaded($extension)) {
                 safeDie('You\'re missing default PHP extension '.$extension);
             }
+        }
+
+    }
+    /**
+     * @throws CDbException
+     */
+    private function setMySQLDefaultEngine($dbEngine){
+        if(!empty($this->connection) && $this->connection->driverName == 'mysql'){
+            $this->connection
+                ->createCommand(new CDbExpression(sprintf('SET default_storage_engine=%s;', $dbEngine)))
+                ->execute();
         }
 
     }

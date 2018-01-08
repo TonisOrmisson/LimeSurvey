@@ -203,7 +203,7 @@ function getLanguageChangerDatas($sSelectedLanguage = "")
 /**
  * This function creates the language selector for the public survey index page
  *
- * @param mixed $sSelectedLanguage The language in which all information is shown
+ * @param string $sSelectedLanguage The language in which all information is shown
  * @return array|bool
  */
 function getLanguageChangerDatasPublicList($sSelectedLanguage)
@@ -1528,7 +1528,7 @@ function doAssessment($surveyid)
                             }
                         } else {
                                 // Single choice question
-                            $usquery  = "SELECT assessment_value FROM {{answers}} where qid=".$field['qid']." and language='$baselang' and code=".dbQuoteAll($_SESSION['survey_'.$surveyid][$field['fieldname']]);
+                            $usquery  = "SELECT assessment_value FROM {{answers}} where qid=".$field['qid']." and language='$baselang' and code=".App()->db->quoteValue($_SESSION['survey_'.$surveyid][$field['fieldname']]);
                             $usresult = dbExecuteAssoc($usquery); //Checked
 
                             if ($usresult) {

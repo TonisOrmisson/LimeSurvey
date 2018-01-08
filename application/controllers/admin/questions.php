@@ -519,7 +519,7 @@ class questions extends Survey_Common_Action
                     $oAnswer->language = $language;
                     $oAnswer->sortorder = $answer->sortorder;
                     $oAnswer->scale_id = $i;
-                    $oAnswer->assessment_value = $answer->assessment_value;
+                    $oAnswer->assessment_value = (isset($answer->assessment_value) ? $answer->assessment_value : 0);
                     $oAnswer->save();
                 }
             }
@@ -962,7 +962,7 @@ class questions extends Survey_Common_Action
                 'language'  => $language,
                 'title'     => $code,
                 'question'  => '',
-                'relevance' => '',
+                'relevance' => '1',
                 'oldCode'   => $oldCode,
             );
         } else {
@@ -982,7 +982,7 @@ class questions extends Survey_Common_Action
                 'language'          => $language,
                 'title'             => $code,
                 'question'          => '',
-                'relevance'         => '',
+                'relevance'         => '1',
                 'oldCode'           => $oldCode,
             );
         }
@@ -1026,13 +1026,8 @@ class questions extends Survey_Common_Action
         $baselang = Survey::model()->findByPk($surveyid)->language;
 
         $qtypelist = getQuestionTypeList('', 'array');
-        $qDescToCode = 'qDescToCode = {';
-        $qCodeToInfo = 'qCodeToInfo = {';
-        foreach ($qtypelist as $qtype => $qdesc) {
-            $qDescToCode .= " '{$qdesc['description']}' : '{$qtype}', \n";
-            $qCodeToInfo .= " '{$qtype}' : '".ls_json_encode($qdesc)."', \n";
-        }
-        $aData['ajaxDatas']['qTypeOutput'] = "$qDescToCode 'null':'null' }; \n $qCodeToInfo 'null':'null' };";
+
+        $aData['ajaxDatas']['qTypeOutput'] = json_encode($qtypelist);
 
         $eqrow = [];
         $eqrow['language'] = $baselang;
@@ -1106,7 +1101,8 @@ class questions extends Survey_Common_Action
 
         $aViewUrls = [];
         $aViewUrls['editQuestion_view'][] = $aData;
-        $aViewUrls['questionJavascript_view'][] = array('type' => $eqrow['type']);
+        App()->getClientScript()->registerScript("EditQuestionView_question_jsviews_".$surveyid.$eqrow['gid'].'new', "OtherSelection('".$eqrow['type']."');", LSYii_ClientScript::POS_POSTSCRIPT);            
+        
 
 
         $this->_renderWrappedTemplate('survey/Question', $aViewUrls, $aData);
@@ -1243,13 +1239,7 @@ class questions extends Survey_Common_Action
             }
 
             $qtypelist = getQuestionTypeList('', 'array');
-            $qDescToCode = 'qDescToCode = {';
-            $qCodeToInfo = 'qCodeToInfo = {';
-            foreach ($qtypelist as $qtype => $qdesc) {
-                $qDescToCode .= " '{$qdesc['description']}' : '{$qtype}', \n";
-                $qCodeToInfo .= " '{$qtype}' : '".ls_json_encode($qdesc)."', \n";
-            }
-            $aData['qTypeOutput'] = "$qDescToCode 'null':'null' }; \n $qCodeToInfo 'null':'null' };";
+            $aData['qTypeOutput'] = json_encode($qtypelist);
 
             $eqrow = [];
             if (!$adding) {
@@ -1337,7 +1327,7 @@ class questions extends Survey_Common_Action
             $aData['addlanguages'] = Survey::model()->findByPk($surveyid)->additionalLanguages;
 
             $aViewUrls['editQuestion_view'][] = $aData;
-            $aViewUrls['questionJavascript_view'][] = array('type' => $eqrow['type']);
+            App()->getClientScript()->registerScript("EditQuestionView_question_jsviews_".$surveyid.$gid.$qid, "OtherSelection('".$eqrow['type']."');", LSYii_ClientScript::POS_POSTSCRIPT);            
         } else {
                     include('accessDenied.php');
         }
@@ -1390,7 +1380,6 @@ class questions extends Survey_Common_Action
      *
      * @access public
      * @param int $surveyid
-     * @param int $gid
      * @param int $qid
      * @return array
      */
@@ -1986,9 +1975,9 @@ class questions extends Survey_Common_Action
      * @param string|array $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'survey/Question', $aViewUrls = array(), $aData = array())
+    protected function _renderWrappedTemplate($sAction = 'survey/Question', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData);
+        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 
     /**

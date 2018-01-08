@@ -146,7 +146,7 @@ class Template extends LSActiveRecord
     public static function templateNameFilter($sTemplateName)
     {
         // If the names has already been filtered, we skip the process
-        if (!empty(self::$aNamesFiltered[$sTemplateName])){
+        if (!empty(self::$aNamesFiltered[$sTemplateName])) {
             return self::$aNamesFiltered[$sTemplateName];
         }
 
@@ -156,7 +156,7 @@ class Template extends LSActiveRecord
         /* Validate if template is OK in user dir, DIRECTORY_SEPARATOR not needed "/" is OK */
         $oTemplate = self::model()->findByPk($sTemplateName);
 
-        if (is_object($oTemplate) && ( is_file(Yii::app()->getConfig("userthemerootdir").DIRECTORY_SEPARATOR.$oTemplate->folder.DIRECTORY_SEPARATOR.'config.xml') || is_file( Yii::app()->getConfig("standardthemerootdir").DIRECTORY_SEPARATOR.$oTemplate->folder.DIRECTORY_SEPARATOR.'config.xml') )) {
+        if (is_object($oTemplate) && ( self::checkTemplateXML($oTemplate->folder) )) {
             self::$aNamesFiltered[$sTemplateName] = $sTemplateName;
             return self::$aNamesFiltered[$sTemplateName];
         }
@@ -169,17 +169,28 @@ class Template extends LSActiveRecord
         /* If we're here, then the default survey theme is not installed and must be changed */
         $aTemplateList = self::getTemplateList();
         $sTemplateName = key($aTemplateList);
-        if (!empty($sTemplateName)){
+        if (!empty($sTemplateName)) {
             setGlobalSetting('defaulttheme', $sTemplateName);
             $sDefaultTemplate = getGlobalSetting('defaulttheme');
             Yii::app()->setFlashMessage(sprintf(gT("Default survey theme %s is not installed. Now %s is the new default survey theme"), $sRequestedTemplate, $sTemplateName), 'error');
             self::$aNamesFiltered[$sTemplateName] = $sTemplateName;
             return $sTemplateName;
-        }else{
+        } else {
             throw new Exception('No survey theme installed !!!!');
         }
     }
 
+    /**
+     * Check if a given Template has a valid XML File
+     * @TODO: check api version
+     *
+     * @param string $sTemplateFolder the template forder name where to look for the XML
+     * @return boolean
+     */
+    public static function checkTemplateXML($sTemplateFolder)
+    {
+        return ( is_file(Yii::app()->getConfig("userthemerootdir").DIRECTORY_SEPARATOR.$sTemplateFolder.DIRECTORY_SEPARATOR.'config.xml') || is_file( Yii::app()->getConfig("standardthemerootdir").DIRECTORY_SEPARATOR.$sTemplateFolder.DIRECTORY_SEPARATOR.'config.xml'));
+    }
 
     /**
      * @param string $sTemplateName

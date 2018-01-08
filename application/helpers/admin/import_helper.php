@@ -336,7 +336,7 @@ function XMLImportGroup($sFullFilePath, $iNewSID)
 * This function imports a LimeSurvey .lsq question XML file
 *
 * @param string $sFullFilePath  The full filepath of the uploaded file
-* @param mixed $iNewSID The new survey id
+* @param integer $iNewSID The new survey id
 * @param mixed $newgid The new question group id -the question will always be added after the last question in the group
 */
 function XMLImportQuestion($sFullFilePath, $iNewSID, $newgid, $options = array('autorename'=>false))
@@ -697,9 +697,17 @@ function importSurveyFile($sFullFilePath, $bTranslateLinksFields, $sNewSurveyNam
     }
 
     if ($sExtension == 'lss') {
-        return XMLImportSurvey($sFullFilePath, null, $sNewSurveyName, $DestSurveyID, $bTranslateLinksFields);
+        $aImportResults = XMLImportSurvey($sFullFilePath, null, $sNewSurveyName, $DestSurveyID, $bTranslateLinksFields);
+        if ($aImportResults && $aImportResults['newsid']) {
+            TemplateConfiguration::checkAndcreateSurveyConfig($aImportResults['newsid']);
+        }
+        return $aImportResults;
     } elseif ($sExtension == 'txt' || $sExtension == 'tsv') {
-        return TSVImportSurvey($sFullFilePath);
+        $aImportResults = TSVImportSurvey($sFullFilePath);
+        if ($aImportResults && $aImportResults['newsid']) {
+            TemplateConfiguration::checkAndcreateSurveyConfig($aImportResults['newsid']);
+        }
+        return $aImportResults;
     } elseif ($sExtension == 'lsa') {
             // Import a survey archive
         Yii::import("application.libraries.admin.pclzip.pclzip", true);
@@ -716,6 +724,9 @@ function importSurveyFile($sFullFilePath, $bTranslateLinksFields, $sNewSurveyNam
             if (pathinfo($aFile['filename'], PATHINFO_EXTENSION) == 'lss') {
                 //Import the LSS file
                 $aImportResults = XMLImportSurvey(Yii::app()->getConfig('tempdir').DIRECTORY_SEPARATOR.$aFile['filename'], null, null, null, true, false);
+                if ($aImportResults && $aImportResults['newsid']) {
+                    TemplateConfiguration::checkAndcreateSurveyConfig($aImportResults['newsid']);
+                }
                 // Activate the survey
                 Yii::app()->loadHelper("admin/activate");
                 $survey = Survey::model()->findByPk($aImportResults['newsid']);
@@ -749,7 +760,7 @@ function importSurveyFile($sFullFilePath, $bTranslateLinksFields, $sNewSurveyNam
                     $aImportResults = array_merge($aTokenCreateResults, $aImportResults);
                     $aTokenImportResults = XMLImportTokens(Yii::app()->getConfig('tempdir').DIRECTORY_SEPARATOR.$aFile['filename'], $aImportResults['newsid']);
                 } else {
-                    $aTokenImportResults['warnings'][] = gT("Unable to create token table");
+                    $aTokenImportResults['warnings'][] = gT("Unable to create survey participants table");
 
                 }
 
@@ -1576,7 +1587,7 @@ function XMLImportTokens($sFullFilePath, $iSurveyID, $sCreateMissingAttributeFie
         foreach ($xml->tokens->fields->fieldname as $sFieldName) {
             $aXLMFieldNames[] = (string) $sFieldName;
         }
-        // Get a list of all fieldnames in the token table
+        // Get a list of all fieldnames in the survey participants table
         $aTokenFieldNames = Yii::app()->db->getSchema()->getTable($survey->tokensTableName, true);
         $aTokenFieldNames = array_keys($aTokenFieldNames->columns);
         $aFieldsToCreate = array_diff($aXLMFieldNames, $aTokenFieldNames);
