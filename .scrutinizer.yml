@@ -1,7 +1,7 @@
 build:
     tests:
         override:
-            - true
+            - [php-scrutinizer-run]
 
     nodes:
         tests: true
