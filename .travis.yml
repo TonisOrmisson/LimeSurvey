@@ -12,7 +12,7 @@ addons:
   artifacts:
     s3_region: "eu-west-1"
     paths:
-      - $(ls $HOME/tests/tmp/screenshots/*.png | tr "\n" ":")
+      - $(ls $HOME/tests/tmp/screenshots | tr "\n" ":")
 before_script:
     # Test
     #- sudo apt-get update
