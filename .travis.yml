@@ -12,9 +12,7 @@ addons:
   artifacts:
     s3_region: "eu-west-1"
     paths:
-      - $(git ls-files -o | tr "\n" ":")
-      - $(ls /var/log/*.log | tr "\n" ":")
-      - $HOME/tets/tmp
+      - $(ls $HOME/tets/tmp/screenshots/*.png | tr "\n" ":")
 before_script:
     # Test
     #- sudo apt-get update
