@@ -4,6 +4,7 @@ namespace ls\tests;
 
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\Exception\NoSuchElementException;
+use Facebook\WebDriver\WebDriverExpectedCondition;
 
 /**
  * @since 2018-01-17
@@ -44,8 +45,10 @@ class LanguageChangerTest extends TestBaseClassWeb
             $web->changeLanguageSelect('de');
 
             // Check so that we see German text.
-            $text = $web->findElement(
-                WebDriverBy::cssSelector('.question-count-text')
+            $text = self::$webDriver->wait(1)->until(
+                WebDriverExpectedCondition::elementToBeClickable(
+                    WebDriverBy::cssSelector('.question-count-text')
+                )
             );
             $this->assertContains($text->getText(), 'In dieser Umfrage sind 2 Fragen enthalten.');
 
