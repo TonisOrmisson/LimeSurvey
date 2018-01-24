@@ -3,10 +3,10 @@
 
 class Settings extends CModel
 {
-    /** @var LSActiveRecord */
+    /** @var LSActiveRecord The initial Setting item records */
     public $settings;
 
-    /** @var string */
+    /** @var string *The Class Name of Setting item*/
     public $itemClass;
 
     /** @var string Value field name in itemClass table */
@@ -23,7 +23,7 @@ class Settings extends CModel
         }
         $this->checkSettings();
         $this->setSettings();
-        $this->loadStrings();
+        $this->populate();
     }
 
 
@@ -49,32 +49,34 @@ class Settings extends CModel
 
     public function beforeValidate() {
         foreach ($this->attributes as $key => $value){
+            // set empty strings as null
             if ($value === ""){
                 $this->$key = NULL;
             }
         }
-
         return parent::beforeValidate();
     }
 
-    public function loadStrings() {
+    /**
+     * Pupulates the model with the setting records
+     */
+    public function populate() {
         if(!empty($this->settings)){
             foreach ($this->settings as $key => $setting) {
-                // only accept keys that are described in the model
-                $type = SurveyLanguagesettingType::getByKey($key);
-                if($type){
-                    $this->{$key} = $setting->{$this->valueField};
-                }
+                $this->{$key} = $setting->{$this->valueField};
             }
         }
     }
 
 
     /**
-     *
+     * Loads the initial records from which the model attributes are populated
      */
-    public function setSettings() {
-        throw new \Exception('setSettings() needs to be overriden');
+    protected function setSettings() {
+        /** @var LSActiveRecord $item */
+        $item = new $this->itemClass;
+        $item->findAll();
+        $this->settings =$item->findAll();
     }
 
 
