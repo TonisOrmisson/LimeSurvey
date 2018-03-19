@@ -135,7 +135,7 @@ return array(
         'devBaseUrl' => 'assets/packages/adminpanel/',
         'basePath' => 'core.adminpanel',
         'js' => array(
-            'build/lsadminpanel'.(($debug > 0) ? '.debug' : '.min').'.js',
+            'build/lsadminpanel'.(($debug > 0) ? '' : '.min').'.js',
             'build/surveysettings'.$minVersion.'.js',
             'build/hammer'.$minVersion.'.js'
         ),
@@ -166,18 +166,6 @@ return array(
         'js' => array(
             // 'build/lslog'.$minVersion.'.js',
             'build/lslog.js',
-        )
-    ),
-    'lshelp' => array(
-        'devBaseUrl' => 'assets/packages/lshelp/',
-        'basePath' => 'core.lshelp',
-        'position' =>CClientScript::POS_BEGIN,
-        'js' => array(
-            'build/lshelper'.$minVersion.'.js',
-        ),
-        'depends' => array(
-            'jquery',
-            'adminbasics'
         )
     ),
     'panelboxes' => array(

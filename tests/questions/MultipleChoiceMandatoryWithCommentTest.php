@@ -38,6 +38,11 @@ class MultipleChoiceMandatoryWithComment extends TestBaseClassWeb
     public function tearDown()
     {
         self::$testHelper->deactivateSurvey(self::$surveyId);
+
+        // NB: Need to sleep since deactivated survey is named
+        // by second, and tests can deactivate same survey more
+        // than once for one second.
+        sleep(1);
     }
     /**
      * Test submit question without comment.
@@ -144,6 +149,9 @@ class MultipleChoiceMandatoryWithComment extends TestBaseClassWeb
             $this->assertEmpty($comment);
 
             $web->submit();
+
+            // Sleep so modal has time to fade in.
+            sleep(1);
 
             // Get alert box.
             $modal = $web->findElement(WebDriverBy::id('bootstrap-alert-box-modal'));
