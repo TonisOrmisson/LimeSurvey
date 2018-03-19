@@ -90,16 +90,18 @@ class SurveyRuntimeHelper
     {
         // Survey settings
         $this->setSurveySettings($surveyid, $args);
-
+        
         // Start rendering
         $this->makeLanguageChanger(); //  language changer can be used on any entry screen, so it must be set first
         extract($args);
-
+        
         ///////////////////////////////////////////////////////////
         // 1: We check if token and/or captcha form shouls be shown
         if (!isset($_SESSION[$this->LEMsessid]['step'])) {
             $this->showTokenOrCaptchaFormsIfNeeded();
         }
+
+        $this->checkForDataSecurityAccepted();
 
         if (!$this->previewgrp && !$this->previewquestion) {
             $this->initMove(); // main methods to init session, LEM, moves, errors, etc
@@ -327,7 +329,7 @@ class SurveyRuntimeHelper
                 $aGroup['class'] = ' ls-hidden';
             }
 
-            $aGroup['name']        = $gl['group_name'];
+            $aGroup['name']        = LimeExpressionManager::ProcessString($gl['group_name'], null, null, 3, 1, false, true, false);
             $aGroup['gseq']        = $_gseq;
             $showgroupinfo_global_ = getGlobalSetting('showgroupinfo');
             $aSurveyinfo           = getSurveyInfo($this->iSurveyid, App()->getLanguage());
@@ -383,7 +385,9 @@ class SurveyRuntimeHelper
 
                     // easier to understand for survey maker
                     $aGroup['aQuestions'][$qid]['qid']                  = $qa[4];
+                    $aGroup['aQuestions'][$qid]['gid']                  = $qinfo['info']['gid'];
                     $aGroup['aQuestions'][$qid]['code']                 = $qa[5];
+                    $aGroup['aQuestions'][$qid]['type']                 = $qinfo['info']['type'];
                     $aGroup['aQuestions'][$qid]['number']               = $qa[0]['number'];
                     $aGroup['aQuestions'][$qid]['text']                 = LimeExpressionManager::ProcessString($qa[0]['text'], $qa[4], $aStandardsReplacementFields, 3, 1, false, true, false);
                     $aGroup['aQuestions'][$qid]['SGQ']                  = $qa[7];
@@ -395,25 +399,26 @@ class SurveyRuntimeHelper
                     $aGroup['aQuestions'][$qid]['answer']               = LimeExpressionManager::ProcessString($qa[1], $qa[4], null, 3, 1, false, true, false);
                     $aGroup['aQuestions'][$qid]['help']['show']         = (flattenText($lemQuestionInfo['info']['help'], true, true) != '');
                     $aGroup['aQuestions'][$qid]['help']['text']         = LimeExpressionManager::ProcessString($lemQuestionInfo['info']['help'], $qa[4], null, 3, 1, false, true, false);
+                    $aGroup['aQuestions'][$qid] = $this->doBeforeQuestionRenderEvent($aGroup['aQuestions'][$qid]);
                 }
-            $aGroup['show_last_group']   = $aGroup['show_last_answer']  = false;
-            $aGroup['lastgroup']         = $aGroup['lastanswer']        = '';
+                $aGroup['show_last_group']   = $aGroup['show_last_answer']  = false;
+                $aGroup['lastgroup']         = $aGroup['lastanswer']        = '';
 
-            if (!empty($qanda)) {
+                if (!empty($qanda)) {
 
-                if ($this->sSurveyMode == 'group') {
-                    $aGroup['show_last_group']   = true;
-                    $aGroup['lastgroup']         = $lastgroup;
+                    if ($this->sSurveyMode == 'group') {
+                        $aGroup['show_last_group']   = true;
+                        $aGroup['lastgroup']         = $lastgroup;
+                    }
+
+                    if ($this->sSurveyMode == 'question') {
+                        $aGroup['show_last_answer']   = true;
+                        $aGroup['lastanswer']         = $lastanswer;
+                    }
                 }
-
-                if ($this->sSurveyMode == 'question') {
-                    $aGroup['show_last_answer']   = true;
-                    $aGroup['lastanswer']         = $lastanswer;
-                }
+                Yii::app()->setConfig('gid', '');
+                $this->aSurveyInfo['aGroups'][$gid] = $aGroup;
             }
-            Yii::app()->setConfig('gid', '');
-            $this->aSurveyInfo['aGroups'][$gid] = $aGroup;
-        }
         }
 
         /**
@@ -574,11 +579,14 @@ class SurveyRuntimeHelper
 
             resetTimers();
 
+            // TODO: Why is $this->aSurveyInfo empty here?
+            $aSurveyInfo = getSurveyInfo($this->iSurveyid, App()->getLanguage());
+            $this->aSurveyInfo = $aSurveyInfo;
+
             //Before doing the "templatereplace()" function, check the $this->aSurveyInfo['url']
             //field for limereplace stuff, and do transformations!
             $this->aSurveyInfo['surveyls_url'] = passthruReplace($this->aSurveyInfo['surveyls_url'], $this->aSurveyInfo);
             $this->aSurveyInfo['surveyls_url'] = templatereplace($this->aSurveyInfo['surveyls_url'], array(), $redata, 'URLReplace', false, null, array(), true); // to do INSERTANS substitutions
-
 
             //THE FOLLOWING DEALS WITH SUBMITTING ANSWERS AND COMPLETING AN ACTIVE SURVEY
             //don't use cookies if tokens are being used
@@ -670,7 +678,7 @@ class SurveyRuntimeHelper
     {
 
         // First time the survey is loaded
-        if (!isset($_SESSION[$this->LEMsessid]['step']) || ($this->previewquestion || $this->previewgrp) ) {
+        if (!isset($_SESSION[$this->LEMsessid]['step']) || ($this->previewquestion || $this->previewgrp)) {
             // Init session, randomization and filed array
             buildsurveysession($this->iSurveyid);
             $fieldmap = randomizationGroupsAndQuestions($this->iSurveyid);
@@ -935,9 +943,22 @@ class SurveyRuntimeHelper
     {
         $bDisplayFirstPage = ($this->sSurveyMode != 'survey' && $_SESSION[$this->LEMsessid]['step'] == 0);
 
-        if ($this->sSurveyMode == 'survey' || $bDisplayFirstPage ){
-            $this->aSurveyInfo['description'] = $this->processString($this->aSurveyInfo['description']);
-            $this->aSurveyInfo['welcome']     = $this->processString($this->aSurveyInfo['welcome']) ;
+        if ($this->sSurveyMode == 'survey' || $bDisplayFirstPage) {
+            //Failsave to have a general standard value
+            if (empty($this->aSurveyInfo['datasecurity_notice_label'])) {
+                $this->aSurveyInfo['datasecurity_notice_label'] = gT("To continue please first accept our survey policy.");
+            }
+
+            if (empty($this->aSurveyInfo['datasecurity_error'])) {
+                $this->aSurveyInfo['datasecurity_error'] = gT("You will have to accept our survey policy!");
+            }
+
+            $this->aSurveyInfo['description']               = $this->processString($this->aSurveyInfo['description']);
+            $this->aSurveyInfo['welcome']                   = $this->processString($this->aSurveyInfo['welcome']) ;
+            $this->aSurveyInfo['datasecurity_notice']       = $this->processString($this->aSurveyInfo['datasecurity_notice']) ;
+            $this->aSurveyInfo['datasecurity_error']        = $this->processString($this->aSurveyInfo['datasecurity_error']) ;
+            $this->aSurveyInfo['datasecurity_notice_label'] = Survey::replacePolicyLink($this->aSurveyInfo['datasecurity_notice_label'],$this->aSurveyInfo['sid']);
+            $this->aSurveyInfo['datasecurity_notice_label'] = $this->processString($this->aSurveyInfo['datasecurity_notice_label']) ;
         }
 
         if ($bDisplayFirstPage) {
@@ -945,6 +966,19 @@ class SurveyRuntimeHelper
             display_first_page($this->thissurvey, $this->aSurveyInfo);
             Yii::app()->end(); // So we can still see debug messages
         }
+    }
+
+    private function checkForDataSecurityAccepted(){
+         if($this->param['thisstep'] === '0' && Survey::model()->findByPk($this->aSurveyInfo['sid'])->showsurveypolicynotice>0) {
+             $data_security_accepted = App()->request->getPost('datasecurity_accepted', false);
+            //  if($data_security_accepted !== 'on' && ($this->aSurveyInfo['active'] == 'Y')){
+             if($data_security_accepted !== 'on'){
+                $_SESSION[$this->LEMsessid]['step'] = 0;
+                $this->aSurveyInfo['datasecuritynotaccepted'] = true;
+                $this->displayFirstPageIfNeeded(true);
+                Yii::app()->end(); // So we can still see debug messages
+            }
+         }
     }
 
     /**
@@ -1060,6 +1094,16 @@ class SurveyRuntimeHelper
                     $this->aSurveyInfo['aAssessments'] = doAssessment($this->iSurveyid);
                 }
 
+                // End text
+                if (trim(str_replace(array('<p>', '</p>'), '', $this->aSurveyInfo['surveyls_endtext'])) == '') {
+                    $this->aSurveyInfo['aCompleted']['showDefault'] = true;
+                } else {
+                    $this->aSurveyInfo['aCompleted']['showDefault'] = false;
+                    // NOTE: this occurence of template replace should stay here. User from backend could use old replacement keyword
+                    //$this->aSurveyInfo['aCompleted']['sEndText'] = templatereplace($this->aSurveyInfo['surveyls_endtext'], array(), $redata, 'SubmitAssessment', false, null, array(), true);
+                    $this->aSurveyInfo['aCompleted']['sEndText'] = $this->processString($this->aSurveyInfo['surveyls_endtext'], 2);
+                }
+
                 $redata = compact(array_keys(get_defined_vars()));
                 // can't kill session before end message, otherwise INSERTANS doesn't work.
                 $completed = templatereplace($this->aSurveyInfo['surveyls_endtext'], array(), $redata, 'SubmitEndtextI', false, null, array(), true);
@@ -1090,7 +1134,8 @@ class SurveyRuntimeHelper
                 } else {
                     $this->aSurveyInfo['aCompleted']['showDefault'] = false;
                     // NOTE: this occurence of template replace should stay here. User from backend could use old replacement keyword
-                    $this->aSurveyInfo['aCompleted']['sEndText'] = templatereplace($this->aSurveyInfo['surveyls_endtext'], array(), $redata, 'SubmitAssessment', false, null, array(), true);
+                    //$this->aSurveyInfo['aCompleted']['sEndText'] = templatereplace($this->aSurveyInfo['surveyls_endtext'], array(), $redata, 'SubmitAssessment', false, null, array(), true);
+                    $this->aSurveyInfo['aCompleted']['sEndText'] = $this->processString($this->aSurveyInfo['surveyls_endtext'], 2);
                 }
 
                 // Link to Print Answer Preview  **********
@@ -1098,7 +1143,8 @@ class SurveyRuntimeHelper
                 if ($this->aSurveyInfo['printanswers'] == 'Y') {
                     $this->aSurveyInfo['aCompleted']['aPrintAnswers']['show']  = true;
                     $this->aSurveyInfo['aCompleted']['aPrintAnswers']['sUrl']  = Yii::app()->getController()->createUrl("/printanswers/view", array('surveyid'=>$this->iSurveyid));
-                    $this->aSurveyInfo['aCompleted']['aPrintAnswers']['sText'] = "Print your answers.";
+                    $this->aSurveyInfo['aCompleted']['aPrintAnswers']['sText'] = gT("Print your answers.");
+
                 }
 
                 // Link to Public statistics  **********
@@ -1141,6 +1187,13 @@ class SurveyRuntimeHelper
             $this->aSurveyInfo['surveyls_url']               = $this->processString($this->aSurveyInfo['surveyls_url']);
             $this->aSurveyInfo['aCompleted']['sSurveylsUrl'] = $this->aSurveyInfo['surveyls_url'];
 
+            // TODO: Process string in url description?
+            if ($this->aSurveyInfo['surveyls_urldescription'] != "") {
+                $this->aSurveyInfo['aCompleted']['sSurveylsUrlDescription'] = $this->aSurveyInfo['surveyls_urldescription'];
+            } else {
+                $this->aSurveyInfo['aCompleted']['sSurveylsUrlDescription'] = $this->aSurveyInfo['surveyls_url'];
+            }
+
 
             if (isset($this->aSurveyInfo['autoredirect']) && $this->aSurveyInfo['autoredirect'] == "Y" && $this->aSurveyInfo['surveyls_url']) {
                 //Automatically redirect the page to the "url" setting for the survey
@@ -1178,14 +1231,17 @@ class SurveyRuntimeHelper
      * @param string $sString the string to evaluate
      * @return string
      */
-    private function processString($sString)
+    private function processString($sString, $iRecursionLevel = 1)
     {
-        $sProcessedString = '';
-        if (strpos($sString, "{") !== false) {
+        $sProcessedString = $sString;
+
+        if((strpos($sProcessedString, "{") !== false)){
             // process string anyway so that it can be pretty-printed
             $aStandardsReplacementFields = getStandardsReplacementFields($this->aSurveyInfo);
-            $sProcessedString = LimeExpressionManager::ProcessString( $sString, null, $aStandardsReplacementFields);
+            $sProcessedString = LimeExpressionManager::ProcessString( $sString, null, $aStandardsReplacementFields, $iRecursionLevel);
+            
         }
+
 
         return $sProcessedString;
     }
@@ -1303,10 +1359,10 @@ class SurveyRuntimeHelper
         $aSurveyinfo = getSurveyInfo($iSurveyId, App()->getLanguage());
         // Check global setting to see if survey level setting should be applied
         if ($showqnumcode_global_ == 'choose') {
-// Use survey level settings
+            // Use survey level settings
             $showqnumcode_ = $aSurveyinfo['showqnumcode']; //B, N, C, or X
         } else {
-// Use global setting
+            // Use global setting
             $showqnumcode_ = $showqnumcode_global_; //both, number, code, or none
         }
 
@@ -1614,14 +1670,6 @@ class SurveyRuntimeHelper
 
         $aEnterErrors = array();
         $FlashError   = false;
-        // Scenario => Token required
-        if ($scenarios['tokenRequired'] && !$preview) {
-            //Test if token is valid
-            list($renderToken, $FlashError) = testIfTokenIsValid($subscenarios, $this->aSurveyInfo, $aEnterTokenData, $clienttoken);
-            if (!empty($FlashError)) {
-                $aEnterErrors['token'] = $FlashError;
-            }
-        }
 
         // Scenario => Captcha required
         if ($scenarios['captchaRequired'] && !$preview) {
@@ -1775,6 +1823,7 @@ class SurveyRuntimeHelper
                 $this->gid              = $this->aStepInfo['gid'];
                 $this->groupname        = $this->aStepInfo['gname'];
                 $this->groupdescription = $this->aStepInfo['gtext'];
+                $this->groupname        = LimeExpressionManager::ProcessString($this->groupname, null, null, 3, 1, false, true, false);
                 $this->groupdescription = LimeExpressionManager::ProcessString($this->groupdescription, null, null, 3, 1, false, true, false);
             }
         }
@@ -1788,4 +1837,44 @@ class SurveyRuntimeHelper
         }
     }
 
+    /**
+     * Apply the plugin even beforeQuestionRender to
+     * question data.
+     *
+     * @see https://manual.limesurvey.org/BeforeQuestionRender
+     *
+     * @param array $data Question data
+     * @return array Question data modified by plugin
+     */
+    protected function doBeforeQuestionRenderEvent($data)
+    {
+        $event = new PluginEvent('beforeQuestionRender');
+        $event->set('surveyId', $this->iSurveyid);
+        $event->set('type', $data['type']);
+        $event->set('code', $data['code']);
+        $event->set('qid', $data['qid']);
+        $event->set('gid', $data['gid']);
+        $event->set('text', $data['text']);
+        $event->set('input_error_class', $data['input_error_class']);
+        $event->set('answers', $data['answer']);  // NB: "answers" in plugin, "answer" in $data.
+        $event->set('help', $data['help']['text']);
+        $event->set('man_message', $data['man_message']);
+        $event->set('valid_message', $data['valid_message']);
+        $event->set('file_valid_message', $data['file_valid_message']);
+        //$event->set('aHtmlOptions', $aHtmlOptions);  // TODO
+
+        App()->getPluginManager()->dispatchEvent($event);
+
+        $data['text']               = $event->get('text');
+        $data['mandatory']          = $event->get('mandatory',$data['mandatory']);
+        $data['input_error_class']  = $event->get('input_error_class');
+        $data['valid_message']      = $event->get('valid_message');
+        $data['file_valid_message'] = $event->get('file_valid_message');
+        $data['man_message']        = $event->get('man_message');
+        $data['answer']             = $event->get('answers');
+        $data['help']['text']       = $event->get('help');
+        $data['help']['show']       = flattenText($data['help']['text'], true, true) != '';
+
+        return $data;
+    }
 }

@@ -2336,7 +2336,7 @@ class remotecontrol_handle
                 $command->addCondition("(completed ='N') or (completed='')");
                 $command->addCondition("validfrom is null OR validfrom < '{$sNow}'");
                 $command->addCondition("validuntil is null OR validuntil > '{$sNow}'");
-                $command->addCondition('emailstatus = "OK"');
+                $command->addCondition("emailstatus = 'OK'");
             }
             $command->order = 'tid';
 
@@ -2913,7 +2913,7 @@ class remotecontrol_handle
 
         $sTableName = Yii::app()->db->tablePrefix.'survey_'.$iSurveyID;
 
-        $sTempFile = $oExport->exportSurvey($iSurveyID, $sLanguageCode, $sDocumentType, $oFormattingOptions, "{$sTableName}.token=".App()->db->quoteValue('$sToken'));
+        $sTempFile = $oExport->exportSurvey($iSurveyID, $sLanguageCode, $sDocumentType, $oFormattingOptions, "{$sTableName}.token=".App()->db->quoteValue("$sToken"));
         return new BigFile($sTempFile, true, 'base64');
 
     }

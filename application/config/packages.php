@@ -22,6 +22,17 @@ if (isset($_GET['isAjax'])) {
     return array();
 }
 return array(
+    /* expressions manager function and system */
+    'expressions'=>array(
+        'devBaseUrl'  => 'assets/packages/expressions/',
+        'basePath' => 'core.expressions',
+        'js'=>array(
+            'em_javascript.js',
+        ),
+        'depends' => array(
+            'jquery',
+        )
+    ),
     /* For public template functionnality */
     'limesurvey-public'=>array(
         'devBaseUrl'  => 'assets/packages/limesurvey/',
@@ -34,6 +45,7 @@ return array(
         ),
         'depends' => array(
             'jquery',
+            'expressions',
             'fontawesome',
         )
     ),
@@ -138,7 +150,7 @@ return array(
         'devBaseUrl' => 'assets/packages/adminpanel/',
         'basePath' => 'core.adminpanel',
         'js' => array(
-            'build/lsadminpanel'.(($debug > 0) ? '.debug' : '.min').'.js',
+            'build/lsadminpanel'.(($debug > 0) ? '' : '.min').'.js',
             'build/surveysettings'.$minVersion.'.js',
             'build/hammer'.$minVersion.'.js'
         ),
@@ -177,10 +189,6 @@ return array(
         'position' =>CClientScript::POS_BEGIN,
         'js' => array(
             'build/lshelper'.$minVersion.'.js',
-        ),
-        'depends' => array(
-            'jquery',
-            'adminbasics'
         )
     ),
     'panelboxes' => array(

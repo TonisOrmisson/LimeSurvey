@@ -79,7 +79,7 @@ class LSETwigViewRenderer extends ETwigViewRenderer
      * @param array   $aDatas  the datas needed to fill the layout
      * @param boolean $bReturn if true, it will return the html string without rendering the whole page. Usefull for debuging, and used for Print Answers
      */
-    public function renderViewFromFile($sLayoutFilePath, $aDatas, $bReturn=false)
+    public function renderViewFromFile($sLayoutFilePath, $aDatas, $bReturn = false)
     {
         $viewFile = Yii::app()->getConfig('rootdir').$sLayoutFilePath;
         if (file_exists($viewFile)) {
@@ -249,7 +249,7 @@ class LSETwigViewRenderer extends ETwigViewRenderer
         $this->_twig = $twig = parent::getTwig();
 
         //Run theme related things only if a theme is provided!
-        if($oTemplate !== null ) {
+        if ($oTemplate !== null) {
             // Get the additional infos for the view, such as language, direction, etc
             $aDatas = $this->getAdditionalInfos($aDatas, $oTemplate);
 
@@ -315,9 +315,13 @@ class LSETwigViewRenderer extends ETwigViewRenderer
             $surveyid = $aDatas['aSurveyInfo']['sid'];
             $event->set('surveyId', $aDatas['aSurveyInfo']['sid']);
 
-            if (!empty($_SESSION['survey_'.$surveyid]['srid'])) {
-                $aDatas['aSurveyInfo']['bShowClearAll'] = !SurveyDynamic::model($surveyid)->isCompleted($_SESSION['survey_'.$surveyid]['srid']);
+            if (isset($_SESSION['survey_'.$surveyid]['srid']) && $aDatas['aSurveyInfo']['active']=='Y') {
+                $isCompleted = SurveyDynamic::model($surveyid)->isCompleted($_SESSION['survey_'.$surveyid]['srid']);
+            } else {
+                $isCompleted = false;
             }
+
+            $aDatas['aSurveyInfo']['bShowClearAll'] = !$isCompleted;
         }
 
         App()->getPluginManager()->dispatchEvent($event);

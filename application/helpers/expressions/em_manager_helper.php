@@ -820,6 +820,9 @@
         {
             LimeExpressionManager::SetDirtyFlag();  // set dirty flag even if not conditions, since must have had a DB change
             $releqns = self::ConvertConditionsToRelevance($surveyId,$qid);
+            if(!is_array($releqns)) {
+                return NULL;
+            }    
             $num = count($releqns);
             if ($num == 0) {
                 return NULL;
@@ -4479,7 +4482,6 @@
         * @param string $string - the string to be replaced
         * @param integer $questionNum - the $qid of question being replaced - needed for properly alignment of question-level relevance and tailoring
         * @param array|null $replacementFields - optional replacement values
-        * @param boolean $debug - deprecated
         * @param integer $numRecursionLevels - the number of times to recursively subtitute values in this string
         * @param integer $whichPrettyPrintIteration - if want to pretty-print the source string, which recursion  level should be pretty-printed
         * @param boolean $noReplacements - true if we already know that no replacements are needed (e.g. there are no curly braces)
@@ -4487,7 +4489,7 @@
         * @param boolean $staticReplacement - return HTML string without the system to update by javascript
         * @return string - the original $string with all replacements done.
         */
-        public  static function ProcessString($string, $questionNum=NULL, $replacementFields=array(), $numRecursionLevels=1, $whichPrettyPrintIteration=1, $noReplacements=false, $timeit=true, $staticReplacement=false)
+        public static function ProcessString($string, $questionNum=NULL, $replacementFields=array(), $numRecursionLevels=1, $whichPrettyPrintIteration=1, $noReplacements=false, $timeit=true, $staticReplacement=false)
         {
             $now = microtime(true);
             $LEM =& LimeExpressionManager::singleton();
@@ -4935,6 +4937,7 @@
             }
             $LEM->surveyOptions['active'] = (isset($aSurveyOptions['active']) ? $aSurveyOptions['active'] : false);
             $LEM->surveyOptions['allowsave'] = (isset($aSurveyOptions['allowsave']) ? $aSurveyOptions['allowsave'] : false);
+            $LEM->surveyOptions['alloweditaftercompletion'] = (isset($aSurveyOptions['alloweditaftercompletion']) ? $aSurveyOptions['alloweditaftercompletion'] : false);
             $LEM->surveyOptions['anonymized'] = (isset($aSurveyOptions['anonymized']) ? $aSurveyOptions['anonymized'] : false);
             $LEM->surveyOptions['assessments'] = (isset($aSurveyOptions['assessments']) ? $aSurveyOptions['assessments'] : false);
             $LEM->surveyOptions['datestamp'] = (isset($aSurveyOptions['datestamp']) ? $aSurveyOptions['datestamp'] : false);
@@ -5544,25 +5547,27 @@
                 if (isset($_SESSION[$this->sessid]['srid']) && $this->surveyOptions['active'])
                 {
                     $response = Response::model($this->sid)->findByPk($_SESSION[$this->sessid]['srid']);
-                    $response->setAttributes($aResponseAttributes, false);
-                    if (!$response->save())
-                    {
-                        // @todo This kills the session if adminemail is defined, so the queries below won't work.
-                        $message = submitfailed('', join("\n",$response->getErorrs()));  // TODO - report SQL error?
+                    if ($response->submitdate == null || Survey::model()->findByPk($this->sid)->alloweditaftercompletion == 'Y') {
+	                    $response->setAttributes($aResponseAttributes, false);
+	                    if (!$response->save())
+	                    {
+	                        // @todo This kills the session if adminemail is defined, so the queries below won't work.
+	                        $message = submitfailed('', join("\n",$response->getErorrs()));  // TODO - report SQL error?
 
-                        if (($this->debugLevel & LEM_DEBUG_VALIDATION_SUMMARY) == LEM_DEBUG_VALIDATION_SUMMARY) {
-                            $message .= $this->gT('Error on response update');  // @todo Add  SQL error?
-                        }
+	                        if (($this->debugLevel & LEM_DEBUG_VALIDATION_SUMMARY) == LEM_DEBUG_VALIDATION_SUMMARY) {
+	                            $message .= $this->gT('Error on response update');  // @todo Add  SQL error?
+	                        }
 
-                        LimeExpressionManager::addFrontendFlashMessage('error', $message, $this->sid);
+	                        LimeExpressionManager::addFrontendFlashMessage('error', $message, $this->sid);
 
-                    }
-                    // Save Timings if needed
-                    elseif ($this->surveyOptions['savetimings']) {
-                        Yii::import("application.libraries.Save");
-                        $cSave = new Save();
-                        $cSave->set_answer_time();
-                    }
+	                    }
+	                    // Save Timings if needed
+	                    elseif ($this->surveyOptions['savetimings']) {
+	                        Yii::import("application.libraries.Save");
+	                        $cSave = new Save();
+	                        $cSave->set_answer_time();
+	                    }
+	                }
 
                     if ($finished) {
                         // Delete the save control record if successfully finalize the submission
@@ -5593,7 +5598,8 @@
                     }
                     else
                     {
-                        if ($finished) {
+                        if ($finished && ($response->submitdate == null || Survey::model()->findByPk($this->sid)->alloweditaftercompletion == 'Y')) {
+                            $sQuery = 'UPDATE '.$this->surveyOptions['tablename'] . " SET ";
                             if($this->surveyOptions['datestamp'])
                             {
                                 // Replace with date("Y-m-d H:i:s") ? See timeadjust
@@ -7190,8 +7196,7 @@
             $allJsVarsUsed = array();
             $rowdividList = array();   // list of subquestions needing relevance entries
             /* All function for expression manager */
-
-            App()->getClientScript()->registerScriptFile(Yii::app()->getConfig('generalscripts')."expressions/em_javascript.js" );
+            App()->getClientScript()->registerPackage("expressions"); // Be sure to load, think we can remove ALL other call
             /* Call the function when trigerring event */
             App()->getClientScript()->registerScript("triggerEmClassChange","triggerEmClassChange();\n",CClientScript::POS_END);
 
@@ -7624,7 +7629,7 @@
                         $jsResultVar = $LEM->em->GetJsVarFor($arg['jsResultVar']);
                         // Note, this will destroy embedded HTML in the equation (e.g. if it is a report, can use {QCODE.question} for this purpose)
                         // This make same than flattenText to be same in JS and in PHP
-                        $relParts[] = "  $('#" . substr($jsResultVar,1,-1) . "').val($.trim($('#question" . $arg['qid'] . " .em_equation').text()));\n";
+                        $relParts[] = "  $('#" . substr($jsResultVar,1,-1) . "').val($.trim($('#question" . $arg['qid'] . " .em_equation').text())).trigger('change');\n";
                     }
                     $relParts[] = "  relChange" . $arg['qid'] . "=true;\n"; // any change to this value should trigger a propagation of changess
                     $relParts[] = "  $('#relevance" . $arg['qid'] . "').val('1');\n";
@@ -8634,20 +8639,19 @@ report~numKids > 0~message~{name}, you said you are {age} and that you have {num
         */
         public function getGroupInfoForEM($surveyid,$sLanguage=NULL)
         {
-            if (is_null($sLanguage) && isset($_SESSION['LEMlang']))
-            {
+            $survey = Survey::model()->findByPk($surveyid);
+
+            if (is_null($sLanguage) && isset($_SESSION['LEMlang'])) {
                 $sLanguage = $_SESSION['LEMlang'];
+            } elseif(is_null($sLanguage)) {
+                $sLanguage=$survey->language;
             }
-            elseif(is_null($sLanguage))
-            {
-                $sLanguage=Survey::model()->findByPk($surveyid)->language;
-            }
-            $oQuestionGroups=QuestionGroup::model()->findAll(array('condition'=>"sid=:sid",'order'=>'group_order','params'=>array(":sid"=>$surveyid)));
+            $oQuestionGroups=$survey->groups;
+
             $qinfo = array();
             $_order=0;
             $gid = array();
-            foreach ($oQuestionGroups as $oQuestionGroup)
-            {
+            foreach ($oQuestionGroups as $oQuestionGroup) {
                 $gid[$oQuestionGroup->gid] = array(
                     'group_order' => $_order,
                     'gid' =>  $oQuestionGroup->gid,
@@ -9364,6 +9368,27 @@ report~numKids > 0~message~{name}, you said you are {age} and that you have {num
                     $sPrint= viewHelper::purified($LEM->GetLastPrettyPrintExpression());
                     $errClass = ($LEM->em->HasErrors() ? 'danger' : '');
                     $out .= "<tr class='LEMgroup $errClass'><td>" . $LEM->gT("End URL:") . "</td><td colspan=\"3\">" . $sPrint . "</td></tr>";
+                }
+                if ($aSurveyInfo['surveyls_policy_notice'] != '')
+                {
+                    $LEM->ProcessString($aSurveyInfo['surveyls_policy_notice'],0);
+                    $sPrint= viewHelper::purified(viewHelper::filterScript($LEM->GetLastPrettyPrintExpression()));
+                    $errClass = ($LEM->em->HasErrors() ? 'danger' : '');
+                    $out .= "<tr class='LEMgroup $errClass'><td >" . $LEM->gT("Survey policy notice:") . "</td><td colspan=\"3\">" . $sPrint . "</td></tr>";
+                }
+                if ($aSurveyInfo['surveyls_policy_error'] != '')
+                {
+                    $LEM->ProcessString($aSurveyInfo['surveyls_policy_error'],0);
+                    $sPrint= viewHelper::purified(viewHelper::filterScript($LEM->GetLastPrettyPrintExpression()));
+                    $errClass = ($LEM->em->HasErrors() ? 'danger' : '');
+                    $out .= "<tr class='LEMgroup $errClass'><td >" . $LEM->gT("Survey policy error:") . "</td><td colspan=\"3\">" . $sPrint . "</td></tr>";
+                }
+                if ($aSurveyInfo['surveyls_policy_notice_label'] != '')
+                {
+                    $LEM->ProcessString($aSurveyInfo['surveyls_policy_notice_label'],0);
+                    $sPrint= viewHelper::purified(viewHelper::filterScript($LEM->GetLastPrettyPrintExpression()));
+                    $errClass = ($LEM->em->HasErrors() ? 'danger' : '');
+                    $out .= "<tr class='LEMgroup $errClass'><td >" . $LEM->gT("Survey policy label:") . "</td><td colspan=\"3\">" . $sPrint . "</td></tr>";
                 }
             }
 

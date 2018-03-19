@@ -252,13 +252,16 @@ class LS_Twig_Extension extends Twig_Extension
     {
         // Reccurence on templates to find the file
         $oTemplate = self::getTemplateForRessource($sImagePath);
+        $sUrlImgAsset = '';
 
         if ($oTemplate) {
             $sUrlImgAsset = self::assetPublish($oTemplate->path.$sImagePath);
-        } else {
-            $sUrlImgAsset = '';
-            // TODO: publish a default image "not found"
         }
+
+        if (@is_array(getimagesize(Yii::app()->getConfig('rootdir').$sImagePath))) {
+            $sUrlImgAsset = $sImagePath;
+        }
+        
 
         return CHtml::image($sUrlImgAsset, $alt, $htmlOptions);
     }
@@ -273,12 +276,15 @@ class LS_Twig_Extension extends Twig_Extension
     {
         // Reccurence on templates to find the file
         $oTemplate = self::getTemplateForRessource($sImagePath);
-        $sUrlImgAsset = '';
-
+        $sUrlImgAsset =  '';$sImagePath;
+        
+        
         if ($oTemplate) {
             $sUrlImgAsset = self::assetPublish($oTemplate->path.$sImagePath);
-        } else {
-            // TODO: publish a default image "not found"
+        } 
+
+        if (@is_array(getimagesize(Yii::app()->getConfig('rootdir').$sImagePath))) {
+            $sUrlImgAsset = $sImagePath;
         }
 
         return $sUrlImgAsset;
@@ -291,10 +297,30 @@ class LS_Twig_Extension extends Twig_Extension
      * @param String $sInString
      * @return String 
      */
-    public static function getExpressionManagerOutput($sInString){
+    public static function getExpressionManagerOutput($sInString) {
         templatereplace(flattenText($sInString));
         return LimeExpressionManager::GetLastPrettyPrintExpression();
     }
+
+    /**
+     * Get the textcontrol widget output for a specific string
+     *
+     * @param String $sInString
+     * @return String 
+     */
+    public static function getTextDisplayWidget($sInString, $name) {
+        templatereplace(flattenText($sInString));
+        $fullInString = LimeExpressionManager::GetLastPrettyPrintExpression();
+
+        $widget = App()->getController()->widget('ext.admin.TextDisplaySwitch.TextDisplaySwitch', array(
+            'widgetsJsName' =>  $name,
+            'textToDisplay' => $fullInString,
+            'returnHtml' => true
+        ));
+        return $widget->run();
+    }
+
+
 
     /**
      * Checks for a permission on render
@@ -307,10 +333,10 @@ class LS_Twig_Extension extends Twig_Extension
      */
     public static function checkPermission($permission, $permissionGrade, $iSurveyId = null) {
 
-        if($iSurveyId === null){
-            return Permission::model()->hasGlobalPermission($permission,$permissionGrade);
+        if ($iSurveyId === null) {
+            return Permission::model()->hasGlobalPermission($permission, $permissionGrade);
         }
-        return Permission::model()->hasSurveyPermission($iSurveyId,$permission,$permissionGrade);
+        return Permission::model()->hasSurveyPermission($iSurveyId, $permission, $permissionGrade);
 
     }
 
@@ -396,10 +422,10 @@ class LS_Twig_Extension extends Twig_Extension
         self::unregisterPackage('fontawesome');
         self::unregisterPackage('template-default-ltr');
         self::unregisterPackage('decimal');
+        self::unregisterPackage('expressions');
         self::unregisterScriptFile('/assets/scripts/survey_runtime.js');
         self::unregisterScriptFile('/assets/scripts/admin/expression.js');
         self::unregisterScriptFile('/assets/scripts/nojs.js');
-        self::unregisterScriptFile('/assets/scripts/expressions/em_javascript.js');
     }
 
     public static function listCoreScripts()
@@ -423,6 +449,5 @@ class LS_Twig_Extension extends Twig_Extension
 
         }
     }
-
 
 }
