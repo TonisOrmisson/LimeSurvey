@@ -190,7 +190,7 @@
                                 {% endif %}
 
                                 {% for image in templateConfiguration.imageFileList %}
-                                    <option data-lightbox-src="{{imageSrc(image.filepath)}}" value="{{image.filepath}}">{{image.filename}}</option>
+                                    <option data-lightbox-src="{{imageSrc(image.filepathOptions)}}" value="{{image.filepath}}">{{image.filename}}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -209,7 +209,7 @@
             <div class='row'>
                 <div class='col-sm-12'>
                     <div class='panel panel-default'>
-                        <div class='panel-heading'>{{ gT("Fruity Fonts") }}</div>
+                        <div class='panel-heading'>{{ gT("Fruity fonts") }}</div>
                         <div class='panel-body'>
                             <div class='form-group row'>
                                 <label for='simple_edit_font' class='control-label'>{{ gT("Select font:") }}</label>

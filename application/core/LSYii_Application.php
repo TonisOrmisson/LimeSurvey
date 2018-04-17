@@ -114,7 +114,7 @@ class LSYii_Application extends CWebApplication
         if ($this->request->getParam('lang') !== null) {
             $this->setLanguage($this->request->getParam('lang'));
         } elseif (isset(App()->session['_lang'])) {
-// See: http://www.yiiframework.com/wiki/26/setting-and-maintaining-the-language-in-application-i18n/
+            // See: http://www.yiiframework.com/wiki/26/setting-and-maintaining-the-language-in-application-i18n/
             $this->setLanguage(App()->session['_lang']);
         }
 
@@ -311,7 +311,9 @@ class LSYii_Application extends CWebApplication
                 // If run from phpunit, die with exception message.
                 die($event->exception->getMessage());
             } else {
-                if ($event->exception->statusCode == '404') {
+                if (isset($event->exception)
+                    && isset($event->exception->statusCode)
+                    && $event->exception->statusCode == '404') {
                     Yii::app()->setComponent('errorHandler', array(
                         'errorAction'=>'surveys/error',
                     ));

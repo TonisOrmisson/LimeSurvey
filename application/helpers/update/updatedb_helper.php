@@ -2194,6 +2194,7 @@ function db_upgrade_all($iOldDBVersion, $bSilent = false)
             $oDB->createCommand()->update('{{settings_global}}', ['stg_value'=>347], "stg_name='DBVersion'");
             $oTransaction->commit();
         }
+
         /**
          * Adding security message and settings
          */
@@ -2320,14 +2321,50 @@ function db_upgrade_all($iOldDBVersion, $bSilent = false)
             // Drop autoincrement on timings table primary key
             upgradeSurveyTimings350();
             
-            $oDB->createCommand()->update('{{settings_global}}', array('stg_value'=>350), "stg_name='DBVersion'");
-
             $oDB->createCommand()->dropPrimaryKey('{{defaultvalues_pk}}','{{defaultvalues}}');
             $oDB->createCommand()->addPrimaryKey('{{defaultvalues_pk}}', '{{defaultvalues}}', ['qid', 'specialtype', 'scale_id', 'sqid']);
 
+            $oDB->createCommand()->update('{{settings_global}}', array('stg_value'=>350), "stg_name='DBVersion'");
+
             $oTransaction->commit();
         }   
+
+        /**
+         * Add load_error and load_error_message to plugin system.
+         */
+        if ($iOldDBVersion < 400) {
+            $oTransaction = $oDB->beginTransaction();
+
+            $oDB->createCommand()->addColumn('{{plugins}}', 'load_error', 'int default 0');
+            $oDB->createCommand()->addColumn('{{plugins}}', 'load_error_message', 'text');
+
+            $oDB->createCommand()->update('{{settings_global}}', array('stg_value'=>400), "stg_name='DBVersion'");
+
+            $oTransaction->commit();
+        }
+
+        if ($iOldDBVersion < 401) {
+            $oTransaction = $oDB->beginTransaction();
+
+            // Plugin type is either "core" or "user" (different folder locations).
+            $oDB->createCommand()->addColumn('{{plugins}}', 'plugin_type', "string(4) default 'user'");
+
+            $oDB->createCommand()->update('{{settings_global}}', array('stg_value'=>401), "stg_name='DBVersion'");
+
+            $oTransaction->commit();
+        }
             
+        /**
+         * Make tokens fit UUID 36 chars
+         */
+        if ($iOldDBVersion < 402) {
+            $oTransaction = $oDB->beginTransaction();
+            upgradeTokenTables402('utf8mb4_bin');
+            upgradeSurveyTables402('utf8mb4_bin');
+            $oDB->createCommand()->update('{{settings_global}}',array('stg_value'=>402),"stg_name='DBVersion'");
+            $oTransaction->commit();
+        }
+      
     } catch (Exception $e) {
         Yii::app()->setConfig('Updating', false);
         $oTransaction->rollback();
@@ -2385,6 +2422,64 @@ function db_upgrade_all($iOldDBVersion, $bSilent = false)
 }
 
 
+/**
+ * @param string $sMySQLCollation
+ */
+function upgradeSurveyTables402($sMySQLCollation)
+{
+    $oDB = Yii::app()->db;
+    $oSchema = Yii::app()->db->schema;
+    if (Yii::app()->db->driverName != 'pgsql') {
+        $aTables = dbGetTablesLike("survey\_%");
+        foreach ($aTables as $sTableName) {
+            $oTableSchema = $oSchema->getTable($sTableName);
+            if (!in_array('token', $oTableSchema->columnNames)) {
+                continue;
+            }
+            // No token field in this table
+            switch (Yii::app()->db->driverName) {
+                case 'sqlsrv':
+                case 'dblib':
+                case 'mssql': dropSecondaryKeyMSSQL('token', $sTableName);
+                    alterColumn($sTableName, 'token', "string(36) COLLATE SQL_Latin1_General_CP1_CS_AS");
+                    break;
+                case 'mysql':
+                case 'mysqli':
+                    alterColumn($sTableName, 'token', "string(36) COLLATE '{$sMySQLCollation}'");
+                    break;
+                default: die('Unknown database driver');
+            }
+        }
+
+    }
+}
+
+/**
+ * @param string $sMySQLCollation
+ */
+function upgradeTokenTables402($sMySQLCollation)
+{
+    $oDB = Yii::app()->db;
+    if (Yii::app()->db->driverName != 'pgsql') {
+        $aTables = dbGetTablesLike("tokens%");
+        if (!empty($aTables)) {
+            foreach ($aTables as $sTableName) {
+                switch (Yii::app()->db->driverName) {
+                    case 'sqlsrv':
+                    case 'dblib':
+                    case 'mssql': dropSecondaryKeyMSSQL('token', $sTableName);
+                        alterColumn($sTableName, 'token', "string(36) COLLATE SQL_Latin1_General_CP1_CS_AS");
+                        break;
+                    case 'mysql':
+                    case 'mysqli':
+                        alterColumn($sTableName, 'token', "string(36) COLLATE '{$sMySQLCollation}'");
+                        break;
+                    default: die('Unknown database driver');
+                }
+            }
+        }
+    }
+}
 function upgradeSurveyTimings350()
 {
     $aTables = dbGetTablesLike("%timings");
@@ -3239,15 +3334,19 @@ function upgradeSurveys177()
 function upgradeTokens176()
 {
     $oDB = Yii::app()->db;
-    $arSurveys = Survey::model()->findAll();
+    $arSurveys = $oDB
+    ->createCommand()
+    ->select('*')
+    ->from('surveys')
+    ->queryAll();
     // Fix any active token tables
     foreach ( $arSurveys as $arSurvey )
     {
-        $sTokenTableName='tokens_'.$arSurvey->sid;
+        $sTokenTableName='tokens_'.$arSurvey['sid'];
         if (tableExists($sTokenTableName))
         {                                        
             $aColumnNames=$aColumnNamesIterator=$oDB->schema->getTable('{{'.$sTokenTableName.'}}')->columnNames;
-            $aAttributes = $arSurvey->tokenAttributes;
+            $aAttributes = $arSurvey['tokenAttributes'];
             foreach($aColumnNamesIterator as $sColumnName)
             {
                 // Check if an old atttribute_cpdb column exists in that token table
@@ -3267,7 +3366,7 @@ function upgradeTokens176()
                     }
                 }
             }
-            Survey::model()->updateByPk($arSurvey->sid, array('attributedescriptions' => serialize($aAttributes)));
+            $oDB->createCommand()->update('{{surveys}}',array('attributedescriptions'=>serialize($aAttributes)),"sid=".$arSurvey['sid']);
         }
     }
     unset($arSurveys);
