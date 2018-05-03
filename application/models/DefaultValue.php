@@ -33,16 +33,6 @@ class DefaultValue extends LSActiveRecord
     public $sqid = 0;
     public $language = ''; // required ?
 
-    /**
-     * @inheritdoc
-     * @return DefaultValue
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

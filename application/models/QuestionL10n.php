@@ -38,16 +38,6 @@ class QuestionL10n extends LSActiveRecord
         return 'id';
     }
 
-    /**
-     * @inheritdoc
-     * @return QuestionL10n
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function relations()

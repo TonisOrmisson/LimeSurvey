@@ -529,16 +529,4 @@ class SurveymenuEntries extends LSActiveRecord
         return true;
     }
 
-    /**
-     * Returns the static model of the specified AR class.
-     * Please note that you should have this exact method in all your CActiveRecord descendants!
-     * @param string $className active record class name.
-     * @return SurveymenuEntries the static model class
-     */
-    public static function model($className = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($className);
-        return $model;
-    }
 }

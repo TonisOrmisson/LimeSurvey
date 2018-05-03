@@ -14,17 +14,7 @@
             }
             return false;
         }
-        /**
-         *
-         * @param mixed $className Either the classname or the survey id.
-         * @return Response
-         */
-        public static function model($className = null)
-        {
-            /** @var self $model */
-            $model = parent::model($className);
-            return $model;
-        }
+
         /**
          *
          * @param int $surveyId

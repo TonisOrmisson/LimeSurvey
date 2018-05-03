@@ -23,16 +23,6 @@
  */
 class Plugin extends LSActiveRecord
 {
-    /**
-     * @inheritdoc
-     * @return Plugin
-     */
-    public static function model($className = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($className);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

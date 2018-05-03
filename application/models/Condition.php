@@ -31,16 +31,6 @@ if (!defined('BASEPATH')) {
  */
 class Condition extends LSActiveRecord
 {
-    /**
-     * @inheritdoc
-     * @return Condition
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /**
      * Returns the setting's table name to be used by the model

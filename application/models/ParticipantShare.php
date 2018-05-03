@@ -30,16 +30,6 @@ class ParticipantShare extends LSActiveRecord
 
     public $ownerName;
 
-    /**
-     * @inheritdoc
-     * @return ParticipantShare
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

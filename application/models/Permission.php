@@ -41,20 +41,6 @@ class Permission extends LSActiveRecord
         return '{{permissions}}';
     }
 
-    /**
-     * Returns the static model of Settings table
-     *
-     * @static
-     * @access public
-     * @param string $class
-     * @return Permission
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /**
      * Returns the base permissions

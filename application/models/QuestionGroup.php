@@ -33,16 +33,6 @@
 class QuestionGroup extends LSActiveRecord
 {
     public $aQuestions; // to stock array of questions of the group
-    /**
-     * @inheritdoc
-     * @return QuestionGroup
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

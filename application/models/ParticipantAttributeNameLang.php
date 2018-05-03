@@ -30,16 +30,6 @@ class ParticipantAttributeNameLang extends LSActiveRecord
         return array('attribute_id', 'lang');
     }
 
-    /**
-     * @inheritdoc
-     * @return ParticipantAttributeNameLang
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

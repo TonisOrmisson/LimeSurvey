@@ -283,16 +283,6 @@ abstract class Token extends Dynamic
         return array($newtokencount, count($tkresult));
 
     }
-    /**
-     * @inheritdoc
-     * @return Token
-     */
-    public static function model($className = null)
-    {
-        /** @var self $model */
-        $model = parent::model($className);
-        return $model;
-    }
 
     /**
      * @param int $surveyId

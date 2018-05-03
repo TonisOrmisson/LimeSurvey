@@ -224,14 +224,4 @@ class Box extends CActiveRecord
         return count($this->icons);
     }
 
-    /**
-     * @inheritdoc
-     * @return Box the static model class
-     */
-    public static function model($className = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($className);
-        return $model;
-    }
 }

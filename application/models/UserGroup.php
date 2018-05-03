@@ -32,16 +32,6 @@ class UserGroup extends LSActiveRecord
     /** @var integer $member_count  */
     public $member_count = null;
 
-    /**
-     * @inheritdoc
-     * @return UserGroup
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

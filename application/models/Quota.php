@@ -45,18 +45,6 @@ class Quota extends LSActiveRecord
     public $active = 1;
     public $action = self::ACTION_TERMINATE;
 
-    /**
-     * Returns the static model of Settings table
-     *
-     * @static
-     * @access public
-     * @param string $class
-     * @return CActiveRecord
-     */
-    public static function model($class = __CLASS__)
-    {
-        return parent::model($class);
-    }
 
     /** @inheritdoc */
     public function tableName()

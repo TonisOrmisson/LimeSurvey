@@ -362,17 +362,6 @@ class Survey extends LSActiveRecord
         return 'sid';
     }
 
-    /**
-     * @inheritdoc
-     * @return Survey
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var Survey $model */
-        $model = parent::model($class);
-        return $model;
-    }
-
     /** @inheritdoc */
     public function relations()
     {

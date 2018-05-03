@@ -43,16 +43,6 @@ class AnswerL10n extends LSActiveRecord
         return array('index'=>'language');
     }    
 
-    /**
-     * @inheritdoc
-     * @return AnswerL10n
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function relations()

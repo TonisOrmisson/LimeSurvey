@@ -43,14 +43,6 @@ class SavedControl extends LSActiveRecord
         return 'scid';
     }
 
-    /**
-     * @inheritdoc
-     * @return CActiveRecord
-     */
-    public static function model($class = __CLASS__)
-    {
-        return parent::model($class);
-    }
 
     /**
      * @param int $sid

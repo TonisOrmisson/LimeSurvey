@@ -55,16 +55,6 @@ class Participant extends LSActiveRecord
     public $countActiveSurveys;
     public $id;
 
-    /**
-     * @inheritdoc
-     * @return Participant
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

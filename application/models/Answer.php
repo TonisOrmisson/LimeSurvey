@@ -29,16 +29,6 @@
  */
 class Answer extends LSActiveRecord
 {
-    /**
-     * @inheritdoc
-     * @return Answer
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

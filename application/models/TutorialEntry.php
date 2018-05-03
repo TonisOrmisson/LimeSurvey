@@ -92,18 +92,6 @@ class TutorialEntry extends LSActiveRecord
         ));
     }
 
-    /**
-     * Returns the static model of the specified AR class.
-     * Please note that you should have this exact method in all your CActiveRecord descendants!
-     * @param string $className active record class name.
-     * @return TutorialEntry the static model class
-     */
-    public static function model($className = __CLASS__)
-    {
-        /** @var TutorialEntry $model */
-        $model = parent::model($className);
-        return $model;
-    }
 
     public function getStepFromEntry()
     {

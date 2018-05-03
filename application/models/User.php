@@ -42,16 +42,6 @@ class User extends LSActiveRecord
     public $lang = 'auto';
 
 
-    /**
-     * @inheritdoc
-     * @return User
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

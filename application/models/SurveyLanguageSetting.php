@@ -61,16 +61,6 @@ class SurveyLanguageSetting extends LSActiveRecord
         return array('surveyls_survey_id', 'surveyls_language');
     }
 
-    /**
-     * @inheritdoc
-     * @return SurveyLanguageSetting
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function relations()

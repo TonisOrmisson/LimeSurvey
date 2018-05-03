@@ -28,16 +28,6 @@
  */
 class QuotaLanguageSetting extends LSActiveRecord
 {
-    /**
-     * @inheritdoc
-     * @return QuotaLanguageSetting
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var QuotaLanguageSetting $model */
-        $model = parent::model($class);
-        return $model;
-    }
 
     /** @inheritdoc */
     public function tableName()

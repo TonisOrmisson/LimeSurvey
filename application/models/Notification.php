@@ -252,16 +252,6 @@ class Notification extends LSActiveRecord
         );
     }
 
-    /**
-     * @inheritdoc
-     * @return Notification the static model class
-     */
-    public static function model($className = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($className);
-        return $model;
-    }
 
     /**
      * Get latest notifications to show in the menu
