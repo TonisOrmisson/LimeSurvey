@@ -81,8 +81,16 @@ class QuestionType extends StaticModel
      */
     public function attributeNames()
     {
-        return ['code', 'description', 'group', 'ubquestions', 'assessable',
+        return ['code', 'description', 'group', 'subquestions', 'assessable',
             'hasdefaultvalues', 'answerscales', 'class'];
+    }
+
+    public function rules()
+    {
+        return [
+            ['subquestions, assessable, hasdefaultvalues, answerscales','numerical', 'integerOnly'=>true],
+            ['code, description, group, class', 'safe'],
+        ];
     }
 
 

@@ -29,7 +29,7 @@ class Field extends CModel
     const SYSFIELD_DATESTAMP = 'datestamp';
     const SYSFIELD_LASTPAGE = 'lastpage';
     const SYSFIELD_REFURL = 'refurl';
-    const SYSFIELD_IP_ADDRESS = 'ipaddress';
+    const SYSFIELD_IP_ADDRESS = 'ipaddr';
 
 
     /** @var Question */
@@ -143,9 +143,9 @@ class Field extends CModel
     private function questionFieldName()
     {
         $name = $this->questionBaseFieldName();
-        if ($this->question->questionType->hasSubSets
+        if (($this->question->questionType->hasSubSets && $this->question->hasParent)
                 //TODO please document  what that means!
-            || ($this->question->type === QuestionType::QT_T_LONG_FREE_TEXT && $this->question->parent_qid != 0)) {
+            || ($this->question->type === QuestionType::QT_T_LONG_FREE_TEXT && $this->question->hasParent)) {
             $name .= $this->question->title;
         }
         return $name;

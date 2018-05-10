@@ -154,7 +154,6 @@ class SurveyActivator
         //Get list of questions for the base language
         //$this->fieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
         $this->fieldMap = new FieldMap($this->survey);
-
         $this->prepareTableDefinition();
         $this->prepareSimulateQuery();
     }

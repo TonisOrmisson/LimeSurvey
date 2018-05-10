@@ -88,7 +88,7 @@ class StaticModel extends CModel
         $models = static::findByAttributeValue($attribute, $values);
         if (!empty($models)) {
              foreach ($models as $model) {
-                 $result[] = $models->{$column};
+                 $result[] = $model->{$column};
              }
         }
         return $result;

@@ -62,18 +62,15 @@ class FieldMap
             $names[] = Field::SYSFIELD_TOKEN;
         }
 
-        if (!$this->survey->isDateStamp) {
+        if ($this->survey->isDateStamp) {
             $names[] = Field::SYSFIELD_STARTDATE;
             $names[] = Field::SYSFIELD_DATESTAMP;
         }
 
-        if (!$this->survey->isIpAddr) {
+        if ($this->survey->isIpAddr) {
             $names[] = Field::SYSFIELD_IP_ADDRESS;
         }
-        if (!$this->survey->isIpAddr) {
-            $names[] = Field::SYSFIELD_IP_ADDRESS;
-        }
-        if (!$this->survey->isRefUrl) {
+        if ($this->survey->isRefUrl) {
             $names[] = Field::SYSFIELD_REFURL;
         }
 
@@ -103,13 +100,14 @@ class FieldMap
      */
     private function createQuestionFields($question) {
         $result = [];
-        $result[$question->field->name] = $question->field;
-        if ($question->questionType->subquestions > 0) {
+        if ($question->questionType->hasSubSets) {
             foreach ($question->subquestions as $subqQuestion) {
                 if (!empty($subqQuestion->field)) {
                     $result[$subqQuestion->field->name] = $subqQuestion->field;
                 }
             }
+        } else {
+            $result[$question->field->name] = $question->field;
         }
         return $result;
     }
