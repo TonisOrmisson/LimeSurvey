@@ -8,9 +8,8 @@ class FieldMap
     /** @var Survey */
     public $survey;
 
-    /** @var Question $question question currently being processed */
-    private $question;
-
+    /** @var string */
+    public $language;
 
     /**
      * FieldMap constructor.
@@ -23,6 +22,7 @@ class FieldMap
             throw new \Exception(get_class($survey) . " used as Survey while initiating " . self::class);
         }
         $this->survey = $survey;
+        $this->language = $survey->language;
     }
 
     /**
@@ -90,7 +90,6 @@ class FieldMap
         foreach ($this->generalStartFieldNames() as $fieldName) {
             $field = new Field();
             $field->systemFieldName = $fieldName;
-            $field->name = $fieldName;
             $result[$field->name] = $field;
         }
         return $result;
@@ -102,32 +101,19 @@ class FieldMap
      * @param Question $question
      * @return Field[]
      */
-    private function  createQuestionFields($question) {
+    private function createQuestionFields($question) {
         $result = [];
-        $field = new Field($question);
-        $result[$field->name] = $field;
-
-        if ($question->hasSubQuestions) {
+        $result[$question->field->name] = $question->field;
+        if ($question->questionType->subquestions > 0) {
             foreach ($question->subquestions as $subqQuestion) {
-                $subqQuestionField = $this->createSubQuestionField($subqQuestion);
-                if (!empty($subqQuestionField)) {
-                    $result[$subqQuestionField->name] = $subqQuestionField;
+                if (!empty($subqQuestion->field)) {
+                    $result[$subqQuestion->field->name] = $subqQuestion->field;
                 }
             }
         }
         return $result;
     }
 
-    /**
-     * Create a Field for a subQuestion
-     * @param Question $question
-     * @return Field|null
-     */
-    private function createSubQuestionField($question)
-    {
-        // FIXME
-        return null;
-    }
 
 
 }

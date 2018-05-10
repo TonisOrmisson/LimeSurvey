@@ -3,6 +3,7 @@
 /**
  * Class Field describes a column in responses data table
  * @property string $type technical type for DB
+ * @property string $name fieldName - actual column name in DB
  * @property string $tokenFieldCollation the suitable collation for token field
  */
 class Field extends CModel
@@ -37,8 +38,6 @@ class Field extends CModel
     /** @var string $systemFieldName Name for non-question field */
     public $systemFieldName;
 
-    /** @var string $name Field column name */
-    public $name;
 
     /** @var string */
     public $id;
@@ -50,9 +49,6 @@ class Field extends CModel
     public function __construct(Question $question = null)
     {
         $this->question = $question;
-        if(!empty($this->question)) {
-            $this->name = $question->getBasicFieldName();
-        }
     }
 
     /**
@@ -125,6 +121,20 @@ class Field extends CModel
             default:
                 throw new \Exception("Undefined system column {$this->systemFieldName}");
         }
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getName()
+    {
+        if (!empty($this->question)) {
+            return $this->question->getBasicFieldName();
+        } elseif (!empty($this->systemFieldName)) {
+            return $this->systemFieldName;
+        }
+        throw new \Exception('Either question or systemFieldName must be defined for Field');
     }
 
 

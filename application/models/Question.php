@@ -44,6 +44,7 @@ if (!defined('BASEPATH')) {
  * @property string[] $quotableTypes Question types that can be used for quotas
  * @property Answer[] $answers
  * @property QuestionType $questionType
+ * @property Field $field
  * @inheritdoc
  */
 class Question extends LSActiveRecord
@@ -753,5 +754,13 @@ class Question extends LSActiveRecord
     public function getHasSubQuestions()
     {
         return !empty($this->subquestions);
+    }
+
+    /**
+     * @return Field
+     */
+    public function getField()
+    {
+        return new Field($this);
     }
 }

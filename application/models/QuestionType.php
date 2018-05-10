@@ -59,16 +59,16 @@ class QuestionType extends StaticModel
     /** @var string $group Group name*/
     public $group;
 
-    /** @var integer $subquestions whether has subquestions //TODO make it boolean instead */
+    /** @var integer $subquestions how many subquestion sets question has 0|1|2 */
     public $subquestions;
 
-    /** @var integer $assessable whether has subquestions //TODO make it boolean instead */
+    /** @var integer $assessable //TODO make it boolean instead */
     public $assessable;
 
-    /** @var integer $ahasdefaultvalues whether has subquestions //TODO make it boolean instead */
+    /** @var integer $hasdefaultvalues //TODO make it boolean instead */
     public $hasdefaultvalues;
 
-    /** @var integer $answerscales number of answer scales*/
+    /** @var integer $answerscales number of answer scales 0|1|2 */
     public $answerscales;
 
     /** @var string $class the css class for question (container??)*/
@@ -567,7 +567,6 @@ class QuestionType extends StaticModel
 
         throw new \Exception("Undefined field data type for QuestionType {$this->code}");
     }
-
 
 
 
