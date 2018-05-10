@@ -641,9 +641,6 @@ class QuestionType extends StaticModel
                 break;
 
 
-
-
-
             case Question::QT_L_LIST_DROPDOWN:
             case Question::QT_EXCLAMATION_LIST_DROPDOWN:
             case Question::QT_M_MULTIPLE_CHOICE:

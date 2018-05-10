@@ -108,7 +108,7 @@ class Field extends CModel
                 return "integer";
                 break;
             case self::SYSFIELD_TOKEN:
-                return "string(35) " . Token::model()->tokenFieldCollation;
+                return "string(35) " . TokenDynamic::model()->tokenFieldCollation;
                 break;
             case self::SYSFIELD_URL:
                 return "text";
