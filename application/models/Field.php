@@ -26,6 +26,8 @@ class Field extends CModel
     const SYSFIELD_SUBMITDATE = 'submitdate';
     const SYSFIELD_DATESTAMP = 'datestamp';
     const SYSFIELD_LASTPAGE = 'lastpage';
+    const SYSFIELD_URL = 'url';
+    const SYSFIELD_IP_ADDRESS = 'ipaddress';
 
 
     /** @var Question */
@@ -106,7 +108,13 @@ class Field extends CModel
                 return "integer";
                 break;
             case self::SYSFIELD_TOKEN:
-                return "string(35)" . $this->collation;
+                return "string(35) " . Token::model()->tokenFieldCollation;
+                break;
+            case self::SYSFIELD_URL:
+                return "text";
+                break;
+            case self::SYSFIELD_IP_ADDRESS:
+                return "string(45)";
                 break;
             default:
                 throw new \Exception("Undefined system column {$this->systemFieldName}");

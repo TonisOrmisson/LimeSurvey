@@ -417,7 +417,7 @@ class QuestionType extends StaticModel
         return [
             self::QT_I_LANGUAGE, self::QT_S_SHORT_FREE_TEXT, self::QT_U_HUGE_FREE_TEXT,
             self::QT_Q_MULTIPLE_SHORT_TEXT, self::QT_T_LONG_FREE_TEXT, self::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT,
-            self::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS,
+            self::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS, self::QT_ASTERISK_EQUATION
         ];
     }
 
@@ -623,6 +623,22 @@ class QuestionType extends StaticModel
             case Question::QT_I_LANGUAGE:
                 $aTableDefinition[$aRow['fieldname']] = "string(20)";
                 break;
+            case "token":
+                $aTableDefinition[$aRow['fieldname']] = 'string(35)'.$this->collation;
+                break;
+            case "url":
+                if ($this->survey->isRefUrl) {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case "ipaddress":
+                if ($this->survey->isIpAddr) {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case Question::QT_ASTERISK_EQUATION:
+                $aTableDefinition[$aRow['fieldname']] = "text";
+                break;
 
 
 
@@ -647,23 +663,7 @@ class QuestionType extends StaticModel
                     $aTableDefinition[$aRow['fieldname']] = "text";
                 }
                 break;
-            case "ipaddress":
-                if ($this->survey->isIpAddr) {
-                    $aTableDefinition[$aRow['fieldname']] = "text";
-                }
-                break;
 
-            case "url":
-                if ($this->survey->isRefUrl) {
-                    $aTableDefinition[$aRow['fieldname']] = "text";
-                }
-                break;
-            case "token":
-                $aTableDefinition[$aRow['fieldname']] = 'string(35)'.$this->collation;
-                break;
-            case Question::QT_ASTERISK_EQUATION:
-                $aTableDefinition[$aRow['fieldname']] = "text";
-                break;
             case Question::QT_R_RANKING_STYLE:
                 /**
                  * See bug #09828: Ranking question : update allowed can broke Survey DB
@@ -692,9 +692,6 @@ class QuestionType extends StaticModel
                 break;
             default:
                 $aTableDefinition[$aRow['fieldname']] = "string(5)";
-        }
-        if (!$this->survey->isAnonymized && !array_key_exists('token', $aTableDefinition)) {
-            $aTableDefinition['token'] = 'string(35)'.$this->collation;
         }
     }
 
