@@ -119,14 +119,7 @@ class SurveyActivator
      */
     protected function prepareCollation()
     {
-        // Specify case sensitive collations for the token
-        $this->collation = '';
-        if (Yii::app()->db->driverName == 'mysqli' || Yii::app()->db->driverName == 'mysql') {
-            $this->collation = " COLLATE 'utf8mb4_bin'";
-        }
-        if (Yii::app()->db->driverName == 'sqlsrv' || Yii::app()->db->driverName == 'dblib' || Yii::app()->db->driverName == 'mssql') {
-            $this->collation = " COLLATE SQL_Latin1_General_CP1_CS_AS";
-        }
+        $this->collation = Token::model()->tokenFieldCollation;
     }
 
 

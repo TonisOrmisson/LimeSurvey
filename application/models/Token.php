@@ -54,7 +54,8 @@ use \LimeSurvey\PluginManager\PluginEvent;
  * @property Survey $survey
  * @property SurveyLink $surveylink
  * @property Response[] $responses
- * @property CDbTableSchema $tableSchema 
+ * @property CDbTableSchema $tableSchema
+ * @property string $tokenFieldCollation the suitable collation for token field
  */
 abstract class Token extends Dynamic
 {
@@ -118,16 +119,8 @@ abstract class Token extends Dynamic
     {
         $surveyId = intval($surveyId);
         // Specify case sensitive collations for the token
-        $sCollation = '';
-        if (Yii::app()->db->driverName == 'mysql' || Yii::app()->db->driverName == 'mysqli') {
-            $sCollation = "COLLATE 'utf8mb4_bin'";
-        }
-        if (Yii::app()->db->driverName == 'sqlsrv'
-            || Yii::app()->db->driverName == 'dblib'
-            || Yii::app()->db->driverName == 'mssql') {
+        $sCollation = self::model()->tokenFieldCollation;
 
-            $sCollation = "COLLATE SQL_Latin1_General_CP1_CS_AS";
-        }
         $fields = array(
             'tid' => 'pk',
             'participant_id' => 'string(50)',
@@ -388,5 +381,22 @@ abstract class Token extends Dynamic
     public function tableName()
     {
         return '{{tokens_'.$this->dynamicId.'}}';
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getTokenFieldCollation()
+    {
+        $driverName = Yii::app()->db->driverName;
+        if ($driverName == 'mysqli' || $driverName == 'mysql') {
+            return " COLLATE 'utf8mb4_bin'";
+        }
+        if ($driverName == 'sqlsrv' || $driverName == 'dblib' || $driverName == 'mssql') {
+            return " COLLATE SQL_Latin1_General_CP1_CS_AS";
+        }
+        throw new \Exception('Unsupported database engine ' . $driverName);
+
     }
 }
