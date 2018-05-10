@@ -53,12 +53,32 @@ class FieldMap
      * @return string[]
      */
     private function generalStartFieldNames() {
-        return [
+        $names = [
             Field::SYSFIELD_ID, Field::SYSFIELD_SUBMITDATE, Field::SYSFIELD_LASTPAGE,
-            Field::SYSFIELD_STARTLANGUAGE, Field::SYSFIELD_SEED, Field::SYSFIELD_TOKEN,
-            Field::SYSFIELD_STARTDATE, Field::SYSFIELD_DATESTAMP, Field::SYSFIELD_IP_ADDRESS,
-            Field::SYSFIELD_REFURL
+            Field::SYSFIELD_STARTLANGUAGE, Field::SYSFIELD_SEED
         ];
+
+        if (!$this->survey->isAnonymized) {
+            $names[] = Field::SYSFIELD_TOKEN;
+        }
+
+        if (!$this->survey->isDateStamp) {
+            $names[] = Field::SYSFIELD_STARTDATE;
+            $names[] = Field::SYSFIELD_DATESTAMP;
+        }
+
+        if (!$this->survey->isIpAddr) {
+            $names[] = Field::SYSFIELD_IP_ADDRESS;
+        }
+        if (!$this->survey->isIpAddr) {
+            $names[] = Field::SYSFIELD_IP_ADDRESS;
+        }
+        if (!$this->survey->isRefUrl) {
+            $names[] = Field::SYSFIELD_REFURL;
+        }
+
+        return $names;
+
     }
 
     /**
