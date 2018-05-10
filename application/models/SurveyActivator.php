@@ -119,7 +119,7 @@ class SurveyActivator
      */
     protected function prepareCollation()
     {
-        $this->collation = TokenDynamic::model()->tokenFieldCollation;
+        $this->collation = (new Field)->tokenFieldCollation;
     }
 
 

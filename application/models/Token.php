@@ -118,7 +118,7 @@ abstract class Token extends Dynamic
     {
         $surveyId = intval($surveyId);
         // Specify case sensitive collations for the token
-        $sCollation = TokenDynamic::model()->tokenFieldCollation;
+        $sCollation = (new Field)->tokenFieldCollation;
 
         $fields = array(
             'tid' => 'pk',

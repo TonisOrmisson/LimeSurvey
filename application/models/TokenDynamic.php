@@ -40,7 +40,6 @@
  *
  * @property array $standardCols
  * @property array $standardColsForGrid
- * @property string $tokenFieldCollation the suitable collation for token field
  */
 class TokenDynamic extends LSActiveRecord
 {
@@ -1015,21 +1014,5 @@ class TokenDynamic extends LSActiveRecord
 
     }
 
-    /**
-     * @return string
-     * @throws Exception
-     */
-    public function getTokenFieldCollation()
-    {
-        $driverName = Yii::app()->db->driverName;
-        if ($driverName == 'mysqli' || $driverName == 'mysql') {
-            return " COLLATE 'utf8mb4_bin'";
-        }
-        if ($driverName == 'sqlsrv' || $driverName == 'dblib' || $driverName == 'mssql') {
-            return " COLLATE SQL_Latin1_General_CP1_CS_AS";
-        }
-        throw new \Exception('Unsupported database engine ' . $driverName);
-
-    }
 
 }
