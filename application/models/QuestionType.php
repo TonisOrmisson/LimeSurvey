@@ -11,6 +11,7 @@
  * @property boolean $isNumeric Whether the type numeric (integer, double)
  * @property boolean $isInteger Whether the type integer
  * @property boolean $isDouble Whether the type double
+ * @property boolean $hasSubSets Whether type has any subquestion sets
  *
  * {@inheritdoc}
  */
@@ -434,6 +435,7 @@ class QuestionType extends StaticModel
         ];
     }
 
+
     /**
      * Get all type codes of that represent data in string (text and char)
      * @return string[]
@@ -475,6 +477,51 @@ class QuestionType extends StaticModel
     {
         return array_merge(self::integerCodes(), self::doubleCodes());
     }
+
+    /**
+     * get Codes of questiion Types that have NO sets of subquestions
+     * @return array
+     */
+    public static function withNoSubSetCodes() {
+        return self::findColumnByAttributeValue('subquestions',0,'code');
+    }
+
+    /**
+     * get Codes of questiion Types that have one set of subquestions
+     * @return array
+     */
+    public static function withOneSubSetCodes() {
+        return self::findColumnByAttributeValue('subquestions',1,'code');
+    }
+
+
+    /**
+     * get Codes of questiion Types that have TWO sets of subquestions
+     * @return array
+     */
+    public static function withTwoSubSetCodes() {
+        return self::findColumnByAttributeValue('subquestions',2,'code');
+    }
+
+    /**
+     * get Codes of questiion Types that have ANY sets of subquestions
+     * @return array
+     */
+    public static function withSubSetCodes() {
+        return self::findColumnByAttributeValue('subquestions',[1,2],'code');
+    }
+
+    /**
+     * @return bool
+     */
+    public function getHasSubSets()
+    {
+        return in_array($this->code, self::withSubSetCodes());
+    }
+
+
+
+
 
     /**
      * @return bool

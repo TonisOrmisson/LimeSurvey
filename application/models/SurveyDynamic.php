@@ -783,14 +783,8 @@ class SurveyDynamic extends LSActiveRecord
             }
         }
 
-        $fieldname = $oQuestion->basicFieldName;
+        $fieldname = $oQuestion->field->name;
         
-        //If question is of any Array-Type  or a subquestion
-        if (in_array($oQuestion->type, ["F", "A", "B", "E", "C", "H", "Q", "K", "M", "P", ";",":","1"]) 
-            || ($oQuestion->type=='T' && $oQuestion->parent_qid != 0) 
-        ) {
-            $fieldname .= $oQuestion->title;
-        }
 
         
         if ($getComment === true) {

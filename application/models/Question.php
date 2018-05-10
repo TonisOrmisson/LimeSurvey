@@ -39,6 +39,7 @@ if (!defined('BASEPATH')) {
  * @property Question $parents      //@TODO should be singular
  * @property Question[] $subquestions
  * @property boolean $hasSubQuestions
+ * @property boolean $hasParent
  * @property QuestionAttribute[] $questionAttributes NB! returns all QuestionArrtibute Models fot this QID regardless of the specified language
  * @property QuestionL10n[] $questionL10ns Question Languagesettings indexd by language code
  * @property string[] $quotableTypes Question types that can be used for quotas
@@ -716,14 +717,7 @@ class Question extends LSActiveRecord
     }
 
 
-    public function getBasicFieldName()
-    {
-        if ($this->parent_qid != 0) {
-            return "{$this->sid}X{$this->gid}X{$this->parent_qid}";
-        } else {
-            return "{$this->sid}X{$this->gid}X{$this->qid}";
-        }
-    }
+
 
     /**
      * @return QuestionAttribute[]
@@ -762,5 +756,13 @@ class Question extends LSActiveRecord
     public function getField()
     {
         return new Field($this);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getHasParent()
+    {
+        return $this->parent_qid > 0;
     }
 }

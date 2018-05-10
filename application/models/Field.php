@@ -130,12 +130,40 @@ class Field extends CModel
     public function getName()
     {
         if (!empty($this->question)) {
-            return $this->question->getBasicFieldName();
+            return $this->questionFieldName();
         } elseif (!empty($this->systemFieldName)) {
             return $this->systemFieldName;
         }
         throw new \Exception('Either question or systemFieldName must be defined for Field');
     }
+
+    /**
+     * @return string
+     */
+    private function questionFieldName()
+    {
+        $name = $this->questionBaseFieldName();
+        if ($this->question->questionType->hasSubSets
+                //TODO please document  what that means!
+            || ($this->question->type === QuestionType::QT_T_LONG_FREE_TEXT && $this->question->parent_qid != 0)) {
+            $name .= $this->question->title;
+        }
+        return $name;
+    }
+
+    /**
+     * @return string
+     */
+    private function questionBaseFieldName()
+    {
+        $question = $this->question;
+        if ($question->hasParent) {
+            return "{$question->sid}X{$question->gid}X{$question->parent_qid}";
+        } else {
+            return "{$question->sid}X{$question->gid}X{$question->qid}";
+        }
+    }
+
 
 
 
