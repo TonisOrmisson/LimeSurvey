@@ -540,6 +540,14 @@ class QuestionType extends StaticModel
         if ($this->isChar) {
             return "string(1)";
         }
+
+        if ($this->code === self::QT_D_DATE) {
+            return "datetime";
+        }
+        if ($this->code === self::QT_I_LANGUAGE) {
+            return "string(20)";
+        }
+
         return "string(" . Field::DEFAULT_STRING_LENGTH . ")";
     }
 
@@ -609,6 +617,12 @@ class QuestionType extends StaticModel
             case Question::QT_X_BOILERPLATE_QUESTION:
                 $aTableDefinition[$aRow['fieldname']] = "string(1)";
                 break;
+            case Question::QT_D_DATE:
+                $aTableDefinition[$aRow['fieldname']] = "datetime";
+                break;
+            case Question::QT_I_LANGUAGE:
+                $aTableDefinition[$aRow['fieldname']] = "string(20)";
+                break;
 
 
 
@@ -625,12 +639,6 @@ class QuestionType extends StaticModel
                     $aTableDefinition[$aRow['fieldname']] = "text";
                 }
                 break;
-            case Question::QT_D_DATE:
-                $aTableDefinition[$aRow['fieldname']] = "datetime";
-                break;
-            case Question::QT_I_LANGUAGE:
-                $aTableDefinition[$aRow['fieldname']] = "string(20)";
-                break;
             case Question::QT_VERTICAL_FILE_UPLOAD:
                 $this->createSurveyDir = true;
                 if (strpos($aRow['fieldname'], "_")) {
@@ -644,6 +652,7 @@ class QuestionType extends StaticModel
                     $aTableDefinition[$aRow['fieldname']] = "text";
                 }
                 break;
+
             case "url":
                 if ($this->survey->isRefUrl) {
                     $aTableDefinition[$aRow['fieldname']] = "text";

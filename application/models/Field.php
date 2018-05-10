@@ -79,9 +79,13 @@ class Field extends CModel
     }
 
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     private function systemFieldType()
     {
-        switch ($this) {
+        switch ($this->systemFieldName) {
             case self::SYSFIELD_ID:
                 return "pk";
                 break;
@@ -101,7 +105,11 @@ class Field extends CModel
             case self::SYSFIELD_LASTPAGE:
                 return "integer";
                 break;
-
+            case self::SYSFIELD_TOKEN:
+                return "string(35)" . $this->collation;
+                break;
+            default:
+                throw new \Exception("Undefined system column {$this->systemFieldName}");
         }
     }
 
