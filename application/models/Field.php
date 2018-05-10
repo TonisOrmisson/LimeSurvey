@@ -27,7 +27,7 @@ class Field extends CModel
     const SYSFIELD_SUBMITDATE = 'submitdate';
     const SYSFIELD_DATESTAMP = 'datestamp';
     const SYSFIELD_LASTPAGE = 'lastpage';
-    const SYSFIELD_URL = 'url';
+    const SYSFIELD_REFURL = 'refurl';
     const SYSFIELD_IP_ADDRESS = 'ipaddress';
 
 
@@ -116,7 +116,7 @@ class Field extends CModel
             case self::SYSFIELD_TOKEN:
                 return "string(35) " . $this->tokenFieldCollation;
                 break;
-            case self::SYSFIELD_URL:
+            case self::SYSFIELD_REFURL:
                 return "text";
                 break;
             case self::SYSFIELD_IP_ADDRESS:

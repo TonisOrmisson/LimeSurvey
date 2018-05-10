@@ -29,8 +29,9 @@ class FieldMap
      * @return Field[]
      */
     public function getFullMap() {
-        $models = [];
-        return array_merge($models, $this->questionsFields());
+        $models = $this->createGeneralStartFields();
+        $models = array_merge($models, $this->questionsFields());
+        return $models;
     }
 
     /**
@@ -46,6 +47,34 @@ class FieldMap
             }
         }
         return $models;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function generalStartFieldNames() {
+        return [
+            Field::SYSFIELD_ID, Field::SYSFIELD_SUBMITDATE, Field::SYSFIELD_LASTPAGE,
+            Field::SYSFIELD_STARTLANGUAGE, Field::SYSFIELD_SEED, Field::SYSFIELD_TOKEN,
+            Field::SYSFIELD_STARTDATE, Field::SYSFIELD_DATESTAMP, Field::SYSFIELD_IP_ADDRESS,
+            Field::SYSFIELD_REFURL
+        ];
+    }
+
+    /**
+     * @return Field[]
+     */
+    private function createGeneralStartFields()
+    {
+        $result = [];
+        foreach ($this->generalStartFieldNames() as $fieldName) {
+            $field = new Field();
+            $field->systemFieldName = $fieldName;
+            $field->name = $fieldName;
+            $result[$field->name] = $field;
+        }
+        return $result;
+
     }
 
     /**

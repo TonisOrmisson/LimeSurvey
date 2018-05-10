@@ -96,7 +96,6 @@ class SurveyActivator
         foreach ($this->fieldMap->getFullMap() as $field) {
             $this->tableDefinition[$field->name] = $field->type;
         }
-        var_dump($this->tableDefinition);
     }
 
     /**
