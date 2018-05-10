@@ -22,6 +22,7 @@ class FieldMap
         if (!($survey instanceof Survey)) {
             throw new \Exception(get_class($survey) . " used as Survey while initiating " . self::class);
         }
+        $this->survey = $survey;
     }
 
     /**
@@ -40,12 +41,43 @@ class FieldMap
         $models = [];
         if (!empty($this->survey->baseQuestions)) {
             foreach ($this->survey->baseQuestions as $question) {
-                $this->question = $question;
-                $field = new Field($question);
-                $models[$field->name] = $field;
+                $questionFields = $this->createQuestionFields($question);
+                $models = array_merge($models, $questionFields);
             }
         }
         return $models;
+    }
+
+    /**
+     * Create Fields for question and all its subquestions
+     * @param Question $question
+     * @return Field[]
+     */
+    private function  createQuestionFields($question) {
+        $result = [];
+        $field = new Field($question);
+        $result[$field->name] = $field;
+
+        if ($question->hasSubQuestions) {
+            foreach ($question->subquestions as $subqQuestion) {
+                $subqQuestionField = $this->createSubQuestionField($subqQuestion);
+                if (!empty($subqQuestionField)) {
+                    $result[$subqQuestionField->name] = $subqQuestionField;
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Create a Field for a subQuestion
+     * @param Question $question
+     * @return Field|null
+     */
+    private function createSubQuestionField($question)
+    {
+        // FIXME
+        return null;
     }
 
 

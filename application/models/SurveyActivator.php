@@ -96,6 +96,7 @@ class SurveyActivator
         foreach ($this->fieldMap->getFullMap() as $field) {
             $this->tableDefinition[$field->name] = $field->type;
         }
+        var_dump($this->tableDefinition);
     }
 
     /**
@@ -152,7 +153,7 @@ class SurveyActivator
         //Check for any additional fields for this survey and create necessary fields (token and datestamp)
         $this->survey->fixInvalidQuestions();
         //Get list of questions for the base language
-        $this->fieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
+        //$this->fieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
         $this->fieldMap = new FieldMap($this->survey);
 
         $this->prepareTableDefinition();

@@ -40,6 +40,9 @@ class Field extends CModel
     /** @var string $name Field column name */
     public $name;
 
+    /** @var string */
+    public $id;
+
     /**
      * Field constructor.
      * @param Question|null $question
@@ -47,8 +50,10 @@ class Field extends CModel
     public function __construct(Question $question = null)
     {
         $this->question = $question;
+        if(!empty($this->question)) {
+            $this->name = $question->getBasicFieldName();
+        }
     }
-
 
     /**
      * {@inheritdoc}

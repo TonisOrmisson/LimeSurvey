@@ -2970,6 +2970,7 @@ function getTemplateURL($sTemplateName)
  * @param int $qid
  * @param string $sLanguage Language of the subquestion text
  * @return array
+ * @deprecated use Question relations
  */
 function getSubQuestions($sid, $qid, $sLanguage)
 {
