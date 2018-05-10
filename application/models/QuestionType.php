@@ -10,6 +10,7 @@
  * @property boolean $isString Whether the type is string (text or char)
  * @property boolean $isNumeric Whether the type numeric (integer, double)
  * @property boolean $isInteger Whether the type integer
+ * @property boolean $isDouble Whether the type double
  *
  * {@inheritdoc}
  */
@@ -462,7 +463,7 @@ class QuestionType extends StaticModel
      */
     public static function doubleCodes()
     {
-        return [];
+        return [self::QT_N_NUMERICAL, self::QT_K_MULTIPLE_NUMERICAL_QUESTION];
 
     }
 
@@ -510,6 +511,14 @@ class QuestionType extends StaticModel
     /**
      * @return bool
      */
+    public function getIsDouble()
+    {
+        return in_array($this->code, self::doubleCodes());
+    }
+
+    /**
+     * @return bool
+     */
     public function getIsNumeric()
     {
         return in_array($this->code, self::numericCodes());
@@ -521,19 +530,22 @@ class QuestionType extends StaticModel
      */
     public function getFieldType()
     {
-        if ($this->isString) {
-            if ($this->isChar) {
-                return Field::TYPE_CHAR;
-            } else {
-                return Field::TYPE_STRING;
-            }
+        if ($this->isDouble) {
+            return "decimal (" . Field::DEFAULT_DOUBLE_LENGTH . ", " . Field::DEFAULT_DOUBLE_DECIMALS . ")";
         }
-        return $this->getFieldDataType();
 
+        if ($this->isText) {
+            return "text";
+        }
+        if ($this->isChar) {
+            return "string(1)";
+        }
+        return "string(" . Field::DEFAULT_STRING_LENGTH . ")";
     }
 
 
     /**
+     * //TODO delete???
      * @return string
      */
     public function getFieldDataType()
@@ -546,6 +558,135 @@ class QuestionType extends StaticModel
         }
 
         throw new \Exception("Undefined field data type for QuestionType {$this->code}");
+    }
+
+
+
+
+    /**
+     * The old logic
+     * //TODO delete me when new is ready
+     * @param $aRow
+     */
+    private function old($aRow)
+    {
+
+        switch ($aRow['type']) {
+            case "lastpage":
+                $aTableDefinition[$aRow['fieldname']] = "integer";
+                break;
+            case 'id':
+                $aTableDefinition[$aRow['fieldname']] = "pk";
+                break;
+            case 'startlanguage':
+                $aTableDefinition[$aRow['fieldname']] = "string(20) NOT NULL";
+                break;
+            case 'seed':
+                $aTableDefinition[$aRow['fieldname']] = "string(31)";
+                break;
+            case "startdate":
+            case "datestamp":
+                $aTableDefinition[$aRow['fieldname']] = "datetime NOT NULL";
+                break;
+            case "submitdate":
+                $aTableDefinition[$aRow['fieldname']] = "datetime";
+                break;
+            case Question::QT_N_NUMERICAL:
+            case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
+                $aTableDefinition[$aRow['fieldname']] = "decimal (30,10)";
+                break;
+            case Question::QT_S_SHORT_FREE_TEXT:
+            case Question::QT_U_HUGE_FREE_TEXT:
+            case Question::QT_Q_MULTIPLE_SHORT_TEXT:
+            case Question::QT_T_LONG_FREE_TEXT:
+            case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:
+            case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:
+                $aTableDefinition[$aRow['fieldname']] = "text";
+                break;
+            case Question::QT_5_POINT_CHOICE:
+            case Question::QT_G_GENDER_DROPDOWN:
+            case Question::QT_Y_YES_NO_RADIO:
+            case Question::QT_X_BOILERPLATE_QUESTION:
+                $aTableDefinition[$aRow['fieldname']] = "string(1)";
+                break;
+
+
+
+
+
+            case Question::QT_L_LIST_DROPDOWN:
+            case Question::QT_EXCLAMATION_LIST_DROPDOWN:
+            case Question::QT_M_MULTIPLE_CHOICE:
+            case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:
+            case Question::QT_O_LIST_WITH_COMMENT:
+                if ($aRow['aid'] != 'other' && strpos($aRow['aid'], 'comment') === false && strpos($aRow['aid'], 'othercomment') === false) {
+                    $aTableDefinition[$aRow['fieldname']] = "string(5)";
+                } else {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case Question::QT_D_DATE:
+                $aTableDefinition[$aRow['fieldname']] = "datetime";
+                break;
+            case Question::QT_I_LANGUAGE:
+                $aTableDefinition[$aRow['fieldname']] = "string(20)";
+                break;
+            case Question::QT_VERTICAL_FILE_UPLOAD:
+                $this->createSurveyDir = true;
+                if (strpos($aRow['fieldname'], "_")) {
+                    $aTableDefinition[$aRow['fieldname']] = "integer";
+                } else {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case "ipaddress":
+                if ($this->survey->isIpAddr) {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case "url":
+                if ($this->survey->isRefUrl) {
+                    $aTableDefinition[$aRow['fieldname']] = "text";
+                }
+                break;
+            case "token":
+                $aTableDefinition[$aRow['fieldname']] = 'string(35)'.$this->collation;
+                break;
+            case Question::QT_ASTERISK_EQUATION:
+                $aTableDefinition[$aRow['fieldname']] = "text";
+                break;
+            case Question::QT_R_RANKING_STYLE:
+                /**
+                 * See bug #09828: Ranking question : update allowed can broke Survey DB
+                 * If max_subquestions is not set or is invalid : set it to actual answers numbers
+                 */
+
+                $nrOfAnswers = Answer::model()->countByAttributes(
+                    array('qid' => $aRow['qid'])
+                );
+                $oQuestionAttribute = QuestionAttribute::model()->find(
+                    "qid = :qid AND attribute = 'max_subquestions'",
+                    array(':qid' => $aRow['qid'])
+                );
+                if (empty($oQuestionAttribute)) {
+                    $oQuestionAttribute = new QuestionAttribute();
+                    $oQuestionAttribute->qid = $aRow['qid'];
+                    $oQuestionAttribute->attribute = 'max_subquestions';
+                    $oQuestionAttribute->value = $nrOfAnswers;
+                    $oQuestionAttribute->save();
+                } elseif (intval($oQuestionAttribute->value) < 1) {
+                    // Fix it if invalid : disallow 0, but need a sub question minimum for EM
+                    $oQuestionAttribute->value = $nrOfAnswers;
+                    $oQuestionAttribute->save();
+                }
+                $aTableDefinition[$aRow['fieldname']] = "string(5)";
+                break;
+            default:
+                $aTableDefinition[$aRow['fieldname']] = "string(5)";
+        }
+        if (!$this->survey->isAnonymized && !array_key_exists('token', $aTableDefinition)) {
+            $aTableDefinition['token'] = 'string(35)'.$this->collation;
+        }
     }
 
 }

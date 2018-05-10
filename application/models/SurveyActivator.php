@@ -9,7 +9,7 @@ class SurveyActivator
     protected $tableDefinition = [];
     /** @var array  */
     protected $timingsTableDefinition = [];
-    /** @var array  */
+    /** @var FieldMap  */
     protected $fieldMap;
     /** @var string */
     protected $collation;
@@ -92,125 +92,10 @@ class SurveyActivator
      */
     protected function prepareTableDefinition()
     {
-        $sFieldMap = $this->fieldMap;
-
-        foreach ($sFieldMap as $j=>$aRow) {
-            switch ($aRow['type']) {
-                case 'seed':
-                    $aTableDefinition[$aRow['fieldname']] = "string(31)";
-                    break;
-                case 'startlanguage':
-                    $aTableDefinition[$aRow['fieldname']] = "string(20) NOT NULL";
-                    break;
-                case 'id':
-                    $aTableDefinition[$aRow['fieldname']] = "pk";
-                    break;
-                case "startdate":
-                case "datestamp":
-                    $aTableDefinition[$aRow['fieldname']] = "datetime NOT NULL";
-                    break;
-                case "submitdate":
-                    $aTableDefinition[$aRow['fieldname']] = "datetime";
-                    break;
-                case "lastpage":
-                    $aTableDefinition[$aRow['fieldname']] = "integer";
-                    break;
-                case Question::QT_N_NUMERICAL:
-                case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION:
-                    $aTableDefinition[$aRow['fieldname']] = "decimal (30,10)";
-                    break;
-                case Question::QT_S_SHORT_FREE_TEXT:
-                    $aTableDefinition[$aRow['fieldname']] = "text";
-                    break;
-                case Question::QT_L_LIST_DROPDOWN:
-                case Question::QT_EXCLAMATION_LIST_DROPDOWN:
-                case Question::QT_M_MULTIPLE_CHOICE:
-                case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:
-                case Question::QT_O_LIST_WITH_COMMENT:
-                    if ($aRow['aid'] != 'other' && strpos($aRow['aid'], 'comment') === false && strpos($aRow['aid'], 'othercomment') === false) {
-                        $aTableDefinition[$aRow['fieldname']] = "string(5)";
-                    } else {
-                        $aTableDefinition[$aRow['fieldname']] = "text";
-                    }
-                    break;
-                case Question::QT_U_HUGE_FREE_TEXT:
-                case Question::QT_Q_MULTIPLE_SHORT_TEXT:
-                case Question::QT_T_LONG_FREE_TEXT:
-                case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:
-                case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:
-                    $aTableDefinition[$aRow['fieldname']] = "text";
-                    break;
-                case Question::QT_D_DATE:
-                    $aTableDefinition[$aRow['fieldname']] = "datetime";
-                    break;
-                case Question::QT_5_POINT_CHOICE:
-                case Question::QT_G_GENDER_DROPDOWN:
-                case Question::QT_Y_YES_NO_RADIO:
-                case Question::QT_X_BOILERPLATE_QUESTION:
-                    $aTableDefinition[$aRow['fieldname']] = "string(1)";
-                    break;
-                case Question::QT_I_LANGUAGE:
-                    $aTableDefinition[$aRow['fieldname']] = "string(20)";
-                    break;
-                case Question::QT_VERTICAL_FILE_UPLOAD:
-                    $this->createSurveyDir = true;
-                    if (strpos($aRow['fieldname'], "_")) {
-                        $aTableDefinition[$aRow['fieldname']] = "integer";
-                    } else {
-                        $aTableDefinition[$aRow['fieldname']] = "text";
-                    }
-                    break;
-                case "ipaddress":
-                    if ($this->survey->isIpAddr) {
-                        $aTableDefinition[$aRow['fieldname']] = "text";
-                    }
-                    break;
-                case "url":
-                    if ($this->survey->isRefUrl) {
-                        $aTableDefinition[$aRow['fieldname']] = "text";
-                    }
-                    break;
-                case "token":
-                    $aTableDefinition[$aRow['fieldname']] = 'string(35)'.$this->collation;
-                    break;
-                case Question::QT_ASTERISK_EQUATION:
-                    $aTableDefinition[$aRow['fieldname']] = "text";
-                    break;
-                case Question::QT_R_RANKING_STYLE:
-                    /**
-                     * See bug #09828: Ranking question : update allowed can broke Survey DB
-                     * If max_subquestions is not set or is invalid : set it to actual answers numbers
-                     */
-
-                    $nrOfAnswers = Answer::model()->countByAttributes(
-                        array('qid' => $aRow['qid'])
-                    );
-                    $oQuestionAttribute = QuestionAttribute::model()->find(
-                        "qid = :qid AND attribute = 'max_subquestions'",
-                        array(':qid' => $aRow['qid'])
-                    );
-                    if (empty($oQuestionAttribute)) {
-                        $oQuestionAttribute = new QuestionAttribute();
-                        $oQuestionAttribute->qid = $aRow['qid'];
-                        $oQuestionAttribute->attribute = 'max_subquestions';
-                        $oQuestionAttribute->value = $nrOfAnswers;
-                        $oQuestionAttribute->save();
-                    } elseif (intval($oQuestionAttribute->value) < 1) {
-                        // Fix it if invalid : disallow 0, but need a sub question minimum for EM
-                        $oQuestionAttribute->value = $nrOfAnswers;
-                        $oQuestionAttribute->save();
-                    }
-                    $aTableDefinition[$aRow['fieldname']] = "string(5)";
-                    break;
-                default:
-                    $aTableDefinition[$aRow['fieldname']] = "string(5)";
-            }
-            if (!$this->survey->isAnonymized && !array_key_exists('token', $aTableDefinition)) {
-                $aTableDefinition['token'] = 'string(35)'.$this->collation;
-            }
+        $this->tableDefinition = [];
+        foreach ($this->fieldMap->getFullMap() as $field) {
+            $this->tableDefinition[$field->name] = $field->type;
         }
-        $this->tableDefinition = $aTableDefinition;
-
     }
 
     /**
@@ -275,6 +160,8 @@ class SurveyActivator
         $this->survey->fixInvalidQuestions();
         //Get list of questions for the base language
         $this->fieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
+        $this->fieldMap = new FieldMap($this->survey);
+
         $this->prepareTableDefinition();
         $this->prepareSimulateQuery();
     }
