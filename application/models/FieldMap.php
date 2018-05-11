@@ -2,7 +2,6 @@
 
 /**
  * Class FieldMap describes the data-set (a set of data Fields /columns) of a Survey
- * @property Field[] $fullMap
  */
 class FieldMap
 {

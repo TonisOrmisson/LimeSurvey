@@ -93,7 +93,7 @@ class SurveyActivator
     protected function prepareTableDefinition()
     {
         $this->tableDefinition = [];
-        foreach ($this->fieldMap->fullMap as $field) {
+        foreach ($this->fieldMap->getFullMap() as $field) {
             $this->tableDefinition[$field->name] = $field->type;
         }
 
