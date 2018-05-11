@@ -429,7 +429,6 @@ class TestHelper extends TestCase
                 $webDriver = LimeSurveyWebDriver::create($host, $capabilities, 5000);
                 $success = true;
             } catch (WebDriverException $ex) {
-                throw $ex;
                 $tries++;
                 sleep(1);
             }
