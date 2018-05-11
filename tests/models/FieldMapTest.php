@@ -18,11 +18,11 @@ class FieldMapTest extends TestBaseClass
             [\QuestionType::QT_L_LIST_DROPDOWN, "string(5)"],
             [\QuestionType::QT_O_LIST_WITH_COMMENT, "string(5)"],
 
-            [\QuestionType::QT_C_ARRAY_YES_UNCERTAIN_NO, "string(5)"],
 
             // these sore actual data in subquestions, first match is parent with no field
             [\QuestionType::QT_B_ARRAY_10_CHOICE_QUESTIONS, null],
             [\QuestionType::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS, null],
+            [\QuestionType::QT_C_ARRAY_YES_UNCERTAIN_NO, null],
         ];
     }
     /**
