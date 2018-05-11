@@ -151,14 +151,50 @@ class FieldMap
     public function getFieldsQuestionsAsArray()
     {
         $array = [];
+        $questions = $this->getFieldsQuestions();
+        if (!empty($questions)) {
+            foreach ($questions as $question) {
+                $array[] = $question->attributes;
+            }
+        }
+        return $array;
+    }
+
+
+    /**
+     * Fields attributes as multidimensional array
+     * @return Question[]
+     */
+    public function getFieldsQuestions()
+    {
+        $array = [];
         if (!empty($this->fields)) {
             foreach ($this->fields as $field) {
                 if (!empty($field->question)) {
-                    $array[] = $field->question->attributes;
+                    $array[] = $field->question;
                 }
             }
         }
         return $array;
+    }
+
+
+    /**
+     * @param string $code QuestionType type code
+     * @return Question[]
+     */
+    public function getQuestionsByType($code)
+    {
+        $questions = $this->getFieldsQuestions();
+        $result = [];
+        if (!empty($questions)) {
+            foreach ($questions as $question) {
+                if ($question->type == $code) {
+                    $result[] = $question;
+                }
+            }
+        }
+        return $result;
     }
 
 
