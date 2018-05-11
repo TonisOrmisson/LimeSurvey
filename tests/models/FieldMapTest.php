@@ -26,7 +26,11 @@ class FieldMapTest extends TestBaseClass
             // Single choice questions
             [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1", "string(5)"],
             [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1o", "string(5)"],     // with other
-            [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1o-other", "text"], // the "other" field
+            [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1o-other", "text"],    // the "other" field
+            [\QuestionType::QT_5_POINT_CHOICE, "SL2", "string(1)"],
+            [\QuestionType::QT_L_LIST_DROPDOWN, "SL3", "string(5)"],
+            [\QuestionType::QT_L_LIST_DROPDOWN, "SL3o", "string(5)"],
+            [\QuestionType::QT_L_LIST_DROPDOWN, "SL3o-other", "text"],
         ];
     }
 

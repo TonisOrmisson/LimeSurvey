@@ -16,80 +16,160 @@
   </fields>
   <rows>
    <row>
-    <aid><![CDATA[8551]]></aid>
-    <qid><![CDATA[37350]]></qid>
+    <aid><![CDATA[6]]></aid>
+    <qid><![CDATA[1]]></qid>
     <code><![CDATA[1]]></code>
     <sortorder><![CDATA[1]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8552]]></aid>
-    <qid><![CDATA[37350]]></qid>
+    <aid><![CDATA[7]]></aid>
+    <qid><![CDATA[1]]></qid>
     <code><![CDATA[2]]></code>
     <sortorder><![CDATA[2]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8553]]></aid>
-    <qid><![CDATA[37350]]></qid>
+    <aid><![CDATA[8]]></aid>
+    <qid><![CDATA[1]]></qid>
     <code><![CDATA[3]]></code>
     <sortorder><![CDATA[3]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8554]]></aid>
-    <qid><![CDATA[37350]]></qid>
+    <aid><![CDATA[9]]></aid>
+    <qid><![CDATA[1]]></qid>
     <code><![CDATA[4]]></code>
     <sortorder><![CDATA[4]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8555]]></aid>
-    <qid><![CDATA[37350]]></qid>
+    <aid><![CDATA[10]]></aid>
+    <qid><![CDATA[1]]></qid>
     <code><![CDATA[5]]></code>
     <sortorder><![CDATA[5]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8546]]></aid>
-    <qid><![CDATA[37349]]></qid>
+    <aid><![CDATA[1]]></aid>
+    <qid><![CDATA[2]]></qid>
     <code><![CDATA[1]]></code>
     <sortorder><![CDATA[1]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8547]]></aid>
-    <qid><![CDATA[37349]]></qid>
+    <aid><![CDATA[2]]></aid>
+    <qid><![CDATA[2]]></qid>
     <code><![CDATA[2]]></code>
     <sortorder><![CDATA[2]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8548]]></aid>
-    <qid><![CDATA[37349]]></qid>
+    <aid><![CDATA[3]]></aid>
+    <qid><![CDATA[2]]></qid>
     <code><![CDATA[3]]></code>
     <sortorder><![CDATA[3]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8549]]></aid>
-    <qid><![CDATA[37349]]></qid>
+    <aid><![CDATA[4]]></aid>
+    <qid><![CDATA[2]]></qid>
     <code><![CDATA[4]]></code>
     <sortorder><![CDATA[4]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <scale_id><![CDATA[0]]></scale_id>
    </row>
    <row>
-    <aid><![CDATA[8550]]></aid>
-    <qid><![CDATA[37349]]></qid>
+    <aid><![CDATA[5]]></aid>
+    <qid><![CDATA[2]]></qid>
+    <code><![CDATA[5]]></code>
+    <sortorder><![CDATA[5]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[216]]></aid>
+    <qid><![CDATA[49]]></qid>
+    <code><![CDATA[1]]></code>
+    <sortorder><![CDATA[1]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[217]]></aid>
+    <qid><![CDATA[49]]></qid>
+    <code><![CDATA[2]]></code>
+    <sortorder><![CDATA[2]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[218]]></aid>
+    <qid><![CDATA[49]]></qid>
+    <code><![CDATA[3]]></code>
+    <sortorder><![CDATA[3]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[219]]></aid>
+    <qid><![CDATA[49]]></qid>
+    <code><![CDATA[4]]></code>
+    <sortorder><![CDATA[4]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[220]]></aid>
+    <qid><![CDATA[49]]></qid>
+    <code><![CDATA[5]]></code>
+    <sortorder><![CDATA[5]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[261]]></aid>
+    <qid><![CDATA[61]]></qid>
+    <code><![CDATA[1]]></code>
+    <sortorder><![CDATA[1]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[262]]></aid>
+    <qid><![CDATA[61]]></qid>
+    <code><![CDATA[2]]></code>
+    <sortorder><![CDATA[2]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[263]]></aid>
+    <qid><![CDATA[61]]></qid>
+    <code><![CDATA[3]]></code>
+    <sortorder><![CDATA[3]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[264]]></aid>
+    <qid><![CDATA[61]]></qid>
+    <code><![CDATA[4]]></code>
+    <sortorder><![CDATA[4]]></sortorder>
+    <assessment_value><![CDATA[0]]></assessment_value>
+    <scale_id><![CDATA[0]]></scale_id>
+   </row>
+   <row>
+    <aid><![CDATA[265]]></aid>
+    <qid><![CDATA[61]]></qid>
     <code><![CDATA[5]]></code>
     <sortorder><![CDATA[5]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
@@ -106,32 +186,32 @@
   </fields>
   <rows>
    <row>
-    <id><![CDATA[9396]]></id>
-    <aid><![CDATA[8546]]></aid>
+    <id><![CDATA[1]]></id>
+    <aid><![CDATA[6]]></aid>
     <answer><![CDATA[first]]></answer>
     <language><![CDATA[en]]></language>
    </row>
    <row>
-    <id><![CDATA[9397]]></id>
-    <aid><![CDATA[8547]]></aid>
+    <id><![CDATA[2]]></id>
+    <aid><![CDATA[7]]></aid>
     <answer><![CDATA[second]]></answer>
     <language><![CDATA[en]]></language>
    </row>
    <row>
-    <id><![CDATA[9398]]></id>
-    <aid><![CDATA[8548]]></aid>
+    <id><![CDATA[3]]></id>
+    <aid><![CDATA[8]]></aid>
     <answer><![CDATA[third]]></answer>
     <language><![CDATA[en]]></language>
    </row>
    <row>
-    <id><![CDATA[9399]]></id>
-    <aid><![CDATA[8549]]></aid>
+    <id><![CDATA[4]]></id>
+    <aid><![CDATA[9]]></aid>
     <answer><![CDATA[fourth]]></answer>
     <language><![CDATA[en]]></language>
    </row>
    <row>
-    <id><![CDATA[9400]]></id>
-    <aid><![CDATA[8550]]></aid>
+    <id><![CDATA[5]]></id>
+    <aid><![CDATA[10]]></aid>
     <answer><![CDATA[fifth]]></answer>
     <language><![CDATA[en]]></language>
    </row>
@@ -147,11 +227,10 @@
   </fields>
   <rows>
    <row>
-    <gid><![CDATA[1393]]></gid>
+    <gid><![CDATA[1]]></gid>
     <sid><![CDATA[215761]]></sid>
     <group_order><![CDATA[1]]></group_order>
     <randomization_group/>
-    <grelevance><![CDATA[1]]></grelevance>
    </row>
   </rows>
  </groups>
@@ -169,15 +248,14 @@
   </fields>
   <rows>
    <row>
-    <id><![CDATA[1817]]></id>
-    <gid><![CDATA[1393]]></gid>
+    <id><![CDATA[1]]></id>
+    <gid><![CDATA[1]]></gid>
     <group_name><![CDATA[Single choice questions]]></group_name>
     <description/>
     <language><![CDATA[en]]></language>
     <sid><![CDATA[215761]]></sid>
     <group_order><![CDATA[1]]></group_order>
     <randomization_group/>
-    <grelevance><![CDATA[1]]></grelevance>
    </row>
   </rows>
  </group_l10ns>
@@ -200,10 +278,10 @@
   </fields>
   <rows>
    <row>
-    <qid><![CDATA[37349]]></qid>
+    <qid><![CDATA[1]]></qid>
     <parent_qid><![CDATA[0]]></parent_qid>
     <sid><![CDATA[215761]]></sid>
-    <gid><![CDATA[1393]]></gid>
+    <gid><![CDATA[1]]></gid>
     <type><![CDATA[!]]></type>
     <title><![CDATA[SL1]]></title>
     <preg/>
@@ -216,10 +294,10 @@
     <modulename/>
    </row>
    <row>
-    <qid><![CDATA[37350]]></qid>
+    <qid><![CDATA[2]]></qid>
     <parent_qid><![CDATA[0]]></parent_qid>
     <sid><![CDATA[215761]]></sid>
-    <gid><![CDATA[1393]]></gid>
+    <gid><![CDATA[1]]></gid>
     <type><![CDATA[!]]></type>
     <title><![CDATA[SL1o]]></title>
     <preg/>
@@ -230,6 +308,52 @@
     <same_default><![CDATA[0]]></same_default>
     <relevance><![CDATA[1]]></relevance>
     <modulename/>
+   </row>
+   <row>
+    <qid><![CDATA[31]]></qid>
+    <parent_qid><![CDATA[0]]></parent_qid>
+    <sid><![CDATA[215761]]></sid>
+    <gid><![CDATA[1]]></gid>
+    <type><![CDATA[5]]></type>
+    <title><![CDATA[SL2]]></title>
+    <preg/>
+    <other><![CDATA[N]]></other>
+    <mandatory><![CDATA[N]]></mandatory>
+    <question_order><![CDATA[215763]]></question_order>
+    <scale_id><![CDATA[0]]></scale_id>
+    <same_default><![CDATA[0]]></same_default>
+    <relevance><![CDATA[1]]></relevance>
+    <modulename/>
+   </row>
+   <row>
+    <qid><![CDATA[49]]></qid>
+    <parent_qid><![CDATA[0]]></parent_qid>
+    <sid><![CDATA[215761]]></sid>
+    <gid><![CDATA[1]]></gid>
+    <type><![CDATA[L]]></type>
+    <title><![CDATA[SL3]]></title>
+    <preg/>
+    <other><![CDATA[N]]></other>
+    <mandatory><![CDATA[N]]></mandatory>
+    <question_order><![CDATA[215764]]></question_order>
+    <scale_id><![CDATA[0]]></scale_id>
+    <same_default><![CDATA[0]]></same_default>
+    <relevance><![CDATA[1]]></relevance>
+   </row>
+   <row>
+    <qid><![CDATA[61]]></qid>
+    <parent_qid><![CDATA[0]]></parent_qid>
+    <sid><![CDATA[215761]]></sid>
+    <gid><![CDATA[1]]></gid>
+    <type><![CDATA[L]]></type>
+    <title><![CDATA[SL3o]]></title>
+    <preg/>
+    <other><![CDATA[Y]]></other>
+    <mandatory><![CDATA[N]]></mandatory>
+    <question_order><![CDATA[215765]]></question_order>
+    <scale_id><![CDATA[0]]></scale_id>
+    <same_default><![CDATA[0]]></same_default>
+    <relevance><![CDATA[1]]></relevance>
    </row>
   </rows>
  </questions>
@@ -243,16 +367,37 @@
   </fields>
   <rows>
    <row>
-    <id><![CDATA[40463]]></id>
-    <qid><![CDATA[37349]]></qid>
+    <id><![CDATA[1]]></id>
+    <qid><![CDATA[1]]></qid>
     <question><![CDATA[List Dropdown without "other"]]></question>
     <help><![CDATA[This is a question help text.]]></help>
     <language><![CDATA[en]]></language>
    </row>
    <row>
-    <id><![CDATA[40464]]></id>
-    <qid><![CDATA[37350]]></qid>
+    <id><![CDATA[2]]></id>
+    <qid><![CDATA[2]]></qid>
     <question><![CDATA[List Dropdown WITH "other"]]></question>
+    <help><![CDATA[This is a question help text.]]></help>
+    <language><![CDATA[en]]></language>
+   </row>
+   <row>
+    <id><![CDATA[31]]></id>
+    <qid><![CDATA[31]]></qid>
+    <question><![CDATA[5-point choice]]></question>
+    <help><![CDATA[This is a question help text.]]></help>
+    <language><![CDATA[en]]></language>
+   </row>
+   <row>
+    <id><![CDATA[49]]></id>
+    <qid><![CDATA[49]]></qid>
+    <question><![CDATA[List Radio without "other"]]></question>
+    <help><![CDATA[This is a question help text.]]></help>
+    <language><![CDATA[en]]></language>
+   </row>
+   <row>
+    <id><![CDATA[61]]></id>
+    <qid><![CDATA[61]]></qid>
+    <question><![CDATA[List Radio with "other"]]></question>
     <help><![CDATA[This is a question help text.]]></help>
     <language><![CDATA[en]]></language>
    </row>
