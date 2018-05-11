@@ -395,7 +395,7 @@ class Question extends LSActiveRecord
     /**
      * @param integer $surveyid
      * @param string $language
-     * @return array
+     * @return Question[]
      */
     public function getQuestionList($surveyid)
     {
