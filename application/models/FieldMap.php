@@ -34,6 +34,7 @@ class FieldMap
     public function getFullMap() {
         $this->createGeneralStartFields();
         $this->questionsFields();
+
         return $this->fields;
     }
 
@@ -45,11 +46,12 @@ class FieldMap
         $result= [];
         foreach ($this->fields as $field) {
             if (!empty($field->question)) {
-                $result[$field->question->fullTitle] = $field->attributes;
+                $result[$this->questionKey($field)] = $field->attributes;
             } else {
                 $result[$field->name] = $field->attributes;
             }
         }
+
         return $result;
     }
 
@@ -101,12 +103,32 @@ class FieldMap
                 }
             } else {
                 if (!empty($fields->question)) {
-                    $this->fields[$fields->question->fullTitle] = $fields;
+                    $this->fields[$this->questionKey($fields)] = $fields;
                 } else {
                     $this->fields[$fields->name] = $fields;
                 }
             }
         }
+    }
+
+    /**
+     * @param Field $field
+     * @return string
+     */
+    private function questionKey($field)
+    {
+        if (!empty($field->question)) {
+            $key = $field->question->fullTitle;
+            if ($field->isCommentField) {
+                $key .= Question::TITLE_SEPARATOR . "comment";
+            }
+            if ($field->isOtherField) {
+                $key .= Question::TITLE_SEPARATOR . "other";
+            }
+            return $key;
+        }
+        throw new \Exception("getting questionKey without having a question");
+
     }
 
     private function createGeneralStartFields()
@@ -131,9 +153,21 @@ class FieldMap
         } else {
             $this->addFields($question->field);
             $this->createCommentFields($question);
+            $this->createOtherField($question);
         }
     }
 
+    /**
+     * Create Field for question "other" option (if needed)
+     * @param Question $question
+     */
+    private function createOtherField($question) {
+        if ($question->hasOther) {
+            $field = new Field($question);
+            $field->isOtherField = true;
+            $this->addFields($field);
+        }
+    }
 
     /**
      * Create Fields for question and all its subquestions

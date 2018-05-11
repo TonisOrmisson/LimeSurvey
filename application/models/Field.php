@@ -45,6 +45,9 @@ class Field extends CModel
     /** @var bool $isCommentField  */
     public $isCommentField = false;
 
+    /** @var bool $isOtherField  */
+    public $isOtherField = false;
+
     /**
      * Field constructor.
      * @param Question|null $question
@@ -79,7 +82,7 @@ class Field extends CModel
     public function getType()
     {
         if (!empty($this->question)) {
-            if ($this->isCommentField) {
+            if ($this->isCommentField || $this->isOtherField) {
                 return "text";
             }
             return $this->question->questionType->fieldType;
@@ -157,6 +160,10 @@ class Field extends CModel
 
         if ($this->isCommentField) {
             $name .="comment";
+        }
+
+        if ($this->isOtherField) {
+            $name .="other";
         }
 
         return $name;

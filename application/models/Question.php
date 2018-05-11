@@ -47,6 +47,7 @@ if (!defined('BASEPATH')) {
  * @property QuestionType $questionType
  * @property Field $field
  * @property string $fullTitle Get an survey level unique title for questions AND subQuestions. Eg subquestion title qould be [parent-title]-[child-tile]
+ * @property boolean $hasOther
  * @inheritdoc
  */
 class Question extends LSActiveRecord
@@ -778,5 +779,13 @@ class Question extends LSActiveRecord
             return $this->parent->title.self::TITLE_SEPARATOR.$this->title;
         }
         return $this->title;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getHasOther()
+    {
+        return ($this->other === 'Y');
     }
 }

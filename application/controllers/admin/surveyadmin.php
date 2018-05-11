@@ -892,7 +892,7 @@ class SurveyAdmin extends Survey_Common_Action
      * @uses self::_tabTokens()
      * @uses self::_tabPanelIntegration()
      * @uses self::_tabResourceManagement()
-     * 
+     *
      * @param int $iSurveyID
      * @param string $subaction
      * @return void
@@ -1427,25 +1427,25 @@ class SurveyAdmin extends Survey_Common_Action
         return $aData;
     }
 
-    /** 
-     * 
-     * survey::_pluginTabSurvey() 
-     * Load "Simple Plugin" page in specific survey. 
-     * @param Survey $survey 
-     * @return mixed 
-     * 
+    /**
+     *
+     * survey::_pluginTabSurvey()
+     * Load "Simple Plugin" page in specific survey.
+     * @param Survey $survey
+     * @return mixed
+     *
      * This method is called via call_user_func in self::rendersidemenulink()
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
-     */ 
-    private function _pluginTabSurvey($survey) 
-    { 
-        $aData = array(); 
-        $beforeSurveySettings = new PluginEvent('beforeSurveySettings'); 
-        $beforeSurveySettings->set('survey', $survey->sid); 
-        App()->getPluginManager()->dispatchEvent($beforeSurveySettings); 
-        $aData['pluginSettings'] = $beforeSurveySettings->get('surveysettings'); 
-        return $aData; 
-    } 
+     */
+    private function _pluginTabSurvey($survey)
+    {
+        $aData = array();
+        $beforeSurveySettings = new PluginEvent('beforeSurveySettings');
+        $beforeSurveySettings->set('survey', $survey->sid);
+        App()->getPluginManager()->dispatchEvent($beforeSurveySettings);
+        $aData['pluginSettings'] = $beforeSurveySettings->get('surveysettings');
+        return $aData;
+    }
     /**
      * survey::_tabPresentationNavigation()
      * Load "Presentation & navigation" tab.
