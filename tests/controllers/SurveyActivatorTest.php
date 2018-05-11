@@ -41,7 +41,7 @@ class SurveyActivatorTest extends TestBaseClass
         $file = self::$surveysFolder.DIRECTORY_SEPARATOR.'limesurvey_survey_'.self::$surveyWithTimingsID.'.lss';
         parent::importSurvey($file);
         $activator = new \SurveyActivator(self::$testSurvey);
-        $result = $activator->activate();
+        $activator->activate();
         $table = Yii::app()->db->schema->getTable(self::$testSurvey->responsesTableName);
         $this->assertNotEmpty($table);
     }
@@ -50,7 +50,7 @@ class SurveyActivatorTest extends TestBaseClass
         $file = self::$surveysFolder.DIRECTORY_SEPARATOR.'limesurvey_survey_'.self::$surveyWithTimingsID.'.lss';
         parent::importSurvey($file);
         $activator = new \SurveyActivator(self::$testSurvey);
-        $result = $activator->activate();
+        $activator->activate();
         $table = Yii::app()->db->schema->getTable(self::$testSurvey->timingsTableName);
         $this->assertNotEmpty($table);
     }
@@ -59,7 +59,7 @@ class SurveyActivatorTest extends TestBaseClass
         $file = self::$surveysFolder.DIRECTORY_SEPARATOR.'limesurvey_survey_'.self::$surveyWithTimingsID.'.lss';
         parent::importSurvey($file);
         $activator = new \SurveyActivator(self::$testSurvey);
-        $result = $activator->activate();
+        $activator->activate();
         \Token::createTable(self::$surveyId);
         $table = Yii::app()->db->schema->getTable(self::$testSurvey->tokensTableName);
         $this->assertNotEmpty($table);
@@ -70,7 +70,7 @@ class SurveyActivatorTest extends TestBaseClass
         $file = self::$surveysFolder.DIRECTORY_SEPARATOR.'limesurvey_survey_'.self::$surveyWithoutTimingsID.'.lss';
         parent::importSurvey($file);
         $activator = new \SurveyActivator(self::$testSurvey);
-        $result = $activator->activate();
+        $activator->activate();
         $table = Yii::app()->db->schema->getTable(self::$testSurvey->timingsTableName);
         $this->assertEmpty($table);
     }
@@ -87,7 +87,7 @@ class SurveyActivatorTest extends TestBaseClass
         $file = self::$surveysFolder.DIRECTORY_SEPARATOR.'limesurvey_survey_'.self::$surveyWithFileUploadID.'.lss';
         parent::importSurvey($file);
         $activator = new \SurveyActivator(self::$testSurvey);
-        $result = $activator->activate();
+        $activator->activate();
         $folder = Yii::app()->getConfig('uploaddir').DIRECTORY_SEPARATOR."surveys".DIRECTORY_SEPARATOR.self::$surveyId.DIRECTORY_SEPARATOR."files";
         $this->assertTrue(file_exists($folder));
     }
