@@ -43,14 +43,8 @@ class FieldMapTest extends TestBaseClass
      */
     public function testQuestionFieldTypes($code, $key, $expected)
     {
-        $fieldMap = self::$fieldMap;
-        if(!empty($expected)) {
-            $field = $fieldMap->fields[$key];
-            $this->assertEquals($expected, $field->type);
-        } else {
-            // must not have field
-            $this->assertFalse(isset($fieldMap->fields[$key]));
-        }
+        $actual = (!empty($expected) ? self::$fieldMap->fields[$key]->type : null);
+        $this->doFieldTest($key,$expected, $actual);
     }
 
     /**
@@ -61,10 +55,15 @@ class FieldMapTest extends TestBaseClass
      */
     public function testQuestionFieldTypesMatchesQuestionCode($code, $key, $expected)
     {
+        $actual = (!empty($expected) ? self::$fieldMap->fields[$key]->question->type : null);
+        $this->doFieldTest($key,$code, $actual);
+    }
+
+    private function doFieldTest($key, $expected, $actual)
+    {
         $fieldMap = self::$fieldMap;
         if(!empty($expected)) {
-            $field = $fieldMap->fields[$key];
-            $this->assertEquals($code, $field->question->type);
+            $this->assertEquals($expected, $actual);
         } else {
             // must not have field
             $this->assertFalse(isset($fieldMap->fields[$key]));
