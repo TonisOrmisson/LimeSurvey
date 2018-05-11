@@ -606,7 +606,7 @@ class QuestionType extends StaticModel
     public function getFieldType()
     {
         if ($this->isDouble) {
-            return "decimal (" . Field::DEFAULT_DOUBLE_LENGTH . ", " . Field::DEFAULT_DOUBLE_DECIMALS . ")";
+            return "decimal(" . Field::DEFAULT_DOUBLE_LENGTH . "," . Field::DEFAULT_DOUBLE_DECIMALS . ")";
         }
 
         if ($this->isText) {

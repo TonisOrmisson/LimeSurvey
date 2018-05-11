@@ -19,15 +19,21 @@ class FieldMapTest extends TestBaseClass
     public function questionFieldTypeProvider()
     {
         return [
-            [\QuestionType::QT_X_BOILERPLATE_QUESTION, null],
 
-            [\QuestionType::QT_S_SHORT_FREE_TEXT, "text"],
-            [\QuestionType::QT_T_LONG_FREE_TEXT, "text"],
-            [\QuestionType::QT_U_HUGE_FREE_TEXT, "text"],
+            [\QuestionType::QT_S_SHORT_FREE_TEXT, "city", "text"],
+            [\QuestionType::QT_N_NUMERICAL, "yearsThere", "decimal(30,10)"],
+            [\QuestionType::QT_R_RANKING_STYLE, "ranking", "string(5)"],
 
-            [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "string(5)"],
-            [\QuestionType::QT_L_LIST_DROPDOWN, "string(5)"],
-            [\QuestionType::QT_O_LIST_WITH_COMMENT, "string(5)"],
+            [\QuestionType::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS, "opinions", null],
+            // TODO CHILDREN OF "opinions"
+
+            //[\QuestionType::QT_T_LONG_FREE_TEXT, "Q2", "text"],
+
+            //[\QuestionType::QT_U_HUGE_FREE_TEXT, "text"],
+
+            //[\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "string(5)"],
+            //[\QuestionType::QT_L_LIST_DROPDOWN, "string(5)"],
+            //[\QuestionType::QT_O_LIST_WITH_COMMENT, "string(5)"],
 
             // these sore actual data in subquestions, first match is parent with no field
             //[\QuestionType::QT_B_ARRAY_10_CHOICE_QUESTIONS, "string(5)"],
@@ -35,16 +41,43 @@ class FieldMapTest extends TestBaseClass
             //[\QuestionType::QT_C_ARRAY_YES_UNCERTAIN_NO, null],
         ];
     }
+
+
     /**
-     * @param string $code QuestionType type code
+     * @param string $code fieldmap Question type code
+     * @param string $key fieldmap key (Question full-title)
      * @param string $expected
      * @dataProvider questionFieldTypeProvider
      */
-    public function testQuestionFieldTypes($code, $expected)
+    public function testQuestionFieldTypes($code, $key, $expected)
     {
         $fieldMap = new \FieldMap(self::$testSurvey);
         $fieldMap->getFullMap();
-        $questions = $fieldMap->getQuestionsByType($code);
-        $this->assertEquals($expected, $questions[0]->field->type);
+        if(!empty($expected)) {
+            $field = $fieldMap->fields[$key];
+            $this->assertEquals($expected, $field->type);
+        } else {
+            $this->assertFalse(isset($fieldMap->fields[$key]));
+        }
     }
+
+    /**
+     * @param string $code fieldmap Question type code
+     * @param string $key fieldmap key (Question full-title)
+     * @param string $expected
+     * @dataProvider questionFieldTypeProvider
+     */
+    public function testQuestionFieldTypesMatchesQuestionCode($code, $key, $expected)
+    {
+        $fieldMap = new \FieldMap(self::$testSurvey);
+        $fieldMap->getFullMap();
+        if(!empty($expected)) {
+            $field = $fieldMap->fields[$key];
+            $this->assertEquals($code, $field->question->type);
+        } else {
+            // no field, nothing to test
+            $this->assertTrue(true);
+        }
+    }
+
 }

@@ -37,6 +37,22 @@ class FieldMap
         return $this->fields;
     }
 
+    /**
+     * @return array
+     */
+    public function getSimpleMap() {
+        $this->getFullMap();
+        $result= [];
+        foreach ($this->fields as $field) {
+            if (!empty($field->question)) {
+                $result[$field->question->fullTitle] = $field->attributes;
+            } else {
+                $result[$field->name] = $field->attributes;
+            }
+        }
+        return $result;
+    }
+
     private function questionsFields()
     {
         foreach ($this->survey->baseQuestions as $question) {
