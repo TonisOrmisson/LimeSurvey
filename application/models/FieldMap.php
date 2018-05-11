@@ -101,7 +101,6 @@ class FieldMap
     /**
      * Create Fields for question and all its subquestions
      * @param Question $question
-     * @return Field[]
      */
     private function createQuestionFields($question) {
         // all parent questions go into recursion
