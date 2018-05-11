@@ -128,6 +128,40 @@ class FieldMap
         }
     }
 
+    /**
+     * @return bool
+     */
+    public function getNeedsUploadFolder() {
+        return $this->hasQuestionType(QuestionType::QT_VERTICAL_FILE_UPLOAD);
+    }
+
+    /**
+     * @param $code
+     * @return bool
+     */
+    public function hasQuestionType($code)
+    {
+        $fieldsArray =$this->getFieldsQuestionsAsArray();
+        return in_array($code, array_column($fieldsArray, 'type'));
+    }
+
+    /**
+     * Fields attributes as multidimensional array
+     * @return array
+     */
+    public function getFieldsQuestionsAsArray()
+    {
+        $array = [];
+        if (!empty($this->fields)) {
+            foreach ($this->fields as $field) {
+                if (!empty($field->question)) {
+                    $array[] = $field->question->attributes;
+                }
+            }
+        }
+        return $array;
+    }
+
 
 
 }

@@ -276,7 +276,7 @@ class SurveyActivator
     {
         $iSurveyID = $this->survey->primaryKey;
         // create the survey directory where the uploaded files can be saved
-        if ($this->createSurveyDir) {
+        if ($this->fieldMap->getNeedsUploadFolder()) {
             if (!file_exists(Yii::app()->getConfig('uploaddir')."/surveys/".$iSurveyID."/files")) {
                 if (!(mkdir(Yii::app()->getConfig('uploaddir')."/surveys/".$iSurveyID."/files", 0777, true))) {
                     return false;
