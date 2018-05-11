@@ -439,8 +439,8 @@ class QuestionType extends StaticModel
     public static function charCodes()
     {
         return [
-            self::QT_5_POINT_CHOICE, self::QT_G_GENDER_DROPDOWN, self::QT_Y_YES_NO_RADIO,
-            self::QT_X_BOILERPLATE_QUESTION
+            self::QT_5_POINT_CHOICE, self::QT_G_GENDER_DROPDOWN, self::QT_Y_YES_NO_RADIO
+
         ];
     }
 
@@ -622,6 +622,11 @@ class QuestionType extends StaticModel
         if ($this->code === self::QT_I_LANGUAGE) {
             return "string(20)";
         }
+
+        if ($this->code === self::QT_X_BOILERPLATE_QUESTION) {
+            return null;
+        }
+
 
         return "string(" . Field::DEFAULT_STRING_LENGTH . ")";
     }

@@ -20,6 +20,9 @@ class TestBaseClass extends TestCase
     /** @var  string $surveysFolder */
     protected static $surveysFolder;
 
+    /** @var  string $demoSurveysFolder */
+    protected static $demoSurveysFolder;
+
     /** @var  string $dataFolder */
     protected static $dataFolder;
 
@@ -40,6 +43,7 @@ class TestBaseClass extends TestCase
         self::$dataFolder = __DIR__.'/data';
         self::$viewsFolder = self::$dataFolder."/views";
         self::$surveysFolder = self::$dataFolder.'/surveys';
+        self::$demoSurveysFolder = __DIR__.'/../docs/demosurveys';
         self::$tempFolder = __DIR__.'/tmp';
         self::$screenshotsFolder = self::$tempFolder.'/screenshots';
         self::$testHelper->importAll();
