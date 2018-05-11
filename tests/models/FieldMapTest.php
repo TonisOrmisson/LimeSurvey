@@ -23,6 +23,10 @@ class FieldMapTest extends TestBaseClass
     public function questionFieldTypeProvider()
     {
         return [
+            /**
+             * [QuestionType->code, Question->fullTitle, Expected fieldType]
+             */
+
             // Single choice questions
             [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1", "string(5)"],
             [\QuestionType::QT_EXCLAMATION_LIST_DROPDOWN, "SL1o", "string(5)"],     // with other
@@ -59,6 +63,11 @@ class FieldMapTest extends TestBaseClass
         $this->doFieldTest($key,$code, $actual);
     }
 
+    /**
+     * @param string $key fieldmap key (Question full-title)
+     * @param string $expected
+     * @param string $actual
+     */
     private function doFieldTest($key, $expected, $actual)
     {
         $fieldMap = self::$fieldMap;
