@@ -12,6 +12,7 @@
  * @property boolean $isInteger Whether the type integer
  * @property boolean $isDouble Whether the type double
  * @property boolean $hasSubSets Whether type has any subquestion sets
+ * @property boolean $hasComment Whether type has additional comment field
  *
  * {@inheritdoc}
  */
@@ -474,7 +475,6 @@ class QuestionType extends StaticModel
     public static function doubleCodes()
     {
         return [self::QT_N_NUMERICAL, self::QT_K_MULTIPLE_NUMERICAL_QUESTION];
-
     }
 
     /**
@@ -520,6 +520,19 @@ class QuestionType extends StaticModel
     }
 
     /**
+     * get Codes of questiion Types that have additional comment field
+     * @return array
+     */
+    public static function withCommentCodes()
+    {
+        return [
+          self::QT_O_LIST_WITH_COMMENT,
+          self::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS,
+        ];
+    }
+
+
+    /**
      * @return bool
      */
     public function getHasSubSets()
@@ -527,6 +540,13 @@ class QuestionType extends StaticModel
         return in_array($this->code, self::withSubSetCodes());
     }
 
+    /**
+     * @return bool
+     */
+    public function getHasComment()
+    {
+        return in_array($this->code, self::withCommentCodes());
+    }
 
 
 

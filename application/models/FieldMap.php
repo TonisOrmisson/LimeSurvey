@@ -11,6 +11,9 @@ class FieldMap
     /** @var string */
     public $language;
 
+    /** @var Field[] */
+    public $fields;
+
     /**
      * FieldMap constructor.
      * @param Survey $survey
@@ -29,24 +32,16 @@ class FieldMap
      * @return Field[]
      */
     public function getFullMap() {
-        $models = $this->createGeneralStartFields();
-        $models = array_merge($models, $this->questionsFields());
-        return $models;
+        $this->createGeneralStartFields();
+        $this->questionsFields();
+        return $this->fields;
     }
 
-    /**
-     * @return Field[]
-     */
     private function questionsFields()
     {
-        $models = [];
-        if (!empty($this->survey->baseQuestions)) {
-            foreach ($this->survey->baseQuestions as $question) {
-                $questionFields = $this->createQuestionFields($question);
-                $models = array_merge($models, $questionFields);
-            }
+        foreach ($this->survey->baseQuestions as $question) {
+            $this->createQuestionFields($question);
         }
-        return $models;
     }
 
     /**
@@ -78,19 +73,29 @@ class FieldMap
 
     }
 
+
     /**
-     * @return Field[]
+     * @param Field|Field[] $fields
      */
+    private function addFields($fields) {
+        if (!empty($fields)) {
+            if (is_array($fields)) {
+                foreach ($fields as $field) {
+                    $this->addFields($field);
+                }
+            } else {
+                $this->fields[$fields->name] = $fields;
+            }
+        }
+    }
+
     private function createGeneralStartFields()
     {
-        $result = [];
         foreach ($this->generalStartFieldNames() as $fieldName) {
             $field = new Field();
             $field->systemFieldName = $fieldName;
-            $result[$field->name] = $field;
+            $this->addFields($field);
         }
-        return $result;
-
     }
 
     /**
@@ -99,17 +104,27 @@ class FieldMap
      * @return Field[]
      */
     private function createQuestionFields($question) {
-        $result = [];
         if ($question->questionType->hasSubSets) {
             foreach ($question->subquestions as $subqQuestion) {
-                if (!empty($subqQuestion->field)) {
-                    $result[$subqQuestion->field->name] = $subqQuestion->field;
-                }
+                $this->createQuestionFields($subqQuestion);
             }
         } else {
-            $result[$question->field->name] = $question->field;
+            $this->addFields($question->field);
+            $this->createCommentFields($question);
         }
-        return $result;
+    }
+
+
+    /**
+     * Create Fields for question and all its subquestions
+     * @param Question $question
+     */
+    private function createCommentFields($question) {
+        if ($question->questionType->hasComment) {
+            $field = new Field($question);
+            $field->isCommentField = true;
+            $this->addFields($field);
+        }
     }
 
 

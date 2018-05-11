@@ -42,6 +42,9 @@ class Field extends CModel
     /** @var string */
     public $id;
 
+    /** @var bool $isCommentField  */
+    public $isCommentField = false;
+
     /**
      * Field constructor.
      * @param Question|null $question
@@ -148,6 +151,11 @@ class Field extends CModel
             || ($this->question->type === QuestionType::QT_T_LONG_FREE_TEXT && $this->question->hasParent)) {
             $name .= $this->question->title;
         }
+
+        if ($this->isCommentField) {
+            $name .="comment";
+        }
+
         return $name;
     }
 
