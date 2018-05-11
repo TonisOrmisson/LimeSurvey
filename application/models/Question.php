@@ -36,7 +36,7 @@ if (!defined('BASEPATH')) {
  *
  * @property Survey $survey
  * @property QuestionGroup $groups  //@TODO should be singular
- * @property Question $parents      //@TODO should be singular
+ * @property Question $parent
  * @property Question[] $subquestions
  * @property boolean $hasSubQuestions
  * @property boolean $hasParent
@@ -46,6 +46,7 @@ if (!defined('BASEPATH')) {
  * @property Answer[] $answers
  * @property QuestionType $questionType
  * @property Field $field
+ * @property string $fullTitle Get an survey level unique title for questions AND subQuestions. Eg subquestion title qould be [parent-title]-[child-tile]
  * @inheritdoc
  */
 class Question extends LSActiveRecord
@@ -80,6 +81,8 @@ class Question extends LSActiveRecord
     const QT_ASTERISK_EQUATION = '*';
     const QT_COLON_ARRAY_MULTI_FLEX_NUMBERS = ':';
     const QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT = ';';
+
+    const TITLE_SEPARATOR = "-";
 
 
     /** @var string $group_name Stock the active group_name for questions list filtering */
@@ -763,5 +766,17 @@ class Question extends LSActiveRecord
     public function getHasParent()
     {
         return $this->parent_qid > 0;
+    }
+
+    /**
+     * Get an survey level unique title for questions AND subQuestions. Eg subquestion title qould be [parent-title]-[child-tile]
+     * @return string
+     */
+    public function getFullTitle()
+    {
+        if($this->hasParent) {
+            return $this->parent->title.self::TITLE_SEPARATOR.$this->title;
+        }
+        return $this->title;
     }
 }

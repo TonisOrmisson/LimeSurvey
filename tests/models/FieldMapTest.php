@@ -22,7 +22,6 @@ class FieldMapTest extends TestBaseClass
             [\QuestionType::QT_X_BOILERPLATE_QUESTION, null],
 
             [\QuestionType::QT_S_SHORT_FREE_TEXT, "text"],
-
             [\QuestionType::QT_T_LONG_FREE_TEXT, "text"],
             [\QuestionType::QT_U_HUGE_FREE_TEXT, "text"],
 

@@ -84,7 +84,11 @@ class FieldMap
                     $this->addFields($field);
                 }
             } else {
-                $this->fields[$fields->name] = $fields;
+                if (!empty($fields->question)) {
+                    $this->fields[$fields->question->fullTitle] = $fields;
+                } else {
+                    $this->fields[$fields->name] = $fields;
+                }
             }
         }
     }
