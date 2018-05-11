@@ -79,6 +79,9 @@ class Field extends CModel
     public function getType()
     {
         if (!empty($this->question)) {
+            if ($this->isCommentField) {
+                return "text";
+            }
             return $this->question->questionType->fieldType;
         } else {
             return $this->systemFieldType();

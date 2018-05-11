@@ -104,7 +104,8 @@ class FieldMap
      * @return Field[]
      */
     private function createQuestionFields($question) {
-        if ($question->questionType->hasSubSets) {
+        // all parent questions go into recursion
+        if ($question->questionType->hasSubSets && !$question->hasParent) {
             foreach ($question->subquestions as $subqQuestion) {
                 $this->createQuestionFields($subqQuestion);
             }
