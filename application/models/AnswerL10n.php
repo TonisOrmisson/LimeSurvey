@@ -23,7 +23,7 @@
  * @property string $language language code
  *
  */
-class AnswerL10n extends LSActiveRecord
+class AnswerL10n extends BaseL10n
 {
 
     /** @inheritdoc */
@@ -32,16 +32,6 @@ class AnswerL10n extends LSActiveRecord
         return '{{answer_l10ns}}';
     }
 
-    /** @inheritdoc */
-    public function primaryKey()
-    {
-        return 'id';
-    }
-
-    public function defaultScope()
-    {
-        return array('index'=>'language');
-    }    
 
     /**
      * @inheritdoc

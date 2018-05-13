@@ -28,7 +28,7 @@
  * @property Question $groups
  * @property AnswerL10n[] $answerL10ns
  */
-class Answer extends LSActiveRecord
+class Answer extends ModelWithL10ns
 {
     /**
      * @inheritdoc

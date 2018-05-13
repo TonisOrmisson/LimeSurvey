@@ -26,7 +26,7 @@
  * @property string $language
  * @property integer $assessment_value
  */
-class LabelL10n extends LSActiveRecord
+class LabelL10n extends BaseL10n
 {
     /**
      * Used for some statistical queries
@@ -40,11 +40,6 @@ class LabelL10n extends LSActiveRecord
         return '{{label_l10ns}}';
     }
 
-    /** @inheritdoc */
-    public function primaryKey()
-    {
-        return 'id';
-    }
     /**
      * @inheritdoc
      * @return LabelL10n
@@ -76,9 +71,5 @@ class LabelL10n extends LSActiveRecord
         );
     }
     
-    public function defaultScope()
-    {
-        return array('index'=>'language');
-    }    
 
 }

@@ -23,7 +23,7 @@
  * @property string $help Question help-text for display
  *
  */
-class QuestionL10n extends LSActiveRecord
+class QuestionL10n extends BaseL10n
 {
 
     /** @inheritdoc */
@@ -32,11 +32,6 @@ class QuestionL10n extends LSActiveRecord
         return '{{question_l10ns}}';
     }
 
-    /** @inheritdoc */
-    public function primaryKey()
-    {
-        return 'id';
-    }
 
     /**
      * @inheritdoc
@@ -58,16 +53,6 @@ class QuestionL10n extends LSActiveRecord
         );
     }
     
-    /**
-     * This defaultScope indexes the ActiveRecords given back by language
-     * Important: This does not work if you want to retrieve records for more than one question at a time.
-     * in that case reset disable the defaultScope by using MyModel::model()->resetScope()->findAll();
-     * @return array Scope that indexes the records by their language
-     */
-    public function defaultScope()
-    {
-        return array('index'=>'language');
-    }
 
     /** @inheritdoc */
     public function rules()

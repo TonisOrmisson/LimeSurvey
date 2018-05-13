@@ -1133,53 +1133,17 @@ class questions extends Survey_Common_Action
                 Yii::app()->session['FileManagerContext'] = "edit:question:{$surveyid}";
                 $aData['display']['menu_bars']['qid_action'] = 'editquestion';
 
-                $oQuestion = Question::model()->findByAttributes(array('sid' => $surveyid, 'gid' => $gid, 'qid' => $qid));
+                $oQuestion = Question::model()->findByPk($qid);
                 if (!$oQuestion) {
                     $this->getController()->error('Invalid question id');
                 }
                 $aData['oQuestion'] = $oQuestion;
                 $basesettings = [];
-                foreach ($oQuestion->questionL10ns as $esrow) {
-                    if (!array_key_exists($esrow->language, $questlangs)) {
-                    // Language Exists, BUT ITS NOT ON THE SURVEY ANYMORE.
-                        $esrow->delete();
-                    } else {
-                        $questlangs[$esrow->language] = 99;
-                    }
 
-                    if ($esrow->language == $baselang) {
-                        $basesettings = array(
-                        'question_order' => $oQuestion->question_order,
-                        'other' => $oQuestion->other,
-                        'mandatory' => $oQuestion->mandatory,
-                        'type' => $oQuestion->type,
-                        'title' => $oQuestion->title,
-                        'preg' => $oQuestion->preg,
-                        'question' => $esrow->question,
-                        'help' => $esrow->help
-                        );
-                    }
-                }
-
-
-                // FIXME this does not match the L10n logic
-                foreach ($questlangs as $key=>$value) {
-                    if ($value != 99) {
-                        $arQuestion = new Question;
-                        $arQuestion->qid = $qid;
-                        $arQuestion->sid = $surveyid;
-                        $arQuestion->gid = $gid;
-                        $arQuestion->type = $basesettings['type'];
-                        $arQuestion->title = $basesettings['title'];
-                        $arQuestion->question = $basesettings['question'];
-                        $arQuestion->preg = $basesettings['preg'];
-                        $arQuestion->help = $basesettings['help'];
-                        $arQuestion->other = $basesettings['other'];
-                        $arQuestion->mandatory = $basesettings['mandatory'];
-                        $arQuestion->question_order = $basesettings['question_order'];
-                        $arQuestion->language = $key;
-                        $arQuestion->insert();
-                    }
+                foreach ($oSurvey->allLanguages as $language) {
+                    $newQuestion = new Question;
+                    $newQuestion->attributes = $oQuestion->attributes;
+                    $newQuestion->save();
                 }
 
                 $oQuestion = Question::model()->with('group')->together()->findByAttributes(array(

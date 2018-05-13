@@ -21,7 +21,7 @@
  * @property string $question Question dieplay text. The actual question.
  * @property string $help Question help-text for display
  */
-class QuestionGroupL10n extends LSActiveRecord
+class QuestionGroupL10n extends BaseL10n
 {
 
     /** @inheritdoc */
@@ -30,11 +30,6 @@ class QuestionGroupL10n extends LSActiveRecord
         return '{{group_l10ns}}';
     }
 
-    /** @inheritdoc */
-    public function primaryKey()
-    {
-        return 'id';
-    }
 
     /**
      * @inheritdoc
@@ -55,11 +50,6 @@ class QuestionGroupL10n extends LSActiveRecord
             'group' => array(self::BELONGS_TO, 'group', '', 'on' => "$alias.gid = group.gid"),
         );
     }
-
-    public function defaultScope()
-    {
-        return array('index'=>'language');
-    }   
 
     /** @inheritdoc */
     public function rules()

@@ -46,7 +46,7 @@ if (!defined('BASEPATH')) {
  * @property array $allSubQuestionIds QID-s of all question sub-questions, empty array returned if no sub-questions
  * @inheritdoc
  */
-class Question extends LSActiveRecord
+class Question extends ModelWithL10ns
 {
     const QT_1_ARRAY_MULTISCALE = '1'; //ARRAY (Flexible Labels) multi scale
     const QT_5_POINT_CHOICE = '5';
@@ -338,6 +338,7 @@ class Question extends LSActiveRecord
     }
 
     /**
+     * @deprecated use group relations instead
      * TODO: replace this function call by $oSurvey->questions defining a relation in SurveyModel
      * @param integer $sid
      * @param integer $gid
