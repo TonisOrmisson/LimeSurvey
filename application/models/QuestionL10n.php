@@ -25,6 +25,10 @@
  */
 class QuestionL10n extends BaseL10n
 {
+    public static $parentFKColumn = 'qid';
+    public static $parentClassName = 'Question';
+    public static $titleColumn = 'question';
+
 
     /** @inheritdoc */
     public function tableName()
@@ -32,38 +36,12 @@ class QuestionL10n extends BaseL10n
         return '{{question_l10ns}}';
     }
 
-
-    /**
-     * @inheritdoc
-     * @return QuestionL10n
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
-
-    /** @inheritdoc */
-    public function relations()
-    {
-        return array(
-            // FIXME this conflicts with the attribute "question"
-            //'question' => array(self::BELONGS_TO, 'Question', 'qid'),
-        );
-    }
-    
-
     /** @inheritdoc */
     public function rules()
     {
-        return array(
-            ['qid,language', 'required'],
-            ['qid', 'numerical', 'integerOnly'=>true],
-            array('question', 'LSYii_Validators'),
-            array('help', 'LSYii_Validators'),
-            array('language', 'length', 'min' => 2, 'max'=>20), // in array languages ?
-        );
+        return array_merge( parent::model()->rules(), [
+            ['help', 'LSYii_Validators'],
+        ]);
     }
 
 }

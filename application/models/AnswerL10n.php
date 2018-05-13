@@ -25,44 +25,14 @@
  */
 class AnswerL10n extends BaseL10n
 {
+    public static $parentFKColumn = 'aid';
+    public static $parentClassName = 'Answer';
+    public static $titleColumn = 'answer';
 
     /** @inheritdoc */
     public function tableName()
     {
         return '{{answer_l10ns}}';
-    }
-
-
-    /**
-     * @inheritdoc
-     * @return AnswerL10n
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
-
-    /** @inheritdoc */
-    public function relations()
-    {
-        $alias = $this->getTableAlias();
-        return array(
-            //'question' => array(self::BELONGS_TO, 'answer', '', 'on' => "$alias.aid = answer.aid"),
-        );
-    }
-
-
-    /** @inheritdoc */
-    public function rules()
-    {
-        return [
-            ['aid,language','required'],
-            ['aid','numerical','integerOnly'=>true],
-            ['answer', 'LSYii_Validators'],
-            ['language', 'length', 'min' => 2, 'max'=>20], // in array languages ?
-        ];
     }
 
 }

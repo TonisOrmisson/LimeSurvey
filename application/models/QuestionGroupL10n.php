@@ -15,14 +15,16 @@
  */
 
 /**
- * Class SurveyLanguageSetting
- *
- * @property string $language Question language code. Note: There is a unique key on qid & language columns combined
+ * @property integer $gid
  * @property string $question Question dieplay text. The actual question.
- * @property string $help Question help-text for display
+ * @property string $group_name
  */
 class QuestionGroupL10n extends BaseL10n
 {
+    public static $parentFKColumn = 'qid';
+    public static $parentClassName = 'QuestionGroup';
+    public static $titleColumn = 'group_name';
+
 
     /** @inheritdoc */
     public function tableName()
@@ -30,43 +32,12 @@ class QuestionGroupL10n extends BaseL10n
         return '{{group_l10ns}}';
     }
 
-
-    /**
-     * @inheritdoc
-     * @return self
-     */
-    public static function model($class = __CLASS__)
-    {
-        /** @var self $model */
-        $model = parent::model($class);
-        return $model;
-    }
-
-    /** @inheritdoc */
-    public function relations()
-    {
-        $alias = $this->getTableAlias();
-        return array(
-            'group' => array(self::BELONGS_TO, 'group', '', 'on' => "$alias.gid = group.gid"),
-        );
-    }
-
-    /** @inheritdoc */
-    public function rules()
-    {
-        return array(
-            array('group_name,description', 'LSYii_Validators'),
-            array('language', 'length', 'min' => 2, 'max'=>20), // in array languages ?
-        );
-    }
-
     /** @inheritdoc */
     public function attributeLabels()
     {
-        return array(
-            'language' => gt('Language'),
+        return array_merge(parent::model()->rules(), [
             'group_name' => gt('Group name')
-        );
+        ]);
     }
     
 }
