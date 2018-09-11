@@ -783,10 +783,12 @@ function LEMval(alias)
             // convert content in date questions to standard format yy-mm-dd to facilitate use in EM (comparisons, min/max etc.)
             else if (attr.type=='D')  {
                 // get date format pattern of referenced question
-                var sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).attr('value');
-
-                // if undefined (eg., variable on a previous page), set default format yy-mm-dd HH:MM
-                sdatetimePattern =typeof sdatetimePattern == 'undefined'? 'YYYY-MM-DD HH:mm': sdatetimePattern;
+                var sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).val();
+                if (sdatetimePattern == ''){
+                    sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).text();
+                }
+                // if empty (eg., variable on a previous page), set default format yy-mm-dd HH:MM
+                sdatetimePattern = sdatetimePattern == ''? 'YYYY-MM-DD HH:mm': sdatetimePattern;
 
                 if (sdatetimePattern==null) {
                     sdatetimePattern="";
@@ -805,16 +807,18 @@ function LEMval(alias)
                 }
                 return value;
             }
-            else {
+            else if(!isNaN(parseFloat(newval)) && isFinite(newval))
+            {
                 // If it's not a decimal number, just return value
                 try {
                     var decimal_safe = new Decimal(value);
-                    return pad(decimal_safe,value.length);
+                    return decimal_safe.toPrecision(value.length);
                 }
                 catch (ex) {
-                    return value;
                 }
             }
+
+            return value;
         }
         case 'rowdivid':
             if (typeof attr.rowdivid === 'undefined' || attr.rowdivid == '') {
@@ -826,17 +830,18 @@ function LEMval(alias)
     }
 }
 
+
 /** Display number with comma as radix separator, if needed
  */
 function LEMfixnum(value)
 {
     if (LEMradix===',') {
         var newval = String(value);
-        if (parseFloat(newval) != value) {
-            return value;   // unchanged
+        if (!isNaN(parseFloat(newval)) && isFinite(newval)) {
+            newval= newval.split('.').join(',');
+            return newval;
         }
-        newval= newval.split('.').join(',');
-        return newval;
+        return value;   // unchanged
     }
     return value;
 }

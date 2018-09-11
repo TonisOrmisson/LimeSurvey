@@ -80,6 +80,8 @@ function quoteText($sText, $sEscapeMode = 'html')
             return HTMLEscape($sText);
         case 'js':
             return javascriptEscape($sText);
+        case 'json':
+            return jsonEscape($sText);
         case 'unescaped':
             return $sText;
         default:
@@ -312,7 +314,13 @@ function getGidNext($surveyid, $gid)
 }
 
 
-
+/**
+ * convertGETtoPOST a function to create a post Request from get parameters
+ * !!! This functions result has to be wrappen in singlequotes!
+ *
+ * @param String $url | The complete url with all parameters
+ * @return String | The onclick action for the element
+ */
 function convertGETtoPOST($url)
 {
     // This function must be deprecated and replaced by $.post
@@ -321,21 +329,17 @@ function convertGETtoPOST($url)
     $calledscript = array_shift($stack);
     $query = array_shift($stack);
     $aqueryitems = explode('&', $query);
-    $arrayParam = Array();
-    $arrayVal = Array();
+    $postArray = [];
 
     foreach ($aqueryitems as $queryitem) {
         $stack = explode('=', $queryitem);
         $paramname = array_shift($stack);
         $value = array_shift($stack);
-        $arrayParam[] = "'".$paramname."'";
-        $arrayVal[] = substr($value, 0, 9) != "document." ? "'".$value."'" : $value;
+        $postArray[$paramname] = $value;
     }
-    //    $Paramlist = "[" . implode(",",$arrayParam) . "]";
-    //    $Valuelist = "[" . implode(",",$arrayVal) . "]";
-    $Paramlist = "[".implode(",", $arrayParam)."]";
-    $Valuelist = "[".implode(",", $arrayVal)."]";
-    $callscript = "sendPost('$calledscript','',$Paramlist,$Valuelist);";
+
+    $callscript = "window.LS.sendPost(\"".$calledscript."\",\"\",".json_encode($postArray).");";
+
     return $callscript;
 }
 
@@ -893,6 +897,8 @@ function getSurveyInfo($surveyid, $languagecode = '')
             if (!isset($thissurvey['adminname'])) {$thissurvey['adminname'] = Yii::app()->getConfig('siteadminemail'); }
             if (!isset($thissurvey['adminemail'])) {$thissurvey['adminemail'] = Yii::app()->getConfig('siteadminname'); }
             if (!isset($thissurvey['urldescrip']) || $thissurvey['urldescrip'] == '') {$thissurvey['urldescrip'] = $thissurvey['surveyls_url']; }
+
+            $thissurvey['owner_username'] = $result->survey->owner->users_name;
 
             $staticSurveyInfo[$surveyid][$languagecode] = $thissurvey;
         }
@@ -2072,7 +2078,7 @@ function buildLabelSetCheckSumArray()
         foreach ($result2->readAll() as $row2) {
             $thisset .= implode('.', $row2);
         } // while
-        $csarray[$row['lid']] = dechex(crc32($thisset) * 1);
+        $csarray[$row['lid']] = hash('sha256', $thisset);
     }
 
     return $csarray;
@@ -2151,10 +2157,22 @@ function javascriptEscape($str, $strip_tags = false, $htmldecode = false)
     array("\\'", '\u0022', "\\n", '\r'),
     $str);
 }
+// make a string safe to include in a json String parameter.
+function jsonEscape($str, $strip_tags = false, $htmldecode = false)
+{
+
+    if ($htmldecode == true) {
+        $str = html_entity_decode($str, ENT_QUOTES, 'UTF-8');
+    }
+    if ($strip_tags == true) {
+        $str = strip_tags($str);
+    }
+    return str_replace(array('"','\''), array("&apos;","&apos;"), $str);
+}
 
 /**
 * This function mails a text $body to the recipient $to.
-* You can use more than one recipient when using a semikolon separated string with recipients.
+* You can use more than one recipient when using a semicolon separated string with recipients.
 *
 * @param string $body Body text of the email in plain text or HTML
 * @param mixed $subject Email subject
@@ -3625,9 +3643,9 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
         $bModified = false;
         foreach ($aCodeMap as $sOldCode=>$sNewCode) {
             // Don't search/replace old codes that are too short or were numeric (because they would not have been usable in EM expressions anyway)
-            if (strlen($sOldCode) > 1 && !is_numeric($sOldCode[0])) {
+            if (strlen($sOldCode) > 1 && !is_numeric($sOldCode)) {
                 $sOldCode = preg_quote($sOldCode, '~');
-                $arQuestion->relevance = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestion->relevance, -1, $iCount);
+                $arQuestion->relevance=preg_replace("/\b{$sOldCode}/",$sNewCode,$arQuestion->relevance,-1,$iCount);
                 $bModified = $bModified || $iCount;
                 $arQuestion->question = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arQuestion->question, -1, $iCount);
                 $bModified = $bModified || $iCount;
@@ -3642,7 +3660,7 @@ function replaceExpressionCodes($iSurveyID, $aCodeMap)
         $bModified = false;
         foreach ($aCodeMap as $sOldCode=>$sNewCode) {
             $sOldCode = preg_quote($sOldCode, '~');
-            $arGroup->grelevance = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arGroup->grelevance, -1, $iCount);
+            $arGroup->grelevance=preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~",$sNewCode,$arGroup->grelevance,-1,$iCount);
             $bModified = $bModified || $iCount;
             $arGroup->description = preg_replace("~{[^}]*\K{$sOldCode}(?=[^}]*?})~", $sNewCode, $arGroup->description, -1, $iCount);
             $bModified = $bModified || $iCount;
@@ -4915,4 +4933,138 @@ function get_absolute_path($path)
         }
     }
     return implode(DIRECTORY_SEPARATOR, $absolutes);
+}
+
+/**
+* Check if string is JSON array
+*
+* @param string $str
+* @return bool
+*/
+function isJson($str) {
+    $json = json_decode($str);
+    return $json && $str != $json;
+}
+
+/**
+* Check if array is associative
+*
+* @param array $array
+* @return bool
+*/
+function isAssociativeArray($array){
+    foreach ($array as $key => $value) {
+        if (is_string($key)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+* Create a directory in tmp dir using a random string
+*
+* @param  string $dir      the temp directory (if empty will use the one from configuration)
+* @param  string $prefix   wanted prefix for the directory
+* @param  int    $mode     wanted  file mode for this directory
+* @return string           the path of the created directory
+*/
+function createRandomTempDir($dir=null, $prefix = '', $mode = 0700)
+{
+
+    $sDir = (empty($dir)) ? Yii::app()->getConfig('tempdir') : get_absolute_path ($dir);
+
+    if (substr($sDir, -1) != DIRECTORY_SEPARATOR) {
+        $sDir .= DIRECTORY_SEPARATOR;
+    }
+
+    do {
+        $sRandomString = getRandomString();
+        $path = $sDir.$prefix.$sRandomString;
+    }
+    while (!mkdir($path, $mode));
+
+    return $path;
+}
+
+/**
+ * Generate a random string, using openssl if available, else using md5
+ * @param  int    $length wanted lenght of the random string (only for openssl mode)
+ * @return string
+ */
+function getRandomString($length=32){
+
+    if ( function_exists('openssl_random_pseudo_bytes') ) {
+        $token = "";
+        $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $codeAlphabet.= "abcdefghijklmnopqrstuvwxyz";
+        $codeAlphabet.= "0123456789";
+        for($i=0;$i<$length;$i++){
+            $token .= $codeAlphabet[crypto_rand_secure(0,strlen($codeAlphabet))];
+        }
+    }else{
+        $token = md5(uniqid(rand(), true));
+    }
+    return $token;
+}
+
+/**
+ * Get a random number between two values using openssl_random_pseudo_bytes
+ * @param  int    $min
+ * @param  int    $max
+ * @return string
+ */
+function crypto_rand_secure($min, $max) {
+        $range = $max - $min;
+        if ($range < 0) return $min; // not so random...
+        $log = log($range, 2);
+        $bytes = (int) ($log / 8) + 1; // length in bytes
+        $bits = (int) $log + 1; // length in bits
+        $filter = (int) (1 << $bits) - 1; // set all lower bits to 1
+        do {
+            $rnd = hexdec(bin2hex(openssl_random_pseudo_bytes($bytes)));
+            $rnd = $rnd & $filter; // discard irrelevant bits
+        } while ($rnd >= $range);
+        return $min + $rnd;
+}
+
+/**
+ * Test if a given zip file is Zip Bomb
+ * see comment here : http://php.net/manual/en/function.zip-entry-filesize.php
+ * @param string $zip_filename
+ * @return int
+ */
+function isZipBomb($zip_filename)
+{
+    return ( get_zip_originalsize($zip_filename) >  getMaximumFileUploadSize() );
+}
+
+/**
+ * Get the original size of a zip archive to prevent Zip Bombing
+ * see comment here : http://php.net/manual/en/function.zip-entry-filesize.php
+ * @param string $filename
+ * @return int
+ */
+function get_zip_originalsize($filename) {
+
+    if ( function_exists ('zip_entry_filesize') ){
+        $size = 0;
+        $resource = zip_open($filename);
+
+        if ( ! is_int($resource) ) {
+            while ($dir_resource = zip_read($resource)) {
+                $size += zip_entry_filesize($dir_resource);
+            }
+            zip_close($resource);
+        }
+
+        return $size;
+    }else{
+        if ( YII_DEBUG ){
+            Yii::app()->setFlashMessage("Warning! The PHP Zip extension is not installed on this server. You're not protected from ZIP bomb attacks.", 'error');
+        }
+    }
+
+    return -1;
 }

@@ -182,7 +182,11 @@ class Question extends LSActiveRecord
      */
     public static function updateSortOrder($gid, $surveyid)
     {
-        $questions = self::model()->findAllByAttributes(array('gid' => $gid, 'sid' => $surveyid, 'language' => Survey::model()->findByPk($surveyid)->language), array('order'=>'question_order'));
+        $questions = self::model()->findAllByAttributes(
+            array('gid' => $gid, 'sid' => $surveyid, 'parent_qid'=>0, 'language' => Survey::model()->findByPk($surveyid)->language),
+            array('order'=>'question_order')
+        );
+
         $p = 0;
         foreach ($questions as $question) {
             $question->question_order = $p;
@@ -284,18 +288,13 @@ class Question extends LSActiveRecord
                 if ($oQuestionTemplate->bHasCustomAttributes) {
                     // Add the custom attributes to the list
                     foreach ($oQuestionTemplate->oConfig->custom_attributes->attribute as $oCustomAttribute) {
-
                         $sAttributeName = (string) $oCustomAttribute->name;
                         $aCustomAttribute = json_decode(json_encode((array) $oCustomAttribute), 1);
-
-                        if (!isset($aCustomAttribute['i18n'])) {
-                            $aCustomAttribute['i18n'] = false;
-                        }
-
-                        if (!isset($aCustomAttribute['readonly'])) {
-                            $aCustomAttribute['readonly'] = false;
-                        }
-
+                        $aCustomAttribute = array_merge(
+                            QuestionAttribute::getDefaultSettings(),
+                            array("category"=>gT("Template")),
+                            $aCustomAttribute
+                        );
                         $aAttributeNames[$sAttributeName] = $aCustomAttribute;
                     }
                 }
@@ -306,7 +305,7 @@ class Question extends LSActiveRecord
 
     public function getTypeGroup()
     {
-        
+
     }
 
     /**
@@ -821,12 +820,16 @@ class Question extends LSActiveRecord
         }
 
         $oSurvey = Survey::model()->findByPk($this->sid);
+        $gid_search = Yii::app()->request->getParam('gid');
 
         if ($oSurvey->active != "Y" && Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'delete')) {
-            $button .= '<a class="btn btn-default"  data-toggle="tooltip" title="'.gT("Delete").'" href="#" role="button"
-                        onclick="if (confirm(\' '.gT("Deleting  will also delete any answer options and subquestions it includes. Are you sure you want to continue?", "js").' \' )){ '.convertGETtoPOST(Yii::app()->createUrl("admin/questions/sa/delete/surveyid/$this->sid/qid/$this->qid")).'} ">
-                            <span class="text-danger fa fa-trash"></span>
-                            </a>';
+            $button .= '<a class="btn btn-default"  data-toggle="tooltip" title="'.gT("Delete").'" href="#" role="button"'
+                ." onclick='$.bsconfirm(\"".gT("Deleting  will also delete any answer options and subquestions it includes. Are you sure you want to continue?","js")
+                            ."\", {\"confirm_ok\": \"".gT("Yes")."\", \"confirm_cancel\": \"".gT("No")."\"}, function() {"
+                            . convertGETtoPOST(Yii::app()->createUrl("admin/questions/sa/delete/", ["surveyid" => $this->sid, "qid" => $this->qid, "gid" => $gid_search]))
+                        ."});'>"
+                    .' <i class="text-danger fa fa-trash"></i>
+                </a>';
         }
 
         return $button;
@@ -878,7 +881,7 @@ class Question extends LSActiveRecord
                 if (($answer['title'] == trim($exclude_all_others))) {
                     if ($position == $answer['question_order'] - 1) {
 //already in the right position
-                        break; 
+                        break;
                     }
                     $tmp = array_splice($ansresult, $position, 1);
                     array_splice($ansresult, $answer['question_order'] - 1, 0, $tmp);
@@ -1088,6 +1091,22 @@ class Question extends LSActiveRecord
         $criteria->addCondition('qid=:qid');
         $criteria->params = [':qid'=>$this->qid];
         return QuestionAttribute::model()->findAll($criteria);
+    }
+
+    /**
+     * @param array $data
+     * @return boolean|null
+     */
+    public function insertRecords($data)
+    {
+        $oRecord = new self;
+        foreach ($data as $k => $v) {
+            $oRecord->$k = $v;
+        }
+        if ($oRecord->validate()) {
+            return $oRecord->save();
+        }
+        Yii::log(\CVarDumper::dumpAsString($oRecord->getErrors()), 'warning', 'application.models.Question.insertRecords');
     }
 
 }

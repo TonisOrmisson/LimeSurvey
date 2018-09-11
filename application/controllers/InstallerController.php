@@ -519,7 +519,7 @@ class InstallerController extends CController
         if (!in_array($sDatabaseType, ['mysqli', 'mysql', 'dblib', 'sqlsrv', 'mssql', 'pgsql'])) {
             throw new Exception(sprintf('Unknown database type "%s".', $sDatabaseType));
         }
-
+  
         //checking DB Connection
         $aErrors = $this->_setup_tables(dirname(APPPATH).'/installer/create-database.php');
         if ($aErrors === false) {
@@ -1058,7 +1058,8 @@ class InstallerController extends CController
             $sConfig .= "\t\t"."),"."\n"
             ."\t\t".""."\n"
 
-            ."\t\t"."// Uncomment the following line if you need table-based sessions"."\n"
+            ."\t\t"."// Uncomment the following lines if you need table-based sessions."."\n"
+            ."\t\t"."// Note: Table-based sessions are currently not supported on MSSQL server."."\n"
             ."\t\t"."// 'session' => array ("."\n"
             ."\t\t\t"."// 'class' => 'application.core.web.DbHttpSession',"."\n"
             ."\t\t\t"."// 'connectionID' => 'db',"."\n"
@@ -1288,6 +1289,9 @@ class InstallerController extends CController
             $this->connection = new DbConnection($sDsn, $sDatabaseUser, $sDatabasePwd);
             if ($sDatabaseType != 'sqlsrv' && $sDatabaseType != 'dblib') {
                 $this->connection->emulatePrepare = true;
+            }
+            if (in_array($sDatabaseType, array('mssql', 'sqlsrv', 'dblib'))) {
+                $this->connection->initSQLs=array('SET DATEFORMAT ymd;', 'SET QUOTED_IDENTIFIER ON;');
             }
             $this->connection->active = true;
             $this->connection->tablePrefix = $sDatabasePrefix;

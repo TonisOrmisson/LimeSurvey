@@ -12,7 +12,8 @@
 *
 */
 namespace LimeSurvey\Helpers;
-
+use QuestionAttribute;
+use Yii;
 /**
  * General helper class for question + question setting system
  */
@@ -86,8 +87,8 @@ class questionHelper
             'sortorder'=>100,
             'inputtype'=>'integer',
             'default'=>'',
-            "help"=>gT('Repeat headings every X subquestions (Set to 0 to deactivate heading repeat, deactivate minimum repeat headings from config).'),
-            "caption"=>gT('Repeat headers')
+            "help"=>gT('Repeat answer options every X subquestions (Set to 0 to deactivate answer options repeat, deactivate minimum answer options repeat from config).'),
+            "caption"=>gT('Repeat answer options')
         );
 
         self::$attributes["array_filter"] = array(
@@ -337,7 +338,7 @@ class questionHelper
             'category'=>gT('Logic'),
             'sortorder'=>130,
             'inputtype'=>'text',
-            "help"=>gT('Excludes all other options if a certain answer is selected - just enter the answer code(s) separated with a semikolon.'),
+            "help"=>gT('Excludes all other options if a certain answer is selected - just enter the answer code(s) separated with a semicolon.'),
             "caption"=>gT('Exclusive option')
         );
 
@@ -493,6 +494,7 @@ class questionHelper
             'category'=>gT('Location'),
             'sortorder'=>101,
             'inputtype'=>'text',
+            'expression'=>1,/* As static */
             "help"=>gT('Default coordinates of the map when the page first loads. Format: latitude [space] longtitude'),
             "caption"=>gT('Default position')
         );
@@ -1606,33 +1608,56 @@ class questionHelper
             self::$questionAttributesSettings[$sType] = array();
             self::getAttributesDefinitions(); /* we need to have self::$attributes */
             /* Filter to get this question type setting */
-            $aQuestionTypeAttribute = array_filter(self::$attributes, function($attribute) use ($sType)
-            {
+            $aQuestionTypeAttributes = array_filter(self::$attributes, function($attribute) use ($sType) {
                 return stripos($attribute['types'], $sType) !== false;
             });
-
-            $default = array(
-                "caption"=>'',
-                "inputtype"=>"text",
-                "options"=>'',
-                "category"=>gT("Plugins"),
-                "default"=>'',
-                "help"=>'',
-                "sortorder"=>1000,
-                "i18n"=>false,
-                "readonly"=>false,
-                "readonly_when_active"=>false,
-                "expression"=>null,
-            );
-            foreach ($aQuestionTypeAttribute as $attribute=>$settings) {
-                self::$questionAttributesSettings[$sType][$attribute] = array_merge(
-                    $default,
-                    $settings,
-                    array("name"=>$attribute)
-                );
+            foreach ($aQuestionTypeAttributes as $attribute=>$settings) {
+                  self::$questionAttributesSettings[$sType][$attribute] = array_merge(
+                      QuestionAttribute::getDefaultSettings(),
+                      array("category"=>gT("Plugins")),
+                      $settings,
+                      array("name"=>$attribute)
+                  );
             }
         }
         return self::$questionAttributesSettings[$sType];
+    }
+
+    /**
+     * Return the question Theme custom attributes values
+     * @param $sQuestionThemeName: question theme name
+     * @return array : the attribute settings for this question type
+     */
+    public static function getQuestionThemeAttributeValues($sQuestionThemeName = null, $question_template = null)
+    {
+        libxml_disable_entity_loader(false);
+
+        $xml_config = simplexml_load_file(Yii::app()->getConfig('corequestionthemerootdir').'/'.$sQuestionThemeName.'/survey/questions/answer/'.$question_template.'/config.xml');
+        $custom_attributes = json_decode(json_encode((array)$xml_config->custom_attributes), TRUE);
+        libxml_disable_entity_loader(true); 
+        return $custom_attributes['attribute'];
+    }
+
+    /**
+     * Return the question Theme preview URL
+     * @param $sType: type pof question
+     * @return string : question theme preview URL
+     */
+    public static function getQuestionThemePreviewUrl($sType = null)
+    {
+        if ($sType == '*'){
+            $preview_filename = 'EQUATION.png';
+        } elseif ($sType == ':'){
+            $preview_filename = 'COLON.png';
+        } elseif ($sType == '|'){
+            $preview_filename = 'PIPE.png';
+        } elseif (!empty($sType)) {
+            $preview_filename = $sType.'.png';
+        } else {
+            $preview_filename = '.png';
+        }
+
+        return Yii::app()->getConfig("imageurl").'/screenshots/'.$preview_filename;
     }
 
 }
