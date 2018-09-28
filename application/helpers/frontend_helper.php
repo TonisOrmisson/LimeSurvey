@@ -675,32 +675,32 @@ function sendSubmitNotifications($surveyid)
             }
         }
 
+        Yii::import('application.helpers.viewHelper');
         $aFullResponseTable=getFullResponseTable($surveyid,$_SESSION['survey_'.$surveyid]['srid'],$_SESSION['survey_'.$surveyid]['s_lang']);
         $ResultTableHTML = "<table class='printouttable' >\n";
         $ResultTableText ="\n\n";
         $oldgid = 0;
         $oldqid = 0;
-
-        Yii::import('application.helpers.viewHelper');
         foreach ($aFullResponseTable as $sFieldname=>$fname)
         {
-            if (substr($sFieldname,0,4)=='gid_')
-            {
-                $ResultTableHTML .= "\t<tr class='printanswersgroup'><td colspan='2'>".viewHelper::flatEllipsizeText($fname[0],true,0)."</td></tr>\n";
-                $ResultTableText .="\n{$fname[0]}\n\n";
-            }
-            elseif (substr($sFieldname,0,4)=='qid_')
-            {
-                $ResultTableHTML .= "\t<tr class='printanswersquestionhead'><td  colspan='2'>".viewHelper::flatEllipsizeText($fname[0], true,0)."</td></tr>\n";
-                $ResultTableText .="\n{$fname[0]}\n";
-            }
-            else
-            {
-                $ResultTableHTML .= "\t<tr class='printanswersquestion'><td>".viewHelper::flatEllipsizeText("{$fname[0]} {$fname[1]}",true,0)."</td><td class='printanswersanswertext'>".CHtml::encode($fname[2])."</td></tr>\n";
-                $ResultTableText .="     {$fname[0]} {$fname[1]}: {$fname[2]}\n";
+            $questionHtml=viewHelper::purified($fname[0]);
+            $questionText=viewHelper::flatEllipsizeText($fname[0],true,0);
+            $subQuestionHtml=viewHelper::purified($fname[1]);
+            $subQuestionText=viewHelper::flatEllipsizeText($fname[1],true,0);
+            if (substr($sFieldname,0,4)=='gid_') {
+                $ResultTableHTML .= "\t<tr class='printanswersgroup'><td colspan='2'>{$questionHtml}</td></tr>\n";
+                $ResultTableText .="\n** {$questionText} ** \n";
+            } elseif (substr($sFieldname,0,4)=='qid_') {
+                $ResultTableHTML .= "\t<tr class='printanswersquestionhead'><td  colspan='2'>{$questionHtml}</td></tr>\n";
+                $ResultTableText .="* {$questionText} \n";
+            } elseif(empty($fname[1])) {
+                $ResultTableHTML .= "\t<tr class='printanswersquestion printanswersquestionhead'><td>{$questionHtml}</td><td class='printanswersanswertext'>".CHtml::encode($fname[2])."</td></tr>\n";
+                $ResultTableText .="* {$questionText} \t\t\t : {$fname[2]}\n";
+            } else {
+                $ResultTableHTML .= "\t<tr class='printanswersquestion'><td>{$subQuestionHtml}</td><td class='printanswersanswertext'>".CHtml::encode($fname[2])."</td></tr>\n";
+                $ResultTableText .="- \t {$subQuestionText} \t\t : {$fname[2]}\n";
             }
         }
-
         $ResultTableHTML .= "</table>\n";
         $ResultTableText .= "\n\n";
         if ($bIsHTML)
@@ -789,7 +789,7 @@ function sendSubmitNotifications($surveyid)
 /**
 * submitfailed : used in em_manager_helper.php
 */
-function submitfailed($errormsg='')
+function submitfailed($errormsg='', $query = null)
 {
     global $debug;
     global $thissurvey;
@@ -797,12 +797,10 @@ function submitfailed($errormsg='')
 
 
 
-    $completed = "<br /><strong><font size='2' color='red'>"
-    . gT("Did Not Save")."</strong></font><br /><br />\n\n"
-    . gT("An unexpected error has occurred and your responses cannot be saved.")."<br /><br />\n";
+    $completed = gT("An unexpected error has occurred and your responses cannot be saved.")."\n";
     if ($thissurvey['adminemail'])
     {
-        $completed .= gT("Your responses have not been lost and have been emailed to the survey administrator and will be entered into our database at a later point.")."<br /><br />\n";
+        //$completed .= gT("Your responses have not been lost and have been emailed to the survey administrator and will be entered into our database at a later point.")."<br /><br />\n";
         if ($debug>0)
         {
             $completed.='Error message: '.htmlspecialchars($errormsg).'<br />';
@@ -811,21 +809,26 @@ function submitfailed($errormsg='')
         $email .= gT("DATA TO BE ENTERED","unescaped").":\n";
         foreach ($_SESSION['survey_'.$surveyid]['insertarray'] as $value)
         {
-            $email .= "$value: {$_SESSION['survey_'.$surveyid][$value]}\n";
+            if(isset($_SESSION['survey_'.$surveyid][$value]))
+            {
+                $email .= "$value: {$_SESSION['survey_'.$surveyid][$value]}\n";
+            }else{
+                //$email .= "$value NULL\n";
+            }
+
         }
         $email .= "\n".gT("SQL CODE THAT FAILED","unescaped").":\n"
-        . "$subquery\n\n"
-        . gT("ERROR MESSAGE","unescaped").":\n"
-        . $errormsg."\n\n";
+        . ($subquery ? "{$subquery}\n" : '')
+        . ($query ? "{$query}\n" : '')  // In case we have no global subquery, but an argument to the function
+        . ($errormsg ? "\n".gT("ERROR MESSAGE","unescaped").":\n" : '')
+        . ($errormsg ? "{$errormsg}\n" : '');
         SendEmailMessage($email, gT("Error saving results","unescaped"), $thissurvey['adminemail'], $thissurvey['adminemail'], "LimeSurvey", false, getBounceEmail($surveyid));
-        //echo "<!-- EMAIL CONTENTS:\n$email -->\n";
-        //An email has been sent, so we can kill off this session.
-        killSurveySession($surveyid);
+        $completed .= "<br>".gT("Your responses have not been lost and have been emailed to the survey administrator and will be entered into our database at a later point.");
+
     }
     else
     {
-        $completed .= "<a href='javascript:location.reload()'>".gT("Try to submit again")."</a><br /><br />\n";
-        $completed .= $subquery;
+        $completed .= gT("Try to submit again");
     }
     return $completed;
 }
@@ -1164,7 +1167,7 @@ function buildsurveysession($surveyid,$preview=false)
         }
     }
 
-    
+
     //RESET ALL THE SESSION VARIABLES AND START AGAIN
     unset($_SESSION['survey_'.$surveyid]['grouplist']);
     unset($_SESSION['survey_'.$surveyid]['fieldarray']);
@@ -1175,7 +1178,7 @@ function buildsurveysession($surveyid,$preview=false)
     $_SESSION['survey_'.$surveyid]['fieldnamesInfo'] = Array();
     // Generate Session ID
     Yii:app()->session->regenerateID(true);
-    
+
     // Multi lingual support order : by REQUEST, if not by Token->language else by survey default language
     if (returnGlobal('lang',true))
     {
@@ -2279,3 +2282,4 @@ function getMove()
     }
     return $move;
 }
+

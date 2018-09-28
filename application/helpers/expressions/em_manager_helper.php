@@ -720,6 +720,9 @@
             $_SESSION['LEMforceRefresh'] = true;// For Expression manager string
             /* Bug #09589 : update a survey don't reset actual test => Force reloading of survey */
             $iSessionSurveyId=self::getLEMsurveyId();
+            /* Remove state of DB error too */
+            Yii::app()->user->setState('dberror_'.$iSessionSurveyId,null);
+
             if($aSessionSurvey=Yii::app()->session["survey_{$iSessionSurveyId}"])
             {
                 $aSessionSurvey['LEMtokenResume']=true;
@@ -2144,7 +2147,24 @@
                 {
                     $max_answers='';
                 }
-
+                /* Specific for ranking : fix only the alert : test if needed (max_subquestions < count(answers) )*/
+                if($type=='R' && (isset($qattr['max_subquestions']) && intval($qattr['max_subquestions'])>0))
+                {
+                    $max_subquestions=intval($qattr['max_subquestions']);
+                    // We don't have another answer count in EM ?
+                    $answerCount=Answer::model()->count("qid=:qid and language=:language",array(":qid"=>$questionNum,'language'=>$_SESSION['LEMlang']));
+                    if($max_subquestions < $answerCount)
+                    {
+                        if($max_answers!='')
+                        {
+                            $max_answers='min('.$max_answers.','.$max_subquestions.')';
+                        }
+                        else
+                        {
+                            $max_answers=intval($qattr['max_subquestions']);
+                        }
+                    }
+                }
                 // Fix min_num_value_n and max_num_value_n for multinumeric with slider: see bug #7798
                 if($type=="K" && isset($qattr['slider_min']) && ( !isset($qattr['min_num_value_n']) || trim($qattr['min_num_value_n'])==''))
                     $qattr['min_num_value_n']=$qattr['slider_min'];
@@ -4786,6 +4806,8 @@
         */
         static function StartSurvey($surveyid,$surveyMode='group',$aSurveyOptions=NULL,$forceRefresh=false,$debugLevel=0)
         {
+            /* If we start a survey : we need to remove DB error */
+            Yii::app()->user->setState('dberror_'.$surveyid,null);
             $LEM =& LimeExpressionManager::singleton();
             $LEM->sid=sanitize_int($surveyid);
             $LEM->sessid = 'survey_' . $LEM->sid;
@@ -5383,12 +5405,18 @@
                             break;
                         case 'N': //NUMERICAL QUESTION TYPE
                         case 'K': //MULTIPLE NUMERICAL QUESTION
-                            if (trim($val)=='')
+                            if (trim($val)=='' || !is_numeric($val)) // is_numeric error is done by EM : then show an error and same page again
                             {
                                 $val=NULL;  // since some databases can't store blanks in numerical inputs
                             }
+                            elseif(!preg_match("/^[-]?(\d{1,20}\.\d{0,10}|\d{1,20})$/",$val)) // DECIMAL(30,10)
+                            {
+                                // Here : we must ADD a message for the user and set the question "not valid" : show the same page + show with input-error class
+                                $val=NULL;
+                            }
                             break;
                         default:
+                            // @todo : control length of DB string, if answers in single choice is valid too (for example) ?
                             break;
                     }
 
@@ -5411,8 +5439,8 @@
 
                     if (!dbExecuteAssoc($query))
                     {
-                        echo submitfailed('');  // TODO - report SQL error?
-
+                        $flashMessage= submitfailed('', $query);  // TODO - report SQL error?
+                        Yii::app()->user->setState('dberror_'.$this->sid, $flashMessage);
                         if (($this->debugLevel & LEM_DEBUG_VALIDATION_SUMMARY) == LEM_DEBUG_VALIDATION_SUMMARY) {
                             $message .= $this->gT('Error in SQL update');  // TODO - add  SQL error?
                         }

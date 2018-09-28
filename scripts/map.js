@@ -54,7 +54,7 @@ function OSGeoInitialize(question,latLng){
 		// If not latLng is set the Map will center to Hamburg
 		var MapOption=LSmaps[name];
 		if(isNaN(MapOption.latitude) || MapOption.latitude==""){
-			MapOption.latitude=53.582665; 
+			MapOption.latitude=53.582665;
 		}
 		if(isNaN(MapOption.longitude) || MapOption.longitude==""){
 			MapOption.longitude=10.018924;
@@ -94,7 +94,7 @@ function OSGeoInitialize(question,latLng){
 		};
 		var overlays = {
 		};
-		var map = L.map("map_"+name, { 
+		var map = L.map("map_"+name, {
 			zoom:MapOption.zoomLevel,
 			minZoom:1,
 			center: [MapOption.latitude, MapOption.longitude] ,
@@ -104,10 +104,10 @@ function OSGeoInitialize(question,latLng){
 		//function zoomExtent(){ // todo: restrict to rect ?
 		//	map.setView([15, 15],1);
 		//}
-		
+
 		var pt1 = latLng[0].split("@");
 		var pt2 = latLng[1].split("@");
-		
+
 		if ((pt1.length == 2) && (pt2.length == 2)) { // is Rect
 			var isRect = true;
 			lat = "";
@@ -124,27 +124,27 @@ function OSGeoInitialize(question,latLng){
 			lat = latLng[0];
 			lng = latLng[1];
 		}
-		
+
 		if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
 			lat=-9999; lng=-9999;
 		}
-		
+
 		var marker = new L.marker([lat,lng], {title:'Current Location',id:1,draggable:'true'});
 		map.addLayer(marker);
-		
+
 		var layerControl = L.control.layers(baseLayers, overlays, {
 		  collapsed: true
 		}).addTo(map);
-		
-		map.on('click', 
-			function(e) { 
+
+		map.on('click',
+			function(e) {
 				var coords = L.latLng(e.latlng.lat,e.latlng.lng);
 				marker.setLatLng(coords);
 				UI_update(e.latlng.lat,e.latlng.lng)
-			}	
+			}
 		)
 
-        // Zoom to 11 when switching to Aerial or Hybrid views - bug 10589 
+        // Zoom to 11 when switching to Aerial or Hybrid views - bug 10589
         var layer2Name, layer3Name, layerIndex = 0;
         for (var key in baseLayers) {
             if (!baseLayers.hasOwnProperty(key)) {
@@ -163,7 +163,7 @@ function OSGeoInitialize(question,latLng){
                 map.setZoom(11);
             }
         });
-		
+
 		marker.on('dragend', function(e){
 				var marker = e.target;
 				var position = marker.getLatLng();
@@ -182,9 +182,9 @@ function OSGeoInitialize(question,latLng){
 				$("#answer_lat"+question).val("");
 				$("#answer_lng"+question).val("");
 			}
-			
+
 		}
-		
+
 		$('coords[name^='+name+']').each(function() {
 			// Save current value of element
 			$(this).data('oldVal', $(this));
@@ -250,20 +250,20 @@ function OSGeoInitialize(question,latLng){
 					UI_update(ui.item.lat, ui.item.lng);
 				}
 			},
-			 open: function() { 
+			 open: function() {
 				$( this ).addClass( "searching" );
 			},
 			close: function() {
 				$( this ).removeClass( "searching" );
 			}
 		});
-        
+
         var mapQuestion = $('#question'+name.split('X')[2]);
-        
+
         function resetMapTiles(mapQuestion) {
-        
+
             //window.setTimeout(function(){
-            
+
                 if($(mapQuestion).css('display') == 'none' && $.support.leadingWhitespace) { // IE7-8 excluded (they work as-is)
                     $(mapQuestion).css({
                         'position': 'relative',
@@ -275,16 +275,16 @@ function OSGeoInitialize(question,latLng){
                         'left': 'auto'
                     }).hide();
                 }
-                
-            //},50);            
+
+            //},50);
         }
-        
+
         resetMapTiles(mapQuestion);
-        
-        jQuery(window).resize(function() {        
-            window.setTimeout(function(){                            
-                resetMapTiles(mapQuestion); 
-            },5);            
+
+        jQuery(window).resize(function() {
+            window.setTimeout(function(){
+                resetMapTiles(mapQuestion);
+            },5);
         });
 
 	return map;
@@ -296,19 +296,19 @@ function OSGeoInitialize(question,latLng){
 // Initialize map
 function GMapsInitialize(question,lat,lng) {
 
-	
+
 	var name = question.substr(0,question.length - 2);
 	var latlng = new google.maps.LatLng(lat, lng);
-	
+
 	var mapOptions = {
 		zoom: zoom[name],
 		center: latlng,
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
-	
+
 	var map = new google.maps.Map(document.getElementById("gmap_canvas_" + question), mapOptions);
 	gmaps[''+question] = map;
-    
+
 	var marker = new google.maps.Marker({
 		position: latlng,
 		draggable:true,
@@ -316,14 +316,14 @@ function GMapsInitialize(question,lat,lng) {
 		id: 'marker__'+question
 	});
 	gmaps['marker__'+question] = marker;
-	
+
 	google.maps.event.addListener(map, 'rightclick', function(event) {
 		marker.setPosition(event.latLng);
 		map.panTo(event.latLng);
 		geocodeAddress(name, event.latLng);
 		$("#answer"+question).val(Math.round(event.latLng.lat()*10000)/10000 + " " + Math.round(event.latLng.lng()*10000)/10000);
 	});
-	
+
 	google.maps.event.addListener(marker, 'dragend', function(event) {
 		//map.panTo(event.latLng);
 		geocodeAddress(name, event.latLng);
@@ -350,12 +350,12 @@ function resetMap(qID) {
 // Reverse geocoder
 function geocodeAddress(name, pos) {
 	var geocoder = new google.maps.Geocoder();
-	
+
 	var city  = '';
 	var state = '';
 	var country = '';
 	var postal = '';
-	
+
 	geocoder.geocode({
 		latLng: pos
 	}, function(results, status) {
@@ -374,7 +374,7 @@ function geocodeAddress(name, pos) {
 					postal = val.short_name;
 				}
 			});
-			
+
 			var location = (results[0].geometry.location);
 		}
 		getInfoToStore(name, pos.lat(), pos.lng(), city, state, country, postal);
@@ -383,7 +383,7 @@ function geocodeAddress(name, pos) {
 
 // Store address info
 function getInfoToStore(name, lat, lng, city, state, country, postal){
-    
+
 	var boycott = $("#boycott_"+name).val();
     // 2 - city; 3 - state; 4 - country; 5 - postal
     if (boycott.indexOf("2")!=-1)
@@ -394,7 +394,7 @@ function getInfoToStore(name, lat, lng, city, state, country, postal){
         country = '';
     if (boycott.indexOf("5")!=-1)
         postal = '';
-    
+
     $("#answer"+name).val(lat + ';' + lng + ';' + city + ';' + state + ';' + country + ';' + postal);
 }
 

@@ -2126,11 +2126,11 @@ function createFieldMap($surveyid, $style='short', $force_refresh=false, $questi
 
         elseif ($arow['type'] == "R")
         {
-            //MULTI ENTRY
-            $data = Answer::model()->findAllByAttributes(array('qid' => $arow['qid'], 'language' => $sLanguage));
-            $data = count($data);
-            $slots=$data;
-            for ($i=1; $i<=$slots; $i++)
+            // Sub question by answer number OR attribute
+            $answersCount = intval(Answer::model()->countByAttributes(array('qid' => $arow['qid'], 'language' => $sLanguage)));
+            $maxDbAnswer=QuestionAttribute::model()->find("qid = :qid AND attribute = 'max_subquestions'",array(':qid' => $arow['qid']));
+            $columnsCount=(!$maxDbAnswer || intval($maxDbAnswer->value)<1) ? $answersCount : intval($maxDbAnswer->value);
+            for ($i=1; $i<=$columnsCount; $i++)
             {
                 $fieldname="{$arow['sid']}X{$arow['gid']}X{$arow['qid']}$i";
                 if (isset($fieldmap[$fieldname])) $aDuplicateQIDs[$arow['qid']]=array('fieldname'=>$fieldname,'question'=>$arow['question'],'gid'=>$arow['gid']);
@@ -3015,7 +3015,7 @@ function questionAttributes($returnByName=false)
         'category'=>gT('Location'),
         'sortorder'=>101,
         'inputtype'=>'text',
-        'default'=>'11',
+        'default'=>'1',
         "help"=>gT("Map zoom level"),
         "caption"=>gT("Zoom level"));
 
@@ -3043,6 +3043,15 @@ function questionAttributes($returnByName=false)
         'help'=>gT('Hide this question at any time. This is useful for including data using answer prefilling.'),
         'caption'=>gT('Always hide this question'));
 
+        /* Add css class : not the best, but exist in 2.50 : can be used by any plugin */
+        $qattributes['cssclass']=array(
+            'types'=>'15ABCDEFGHIKLMNOPQRSTUWXYZ!:;|*',
+            'category'=>gT('Display'),
+            'sortorder'=>102,
+            'inputtype'=>'text',
+            'help'=>gT('Add additional CSS class(es) for this question. Use a space between different CSS class names.'),
+            'caption'=>gT('CSS class(es)'));
+
         $qattributes["max_answers"]=array(
         "types"=>"MPR1:;ABCEFKQ",
         'category'=>gT('Logic'),
@@ -3067,13 +3076,15 @@ function questionAttributes($returnByName=false)
         "help"=>gT('Maximum value of the numeric input'),
         "caption"=>gT('Maximum value'));
 
-        //    $qattributes["max_num_value_sgqa"]=array(
-        //    "types"=>"K",
-        //    'category'=>gT('Logic'),
-        //    'sortorder'=>100,
-        //    'inputtype'=>'text',
-        //    "help"=>gT('Enter the SGQA identifier to use the total of a previous question as the maximum for this question'),
-        //    "caption"=>gT('Max value from SGQA'));
+        /* Ranking specific : max DB answer */
+        $qattributes["max_subquestions"]=array(
+        "types"=>"R",
+        'readonly'=>true,
+        'category'=>gT('Logic'),
+        'sortorder'=>12,
+        'inputtype'=>'integer',
+        "help"=>gT('Limit the number of possible answers fixed by number of columns in database'),
+        "caption"=>gT('Maximum columns for answers'));
 
         $qattributes["maximum_chars"]=array(
         "types"=>"STUNQK:;",
@@ -3831,26 +3842,55 @@ function questionAttributes($returnByName=false)
             'default'=>0,
         );
 
+        /**
+         * New event to allow plugin to add own question attribute (settings)
+         * Using $event->append('questionAttributes', $questionAttributes);
+         * $questionAttributes=[
+         *  attributeName=>[
+         *      'types' : Aply to this question type
+         *      'category' : Where to put it
+         *      'sortorder' : Qort order in this category
+         *      'inputtype' : type of input
+         *      'options' : optionnal options if input type need it*
+         *      'default' : the defaumt value
+         *      'caption' : the label
+         *      'help' : an help]
+         *  ]
+         */
+        $event = new PluginEvent('newQuestionAttributes');
+        $result = App()->getPluginManager()->dispatchEvent($event);
+        $questionAttributes = $result->get('questionAttributes');
+        if(is_array($questionAttributes))
+        {
+            $qattributes=array_merge($qattributes,$questionAttributes);
+        }
+
     }
     //This builds a more useful array (don't modify)
     if ($returnByName==false)
     {
         if(!$qat)
         {
+            $default= array(
+                "caption"=>'',
+                "inputtype"=>"text",
+                "options"=>'',
+                "category"=>gT("Plugins"),
+                "default"=>'',
+                "help"=>'',
+                "sortorder"=>1000,
+                "i18n"=>false,
+                "readonly"=>false,
+            );
             foreach($qattributes as $qname=>$qvalue)
             {
                 for ($i=0; $i<=strlen($qvalue['types'])-1; $i++)
                 {
-                    $qat[substr($qvalue['types'], $i, 1)][$qname]=array("name"=>$qname,
-                    "inputtype"=>$qvalue['inputtype'],
-                    "category"=>$qvalue['category'],
-                    "sortorder"=>$qvalue['sortorder'],
-                    "i18n"=>isset($qvalue['i18n'])?$qvalue['i18n']:false,
-                    "readonly"=>isset($qvalue['readonly_when_active'])?$qvalue['readonly_when_active']:false,
-                    "options"=>isset($qvalue['options'])?$qvalue['options']:'',
-                    "default"=>isset($qvalue['default'])?$qvalue['default']:'',
-                    "help"=>$qvalue['help'],
-                    "caption"=>$qvalue['caption']);
+                    $qat[substr($qvalue['types'], $i, 1)][$qname]=array_merge(
+                        array("name"=>$qname),
+                        $default,
+                        $qvalue
+                    );
                 }
             }
         }
@@ -3989,8 +4029,8 @@ function SendEmailMessage($body, $subject, $to, $from, $sitename, $ishtml=false,
     }
 
     require_once(APPPATH.'/third_party/phpmailer/PHPMailerAutoload.php');
-    $mail = new PHPMailer ;
-    $mail->SMTPAutoTLS=false;
+    $mail = new PHPMailer;
+
     if (!$mail->SetLanguage($defaultlang,APPPATH.'/third_party/phpmailer/language/'))
     {
         $mail->SetLanguage('en',APPPATH.'/third_party/phpmailer/language/');
@@ -4023,6 +4063,17 @@ function SendEmailMessage($body, $subject, $to, $from, $sitename, $ishtml=false,
             break;
         case "smtp":
             $mail->IsSMTP();
+            if ($emailsmtpssl==''){
+                $mail->SMTPAutoTLS = false;
+            }elseif(Yii::app()->getConfig('ssl_allow_self_signed')){
+                $mail->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
+            }
             if ($emailsmtpdebug>0)
             {
                 $mail->SMTPDebug = $emailsmtpdebug;
@@ -4077,13 +4128,17 @@ function SendEmailMessage($body, $subject, $to, $from, $sitename, $ishtml=false,
     if ($ishtml)
     {
         $mail->IsHTML(true);
-        //$mail->AltBody = strip_tags(breakToNewline(html_entity_decode($body,ENT_QUOTES,$emailcharset))); // Use included PHPmailer system see bug #8234
+        if(strpos($body,"<html>")===false)
+        {
+            $body="<html>".$body."</html>";
+        }
+        $mail->msgHTML($body,App()->getConfig("publicdir")); // This allow embedded image if we remove the servername from image
     }
     else
     {
         $mail->IsHTML(false);
+        $mail->Body = $body;
     }
-    $mail->Body = $body;
     // Add attachments if they are there.
     if (is_array($attachments))
     {
@@ -4100,9 +4155,10 @@ function SendEmailMessage($body, $subject, $to, $from, $sitename, $ishtml=false,
             }
         }
     }
+    $mail->Subject=$subject;
 
-    if (trim($subject)!='') {$mail->Subject = "=?$emailcharset?B?" . base64_encode($subject) . "?=";}
-    if ($emailsmtpdebug>0) {
+    if ($emailsmtpdebug>0)
+    {
         ob_start();
     }
     $sent=$mail->Send();

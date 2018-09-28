@@ -83,8 +83,8 @@
             $fields = array(
                 'tid' => 'pk',
                 'participant_id' => 'string(50)',
-                'firstname' => 'string(40)',
-                'lastname' => 'string(40)',
+                'firstname' => 'string(150)',
+                'lastname' => 'string(150)',
                 'email' => 'text',
                 'emailstatus' => 'text',
                 'token' => "string(35) {$sCollation}",
@@ -137,12 +137,12 @@
          */
         public function generateToken()
         {
-            $iTokenLength = $this->survey->tokenlength;
-            $this->token = $this::generateRandomToken($iTokenLength);
+            $length = $this->survey->tokenlength;
+            $this->token = $this::generateRandomToken($length);
             $counter = 0;
             while (!$this->validate('token'))
             {
-                $this->token = $this::generateRandomToken($iTokenLength);
+                $this->token = $this::generateRandomToken($length);
                 $counter++;
                 // This is extremely unlikely.
                 if ($counter > 10)
@@ -157,8 +157,8 @@
         *
         * @param mixed $tokenlength
         */
-        public static function generateRandomToken($iTokenLength){
-            return str_replace(array('~','_'),array('a','z'),Yii::app()->securityManager->generateRandomString($iTokenLength));
+        public static function generateRandomToken($tokenlength){
+            return str_replace(array('~','_'),array('a','z'),Yii::app()->securityManager->generateRandomString($tokenlength));
         }
 
         /**
@@ -180,7 +180,7 @@
                 throw new \Exception("This function should only be called like: Token::model(12345)->generateTokens");
             }
             $surveyId = $this->dynamicId;
-            $iTokenLength = isset($this->survey) && is_numeric($this->survey->tokenlength) ? $this->survey->tokenlength : 15;
+            $tokenLength = isset($this->survey) && is_numeric($this->survey->tokenlength) ? $this->survey->tokenlength : 15;
 
             $tkresult = Yii::app()->db->createCommand("SELECT tid FROM {{tokens_{$surveyId}}} WHERE token IS NULL OR token=''")->queryAll();
             //Exit early if there are not empty tokens
@@ -205,7 +205,7 @@
                 $bIsValidToken = false;
                 while ($bIsValidToken == false && $invalidtokencount<50)
                 {
-                    $newtoken =$this::generateRandomToken($iTokenLength);
+                    $newtoken =$this::generateRandomToken($tokenLength);
                     if (!isset($existingtokens[$newtoken]))
                     {
                         $existingtokens[$newtoken] = true;

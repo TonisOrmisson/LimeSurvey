@@ -88,9 +88,39 @@ class index extends CAction {
         // collect all data in this method to pass on later
         $redata = compact(array_keys(get_defined_vars()));
 
-        // Set the language of the survey, either from POST, GET parameter of session var
-        $sOldLang = isset($_SESSION['survey_'.$surveyid]['s_lang'])?$_SESSION['survey_'.$surveyid]['s_lang']:"";// Keep the old value, because SetSurveyLanguage update $_SESSION
-        $sDisplayLanguage = $this->_getLanguage($surveyid, $param);
+        /**
+         *  Set the language of the page , either from POST, GET parameter of session var
+         * Set it before all errors page
+         * Keep the old value, because SetSurveyLanguage update $_SESSION
+         */
+        $sOldLang=isset($_SESSION['survey_'.$surveyid]['s_lang'])?$_SESSION['survey_'.$surveyid]['s_lang']:null;
+        if (!empty($param['lang']))
+        {
+            $sDisplayLanguage = $param['lang'];// $param take lang from returnGlobal and returnGlobal sanitize langagecode
+        }
+        elseif (isset($_SESSION['survey_'.$surveyid]['s_lang']))
+        {
+            $sDisplayLanguage = $_SESSION['survey_'.$surveyid]['s_lang'];
+        }
+        elseif(Survey::model()->findByPk($surveyid))
+        {
+            $sDisplayLanguage=Survey::model()->findByPk($surveyid)->language;
+        }
+        else
+        {
+            $sDisplayLanguage=Yii::app()->getConfig('defaultlang');
+        }
+        /* Unsure display language is in available language */
+        if(Survey::model()->findByPk($surveyid)){
+            if(!in_array($sDisplayLanguage,Survey::model()->findByPk($surveyid)->getAllLanguages())){
+                $sDisplayLanguage=Survey::model()->findByPk($surveyid)->language;
+            }
+        } else {
+            $aLanguages=getLanguageDataRestricted();
+            if(!array_key_exists($sDisplayLanguage,$aLanguages)){
+                $sDisplayLanguage=Yii::app()->getConfig('defaultlang');
+            }
+        }
         if ($surveyid && $surveyExists)
         {
             SetSurveyLanguage( $surveyid, $sDisplayLanguage);
@@ -99,7 +129,6 @@ class index extends CAction {
         {
             SetSurveyLanguage( 0, $sDisplayLanguage);
         }
-        
         if ( $this->_isClientTokenDifferentFromSessionToken($clienttoken,$surveyid) )
         {
             $sReloadUrl=$this->getController()->createUrl("/survey/index/sid/{$surveyid}",array('token'=>$clienttoken,'lang'=>App()->language,'newtest'=>'Y'));
@@ -168,19 +197,20 @@ class index extends CAction {
         // recompute $redata since $saved_id used to be a global
         $redata = compact(array_keys(get_defined_vars()));
 
-
         if ( $this->_didSessionTimeOut($surveyid) )
         {
-            // @TODO is this still required ?
+            $aReloadUrlParam=array('lang'=>App()->language,'newtest'=>'Y');
+            if($clienttoken){$aReloadUrlParam['token']=$clienttoken;}
+            $sReloadUrl=$this->getController()->createUrl("/survey/index/sid/{$surveyid}",$aReloadUrlParam);
             $asMessage = array(
                 gT("Error"),
                 gT("We are sorry but your session has expired."),
                 gT("Either you have been inactive for too long, you have cookies disabled for your browser, or there were problems with your connection."),
+                "<a class='reloadlink newsurvey' href={$sReloadUrl}>".gT("Click here to start the survey.")."</a>",
                 sprintf(gT("Please contact %s ( %s ) for further assistance."),$thissurvey['adminname'],$thissurvey['adminemail'])
             );
             $this->_niceExit($redata, __LINE__, null, $asMessage);
         };
-
 
         //CHECK FOR REQUIRED INFORMATION (sid)
         if ($surveyid && $surveyExists)
@@ -628,9 +658,6 @@ class index extends CAction {
 
     function _canUserPreviewSurvey($iSurveyID)
     {
-        if ( !isset($_SESSION['loginID']) ) // This is not needed because Permission::model()->hasSurveyPermission control connexion
-            return false;
-
         return Permission::model()->hasSurveyPermission($iSurveyID,'surveycontent','read');
     }
 
@@ -706,25 +733,6 @@ class index extends CAction {
         echo templatereplace(file_get_contents($sTemplateFile),array(),$redata,'survey['.$iDebugLine.']');
     }
 
-    function _getLanguage($surveyid, $param)
-    {
-         if (!empty($param['lang']))
-         {
-             return $param['lang'];// $param take lang from returnGlobal and returnGlobal sanitize langagecode
-         }
-         elseif (isset($_SESSION['survey_'.$surveyid]['s_lang']))
-         {
-             return $_SESSION['survey_'.$surveyid]['s_lang'];
-         }
-         elseif(Survey::model()->findByPk($surveyid))
-         {
-             return Survey::model()->findByPk($surveyid)->language;
-         }
-         else
-         {
-             return Yii::app()->getConfig('defaultlang');
-         }
-    }
 
 }
 

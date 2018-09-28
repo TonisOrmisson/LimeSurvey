@@ -81,6 +81,7 @@ class UpdateForm extends CFormModel
             $content->result = FALSE;
             $content->error = "update_disable";
         }
+
         return $content;
     }
 

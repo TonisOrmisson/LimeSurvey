@@ -37,31 +37,50 @@ class LSYii_Application extends CWebApplication
     * @param array $config
     * @return void
     */
-    public function __construct($config = null)
+    public function __construct($aApplicationConfig = null)
     {
-        parent::__construct($config);
-        Yii::setPathOfAlias('bootstrap' , Yii::getPathOfAlias('ext.bootstrap'));
-        // Load the default and environmental settings from different files into self.
-        $ls_config = require(__DIR__ . '/../config/config-defaults.php');
-        $email_config = require(__DIR__ . '/../config/email.php');
-        $version_config = require(__DIR__ . '/../config/version.php');
-        $updater_version_config = require(__DIR__ . '/../config/updater_version.php');
-        $settings = array_merge($ls_config, $version_config, $email_config, $updater_version_config);
-
-
+        /* Using some config part for app config, then load it before*/
+        $baseConfig = require(__DIR__ . '/../config/config-defaults.php');
         if(file_exists(__DIR__ . '/../config/config.php'))
         {
-            $ls_config = require(__DIR__ . '/../config/config.php');
-            if(is_array($ls_config['config']))
+            $userConfigs = require(__DIR__ . '/../config/config.php');
+            if(is_array($userConfigs['config']))
             {
-                $settings = array_merge($settings, $ls_config['config']);
+                $baseConfig = array_merge($baseConfig, $userConfigs['config']);
             }
         }
 
-        foreach ($settings as $key => $value)
-            $this->setConfig($key, $value);
+        /* Set the runtime path according to tempdir if needed */
+        if(!isset($aApplicationConfig['runtimePath'])){
+            $aApplicationConfig['runtimePath']=$baseConfig['tempdir'] . DIRECTORY_SEPARATOR. 'runtime';
+        } /* No need to test runtimePath validity : Yii return an exception without issue */
 
-        App()->getAssetManager()->setBaseUrl(Yii::app()->getBaseUrl(false) . '/tmp/assets');
+        parent::__construct($aApplicationConfig);
+
+        /* Because we have app now : we have to call again the config (usage of Yii::app() for publicurl */
+        $coreConfig = require(__DIR__ . '/../config/config-defaults.php');
+        $emailConfig = require(__DIR__ . '/../config/email.php');
+        $versionConfig = require(__DIR__ . '/../config/version.php');
+        $updaterVersionConfig = require(__DIR__ . '/../config/updater_version.php');
+        $lsConfig = array_merge($coreConfig, $emailConfig, $versionConfig, $updaterVersionConfig);
+        if(file_exists(__DIR__ . '/../config/config.php'))
+        {
+            $userConfigs = require(__DIR__ . '/../config/config.php');
+            if(is_array($userConfigs['config']))
+            {
+                $lsConfig = array_merge($lsConfig, $userConfigs['config']);
+            }
+        }
+        if(!isset($aApplicationConfig['components']['assetManager']['baseUrl'])){
+            App()->getAssetManager()->setBaseUrl($lsConfig['tempurl']. '/assets');
+        }
+        if(!isset($aApplicationConfig['components']['assetManager']['basePath'])){
+            App()->getAssetManager()->setBasePath($lsConfig['tempdir'] . '/assets');
+        }
+
+
+        $this->config = array_merge($this->config, $lsConfig);
+
     }
 
 
@@ -207,5 +226,26 @@ class LSYii_Application extends CWebApplication
         return $this->getComponent('pluginManager');
     }
 
+    /**
+     * The pre-filter for controller actions.
+     * This method is invoked before the currently requested controller action and all its filters
+     * are executed. You may override this method with logic that needs to be done
+     * before all controller actions.
+     * @param CController $controller the controller
+     * @param CAction $action the action
+     * @return boolean whether the action should be executed.
+     */
+    public function beforeControllerAction($controller,$action)
+    {
+        /**
+         * Plugin event done before all web controller action
+         * Can set run to false to deactivate action
+         */
+        $event = new PluginEvent('beforeControllerAction');
+        $event->set('controller',$controller->getId());
+        $event->set('action',$action->getId());
+        App()->getPluginManager()->dispatchEvent($event);
+        return $event->get("run",parent::beforeControllerAction($controller,$action));
+    }
 
 }

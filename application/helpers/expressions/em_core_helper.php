@@ -270,14 +270,14 @@ class ExpressionManager {
             return false;
         }
         /* When value come from DB : it's set to 1.000000 (DECIMAL) : must be fixed see #11163. Response::model() must fix this . or not ? */
-        /* Don't return true always : user can entre non numeric value in a numeric value : we must compare as string then */
+        /* Don't return true always : user can enter non numeric value in a numeric value : we must compare as string then */
         $arg1[0]=($arg1[2]=="NUMBER" && strpos($arg1[0],".")) ? rtrim(rtrim($arg1[0],"0"),".") : $arg1[0];
         $arg2[0]=($arg2[2]=="NUMBER" && strpos($arg2[0],".")) ? rtrim(rtrim($arg2[0],"0"),".") : $arg2[0];
-        $bNumericArg1 = $arg1[0]==='' || strval(floatval($arg1[0]))==strval($arg1[0]);
-        $bNumericArg2 = $arg2[0]==='' || strval(floatval($arg2[0]))===strval($arg2[0]);
+        $bNumericArg1 = !$arg1[0] || strval(floatval($arg1[0]))==strval($arg1[0]);
+        $bNumericArg2 = !$arg2[0] || strval(floatval($arg2[0]))==strval($arg2[0]);
 
         $bStringArg1 = !$arg1[0] || !$bNumericArg1;
-        $bStringArg2 = !$arg1[0] || !$bNumericArg2;
+        $bStringArg2 = !$arg2[0] || !$bNumericArg2;
 
         $bBothNumeric = ($bNumericArg1 && $bNumericArg2);
         $bBothString = ($bStringArg1 && $bStringArg2);
@@ -2749,6 +2749,7 @@ function exprmgr_int($arg)
     }
     return (preg_match("/^-?[0-9]*$/",$arg));// Allow 000 for value, @link https://bugs.limesurvey.org/view.php?id=9550 DECIMAL sql type.
 }
+
 /**
  * Join together $args[0-N] with ', '
  * @param <type> $args

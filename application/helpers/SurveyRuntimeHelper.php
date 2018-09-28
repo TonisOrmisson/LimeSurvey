@@ -263,7 +263,7 @@ class SurveyRuntimeHelper {
                 elseif (isset($thissurvey['showwelcome']) && $thissurvey['showwelcome'] == 'N')
                 {
                     $moveResult = LimeExpressionManager::NavigateForwards();
-                    //$_SESSION[$LEMsessid]['step']=1;
+                    $_SESSION[$LEMsessid]['step']=max(1,$moveResult['seq']);
                 }
             }
             elseif($surveyid != LimeExpressionManager::getLEMsurveyId())
@@ -287,7 +287,7 @@ class SurveyRuntimeHelper {
             {
                 // then trying to resubmit (e.g. Next, Previous, Submit) from a cached copy of the page
                 // Does not try to save anything from the page to the database
-                $moveResult = LimeExpressionManager::GetLastMoveResult(true);
+                $moveResult = LimeExpressionManager::JumpTo($_SESSION[$LEMsessid]['step'], false, false, true);// We JumpTo current step : see bug #11404
                 if (isset($_POST['thisstep']) && isset($moveResult['seq']) && $_POST['thisstep'] == $moveResult['seq'])
                 {
                     // then pressing F5 or otherwise refreshing the current page, which is OK
@@ -302,6 +302,7 @@ class SurveyRuntimeHelper {
                     $invalidLastPage=true;
                     $backpopup=gT("Please use the LimeSurvey navigation buttons or index.  It appears you attempted to use the browser back button to re-submit a page.");
                 }
+
             }
             if(isset($move) && $move=="clearcancel")
             {
@@ -475,7 +476,6 @@ class SurveyRuntimeHelper {
             //Now, we check mandatory questions if necessary
             //CHECK IF ALL CONDITIONAL MANDATORY QUESTIONS THAT APPLY HAVE BEEN ANSWERED
             global $notanswered;
-
             if (isset($moveResult) && !$moveResult['finished'])
             {
                 $unansweredSQList = $moveResult['unansweredSQs'];
@@ -993,6 +993,11 @@ class SurveyRuntimeHelper {
         // echo "<input type='text' id='runonce' value='0' style='display: none;'/>";
 
         $showpopups=Yii::app()->getConfig('showpopups');
+        if(Yii::app()->user->hasState('dberror_'.$surveyid))
+        {
+            echo "<p class='errormandatory alert alert-danger' role='alert'>" . Yii::app()->user->getState('dberror_'.$surveyid) . "</p>";
+            Yii::app()->user->setState('dberror_'.$surveyid,null);
+        }
         //Display the "mandatory" message on page if necessary
         if (!$showpopups && $stepInfo['mandViolation'] && $okToShowErrors)
         {
@@ -1188,13 +1193,13 @@ class SurveyRuntimeHelper {
 
     /**
     * Construction of replacement array, actually doing it with redata
-    * 
+    *
     * @param $aQuestionQanda : array from qanda helper
     * @return aray of replacement for question.psptl
     **/
     public static function getQuestionReplacement($aQuestionQanda)
     {
-        
+
         // Get the default replacement and set empty value by default
         $aReplacement=array(
             "QID"=>"",
@@ -1228,7 +1233,7 @@ class SurveyRuntimeHelper {
         $oSurveyId=Survey::model()->findByPk($iSurveyId);
         $sType=$lemQuestionInfo['info']['type'];
 
-        // Core value : not replaced 
+        // Core value : not replaced
         $aReplacement['QID']=$iQid;
         $aReplacement['GID']=$aQuestionQanda[6];// Not sure for aleatory : it's the real gid or the updated gid ? We need original gid or updated gid ?
         $aReplacement['SGQ']=$aQuestionQanda[7];
@@ -1291,8 +1296,18 @@ class SurveyRuntimeHelper {
             }
             $aReplacement['QUESTIONHELP']="<img src='{$helpicon}' alt='Help' align='left' />".$aReplacement['QUESTIONHELP'];
         }
-        // Core value :the classes
+
+         // Core value :the classes
         $aReplacement['QUESTION_CLASS'] = Question::getQuestionClass($sType);
+
+        /* Add css class from attribute: not the best, but exist in 2.50 : can be used by any plugin */
+        /* This must be moved in an extrenal plugin when we have it */
+        $aQuestionAttributes = getQuestionAttributeValues($iQid);
+        if(!empty($aQuestionAttributes['cssclass']))
+        {
+            $aReplacement['QUESTION_CLASS'] .= " ".htmlentities($aQuestionAttributes['cssclass'],ENT_QUOTES);
+        }
+
         $aMandatoryClass = array();
         if ($lemQuestionInfo['info']['mandatory'] == 'Y')// $aQuestionQanda[0]['mandatory']=="*"
         {

@@ -14,7 +14,6 @@ if (!file_exists(dirname(__FILE__) .  '/config.php')) {
 @date_default_timezone_set(@date_default_timezone_get());
 $internalConfig = array(
     'basePath' => dirname(dirname(__FILE__)),
-    'runtimePath' => dirname(dirname(dirname(__FILE__))).DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'runtime',
     'name' => 'LimeSurvey',
     'localeClass' =>  'LSYii_Locale',
     'defaultController' => 'surveys',
@@ -40,19 +39,17 @@ $internalConfig = array(
             'rules' => require('routes.php'),
             'showScriptName' => true,
         ),
-        'assetManager' => array(
-            'baseUrl' => '/tmp/assets',
-            'basePath'=> dirname(dirname(dirname(__FILE__))).DIRECTORY_SEPARATOR.'tmp'.DIRECTORY_SEPARATOR.'assets'
-
-        ),
         'request' => array(
             'class'=>'LSHttpRequest',
-            'noCsrfValidationRoutes'=>array(
-                'remotecontrol'
-            ),
-
             'enableCsrfValidation'=>true,    // CSRF protection
-            'enableCookieValidation'=>false   // Enable to activate cookie protection
+            'enableCookieValidation'=>false,   // Enable to activate cookie protection
+            'csrfCookie' => array(
+                'secure' => (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off'), // @see session
+            ),
+            'noCsrfValidationRoutes'=>array(
+                'remotecontrol',
+                'plugins/unsecure',
+            ),
         ),
         'user' => array(
             'class' => 'LSWebUser',
@@ -66,7 +63,12 @@ $internalConfig = array(
                 ),
                 'profile' => array(
                     'class' => 'CProfileLogRoute'
-                )
+                ),
+                /* Adding app warning and error to ./tmp/runtime/application.log, can be replaced in config */
+                'fileError' => array(
+                    'class' => 'CFileLogRoute',
+                    'levels' => 'warning, error',
+                ),
             )
         ),
         'cache'=>array(
@@ -81,6 +83,8 @@ $internalConfig = array(
         'session' => array(
             'cookieParams' => array(
                 'httponly' => true,
+                // Set secure if needed , some dumb server need || $_SERVER['SERVER_PORT'] == 443 . See @link http://stackoverflow.com/a/2886224/2239406
+                'secure'=>(!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off'),
             ),
         ),
         'messages' => array(
@@ -94,7 +98,10 @@ $internalConfig = array(
             'class' => "\\ls\\pluginmanager\\PluginManager",
             'api' => "\\ls\\pluginmanager\\LimesurveyApi"
         )
-    )
+    ),
+    'config'=>array(
+        'updatable'=>false,
+    ),
 );
 
 
