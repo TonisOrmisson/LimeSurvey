@@ -649,7 +649,7 @@ class questionHelper
             "types"=>":",
             'category'=>gT('Display'),
             'sortorder'=>111,
-            'inputtype'=>'integer',
+            'inputtype'=>'float',
             'default'=>'',
             "help"=>gT('Step value'),
             "caption"=>gT('Step value')
@@ -1423,7 +1423,7 @@ class questionHelper
             'sortorder'=>100,
             "inputtype"=>"integer",
             'default'=>1,
-            "help"=>gT("Minute step interval when using select boxes"),
+            "help"=>gT("Visual minute step interval"),
             "caption"=>gT("Minute step interval")
         );
 
