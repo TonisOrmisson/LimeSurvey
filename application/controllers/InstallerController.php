@@ -253,7 +253,7 @@ class InstallerController extends CController
             if ($oModel->validate()) {
 
                 //saving the form data to session
-                foreach (array('dblocation', 'dbname', 'dbengine', 'dbtype', 'dbpwd', 'dbuser', 'dbprefix') as $sStatusKey) {
+                foreach (array('dblocation','dbname', 'dbengine', 'dbtype', 'dbpwd', 'dbuser', 'dbprefix') as $sStatusKey) {
                     Yii::app()->session[$sStatusKey] = $oModel->$sStatusKey;
                 }
 
@@ -342,7 +342,7 @@ class InstallerController extends CController
                     $this->render('/installer/populatedb_view', $aValues);
                     return;
                 }
-            }
+           }
         }
         $this->render('/installer/dbconfig_view', $aData);
     }
@@ -946,7 +946,7 @@ class InstallerController extends CController
                 ."\t\t"."'db' => array("."\n"
                 ."\t\t\t"."'connectionString' => '$sDsn',"."\n";
             }
-            if ($model->dbtype != InstallerConfigForm::DB_TYPE_SQLSRV && $model->dbtype != InstallerConfigForm::DB_TYPE_DBLIB) {
+            if ($model->dbtype != InstallerConfigForm::DB_TYPE_SQLSRV && $model->dbtype != InstallerConfigForm::DB_TYPE_DBLIB ) {
                 $sConfig .= "\t\t\t"."'emulatePrepare' => true,"."\n";
 
             }
@@ -1047,16 +1047,15 @@ class InstallerController extends CController
      * @param $scenario
      * @return InstallerConfigForm
      */
-    private function getModelFromSession($scenario = null)
-    {
+    private function getModelFromSession($scenario = null) {
         $model = new InstallerConfigForm($scenario);
-        isset(Yii::app()->session['dbtype']) ? $model->dbtype = Yii::app()->session['dbtype'] : null;
-        isset(Yii::app()->session['dbengine']) ? $model->dbengine = Yii::app()->session['dbengine'] : null;
-        isset(Yii::app()->session['dbname']) ? $model->dbname = Yii::app()->session['dbname'] : null;
-        isset(Yii::app()->session['dbuser']) ? $model->dbuser = Yii::app()->session['dbuser'] : null;
-        isset(Yii::app()->session['dbpwd']) ? $model->dbpwd = Yii::app()->session['dbpwd'] : null;
-        isset(Yii::app()->session['dblocation']) ? $model->dblocation = Yii::app()->session['dblocation'] : null;
-        isset(Yii::app()->session['dbExists']) ? $model->dbExists = Yii::app()->session['databaseexist'] : null;
+        isset(Yii::app()->session['dbtype']) ? $model->dbtype = Yii::app()->session['dbtype']:null;
+        isset(Yii::app()->session['dbengine']) ? $model->dbengine = Yii::app()->session['dbengine']:null;
+        isset(Yii::app()->session['dbname']) ? $model->dbname = Yii::app()->session['dbname']:null;
+        isset(Yii::app()->session['dbuser']) ? $model->dbuser = Yii::app()->session['dbuser']:null;
+        isset(Yii::app()->session['dbpwd']) ? $model->dbpwd = Yii::app()->session['dbpwd']:null;
+        isset(Yii::app()->session['dblocation']) ? $model->dblocation = Yii::app()->session['dblocation']:null;
+        isset(Yii::app()->session['dbExists']) ? $model->dbExists = Yii::app()->session['databaseexist']:null;
         return $model;
     }
 
@@ -1088,7 +1087,7 @@ class InstallerController extends CController
 
         $sDsn = $model->getDsn();
 
-        if ($model->dbtype != InstallerConfigForm::DB_TYPE_SQLSRV && $model->dbtype != InstallerConfigForm::DB_TYPE_DBLIB) {
+        if ($model->dbtype != InstallerConfigForm::DB_TYPE_SQLSRV && $model->dbtype != InstallerConfigForm::DB_TYPE_DBLIB ) {
             $emulatePrepare = true;
         } else {
             $emulatePrepare = null;
