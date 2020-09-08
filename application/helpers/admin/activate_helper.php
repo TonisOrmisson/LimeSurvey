@@ -104,7 +104,8 @@ function checkGroup($postsid)
 
 
     $baselang = Survey::model()->findByPk($postsid)->language;
-    $groupquery = "SELECT g.gid,g.group_name,count(q.qid) as count from {{questions}} as q RIGHT JOIN ".Yii::app()->db->quoteTableName('{{groups}}')." as g ON q.gid=g.gid AND g.language=q.language WHERE g.sid=$postsid AND g.language='$baselang' group by g.gid,g.group_name;";
+    $groupsTableName = Yii::app()->db->quoteTableName('{{groups}}');
+    $groupquery = "SELECT g.gid,g.group_name,count(q.qid) as count from {{questions}} as q, $groupsTableName as g ON q.gid=g.gid AND g.language=q.language WHERE g.sid=$postsid AND g.language='$baselang' group by g.gid,g.group_name;";
     $groupresult = Yii::app()->db->createCommand($groupquery)->query()->readAll();
     foreach ($groupresult as $row) {
 //TIBO
@@ -458,8 +459,8 @@ function activateSurvey($iSurveyID, $simulate = false)
             $sQuery = "SELECT setval(pg_get_serial_sequence('{{survey_{$iSurveyID}}}', 'id'),{$iAutoNumberStart},false);";
             @Yii::app()->db->createCommand($sQuery)->execute();
         } else {
-            $sQuery = "ALTER TABLE {{survey_{$iSurveyID}}} AUTO_INCREMENT = {$iAutoNumberStart}";
-            @Yii::app()->db->createCommand($sQuery)->execute();
+            //$sQuery = "ALTER TABLE {{survey_{$iSurveyID}}} AUTO_INCREMENT = {$iAutoNumberStart}";
+            //@Yii::app()->db->createCommand($sQuery)->execute();
         }
     }
 
