@@ -1105,13 +1105,12 @@ function randomizationQuestion($surveyid, array $fieldmap, $preview)
 {
     $randomized   = false;
     $randomGroups = array();
-
     // Find all defined randomization groups through question attribute values
     // TODO: move the sql queries to a model
     if (in_array(Yii::app()->db->getDriverName(), array('mssql', 'sqlsrv', 'dblib'))) {
         $rgquery = "SELECT attr.qid, CAST(value as varchar(255)) as value FROM {{question_attributes}} as attr right join {{questions}} as quests on attr.qid=quests.qid WHERE attribute='random_group' and CAST(value as varchar(255)) <> '' and sid=$surveyid GROUP BY attr.qid, CAST(value as varchar(255))";
     } else {
-        $rgquery = "SELECT attr.qid, value FROM {{question_attributes}} as attr right join {{questions}} as quests on attr.qid=quests.qid WHERE attribute='random_group' and value <> '' and sid=$surveyid GROUP BY attr.qid, value";
+        $rgquery = "SELECT attr.qid, value FROM {{question_attributes}} as attr, {{questions}} quests on attr.qid=quests.qid WHERE attr.attribute='random_group' and attr.value <> '' and quests.sid=$surveyid GROUP BY attr.qid, value";
     }
 
     $rgresult = dbExecuteAssoc($rgquery);
