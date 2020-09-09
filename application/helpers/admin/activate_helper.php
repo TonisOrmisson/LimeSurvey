@@ -299,8 +299,14 @@ function activateSurvey($iSurveyID, $simulate = false)
                 $aTableDefinition[$aRow['fieldname']] = "string(20) NOT NULL";
                 break;
             case 'id':
-                $aTableDefinition[$aRow['fieldname']] = "pk";
+                $databasetype = Yii::app()->db->getDriverName();
+                if ($databasetype === 'sqlite') {
+                    $aTableDefinition[$aRow['fieldname']] = " INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL";
+                } else {
+                    $aTableDefinition[$aRow['fieldname']] = "pk";
+                }
                 break;
+
             case "startdate":
             case "datestamp":
                 $aTableDefinition[$aRow['fieldname']] = "datetime NOT NULL";
