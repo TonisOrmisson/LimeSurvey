@@ -5669,6 +5669,14 @@
                                 $cSave = new Save();
                                 $cSave->set_answer_time();
                             }
+
+                            $event = new PluginEvent('onUpdateResponse');
+                            $event->set('surveyId', $this->sid);
+                            $event->set('responseId', $oResponse->id);
+                            $event->set('step', $thisstep);
+                            $event->set('responseAttributes', $aResponseAttributes);
+                            $event->set('finished', $finished);
+
                         }
                     } else {
                         LimeExpressionManager::addFrontendFlashMessage('error', $this->gT('This response was already submitted.'), $this->sid);
