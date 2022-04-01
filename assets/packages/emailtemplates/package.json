@@ -15,7 +15,7 @@
     "@ckeditor/ckeditor5-theme-lark": "^13.0.1",
     "core-js": "^2.6.5",
     "he": "^1.2.0",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.21",
     "mousetrap": "^1.6.2",
     "vue": "^2.6.10",
     "vue-bootstrap-toggle": "^1.1.4",
