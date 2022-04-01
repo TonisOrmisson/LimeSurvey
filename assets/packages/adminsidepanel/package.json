@@ -11,7 +11,7 @@
     "watch": "vue-cli-service build --mode=developement --watch"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.4.4",
+    "@babel/polyfill": "^7.12.1",
     "core-js": "^2.6.5",
     "lodash": "^4.17.4",
     "vue": "^2.6.10",
