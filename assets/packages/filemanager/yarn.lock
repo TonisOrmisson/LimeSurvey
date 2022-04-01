@@ -9845,10 +9845,10 @@ vue@^2.6.11:
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.11.tgz#76594d877d4b12234406e84e35275c6d514125c5"
   integrity sha512-VfPwgcGABbGAue9+sfrD4PuwFar7gPb1yl1UK1MwXoQPAw0BKSqWfoYCT/ThFrdEVWoI51dBuyCoiNU9bZDZxQ==
 
-vuejs-dialog@^1.4.0:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/vuejs-dialog/-/vuejs-dialog-1.4.1.tgz#a1d332740b1f92dc26daa88095c9f4ad9bcf25b9"
-  integrity sha512-gAAiQL+KHAqYbyGxpdT8OPG7hbnB2qWzH5dkQZrntlhewe7R8N0QxsbqHcFRKAk5pUJCrc7zjbEjshlWoCSDHg==
+vuejs-dialog@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/vuejs-dialog/-/vuejs-dialog-1.4.2.tgz#33ef5a7669291c1bb09f2e958c4a438e54cdd293"
+  integrity sha512-6kRse144WXDFBMKdeuqE43rHy0ZJ81uLOFh62r2d80ICKavQYHIvr+GlTFmoR23190lC4f2w+ZJ8cS4ljkCDMw==
 
 vuex-persist@^2.2.0:
   version "2.2.0"
