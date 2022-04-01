@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.4",
-    "popper.js": "^1.15.0"
+    "popper.js": "^1.16.1"
   },
   "browserslist": "> 0.25%, not dead"
 }
