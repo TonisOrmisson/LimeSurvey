@@ -17,7 +17,7 @@
     "mousetrap": "^1.6.2",
     "vue": "^2.6.10",
     "vue-bootstrap-toggle": "^1.1.4",
-    "vue-localstorage": "^0.5.0",
+    "vue-localstorage": "^0.6.2",
     "vuex": "^3.0.1",
     "vuex-persist": "^1.0.3"
   },
