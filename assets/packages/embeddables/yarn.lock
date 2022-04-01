@@ -995,10 +995,10 @@ electron-to-chromium@^1.3.295:
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.3.296.tgz#a1d4322d742317945285d3ba88966561b67f3ac8"
   integrity sha512-s5hv+TSJSVRsxH190De66YHb50pBGTweT9XGWYu/LMR20KX6TsjFzObo36CjVAzM+PUeeKSBRtm/mISlCzeojQ==
 
-embedo@^1.12.0:
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/embedo/-/embedo-1.12.0.tgz#4352572c3a4129a14bc452e1e2406b229c46739c"
-  integrity sha512-EqJ8gSpPPVumemovBsIU/S2wumj7TZGhomsLFhczSTP7M7WGF+dwiVRgTqX0IlJhlrfliQW/2n+X/1dQ71s2Hg==
+embedo@^1.14.0:
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/embedo/-/embedo-1.14.0.tgz#c8f1530b58fbd11452e7209ec9888aae4780f394"
+  integrity sha512-bm8p4mDNIdpn6WVZ5YhbOSQsHQNqFpp31w7Oid9OrfiXwL0HRnOYLchmCHWsCvPymFOzE3Bj45Gp58m8WpC44w==
 
 env-cmd@^9.0.3:
   version "9.0.3"
