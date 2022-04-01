@@ -12,7 +12,7 @@
     "watch": "vue-cli-service build --mode=developement --watch"
   },
   "dependencies": {
-    "core-js": "^3.6.4",
+    "core-js": "^3.21.1",
     "vue": "^2.6.11",
     "vue-localstorage": "^0.6.2",
     "vue2-dropzone": "^3.5.9",
