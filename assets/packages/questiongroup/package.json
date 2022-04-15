@@ -11,7 +11,7 @@
     "watch": "vue-cli-service build --mode=developement --watch"
   },
   "dependencies": {
-    "@ckeditor/ckeditor5-dev-webpack-plugin": "^8.0.1",
+    "@ckeditor/ckeditor5-dev-webpack-plugin": "^30.0.0",
     "@ckeditor/ckeditor5-theme-lark": "^13.0.1",
     "core-js": "^2.6.5",
     "lodash": "^4.17.4",
