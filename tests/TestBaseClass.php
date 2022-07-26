@@ -43,9 +43,6 @@ class TestBaseClass extends TestCase
         //var_dump('gc_maxlifetime = ' . $lt);
         //die;
 
-        // This did not fix the langchang test failure on Travis.
-        //session_destroy();
-        //session_start();
 
         self::$testHelper = new TestHelper();
 

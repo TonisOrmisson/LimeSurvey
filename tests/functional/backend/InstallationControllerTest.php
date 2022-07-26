@@ -84,7 +84,7 @@ class InstallationControllerTest extends TestBaseClassWeb
             $this->assertTrue($result, 'Could unlink config.php');
         }
         
-        exec("sudo chmod -R 777 ./tmp"); // Add chmod 777, needed for CI pipeline
+        exec("chmod -R 777 ./tmp"); // Add chmod 777, needed for CI pipeline
 
         // Run installer.
         $urlMan = \Yii::app()->urlManager;

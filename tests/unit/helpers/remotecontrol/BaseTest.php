@@ -9,9 +9,9 @@ abstract class BaseTest extends TestHelper
     /* @var remotecontrol_handle*/
     public $handler;
 
-    /* @var string see .travis.yml */
+    /* @var string  */
     const REMOTECONTROL_USERNAME = 'admin';
-    /* @var string see .travis.yml */
+    /* @var string */
     const REMOTECONTROL_PASSWORD = 'password';
 
     protected function setUp(): void
