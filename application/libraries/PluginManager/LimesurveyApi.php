@@ -58,7 +58,7 @@ class LimesurveyApi
     public function createTable($plugin, $sTableName, $aColumns, $sOptions = null)
     {
         if (null !== $sTableName = $this->getTableName($plugin, $sTableName)) {
-            return Ap()->getDb()->createCommand()->createTable($sTableName, $aColumns, $sOptions);
+            return App()->getDb()->createCommand()->createTable($sTableName, $aColumns, $sOptions);
         }
         return false;
     }
