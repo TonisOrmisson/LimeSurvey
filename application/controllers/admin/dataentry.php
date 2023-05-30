@@ -144,7 +144,6 @@ class dataentry extends Survey_Common_Action
         $aOptions['sCharset'] = Yii::app()->request->getPost('vvcharset');
         $aOptions['sSeparator'] = "\t";
         $aResult = CSVImportResponses($filePath, $iSurveyId, $aOptions);
-        unlink($filePath); //delete the uploaded file
         $aData['class'] = "";
         $aData['title'] = gT("Import a VV response data file");
         $aData['aResult']['success'][] = gT("File upload succeeded.");
@@ -1173,10 +1172,12 @@ class dataentry extends Survey_Common_Action
                                     $aDataentryoutput .= CHtml::numberField($fname['fieldname'], $idrow[$fname['fieldname']],array('step'=>'any'));
                                 } else {
                                     $aDataentryoutput .= "\t<select name='{$fname['fieldname']}' class='form-control'>\n";
-                                    $aDataentryoutput .= "<option value=''>...</option>\n";
+                                    $aDataentryoutput .= "<option value=''";
+                                    if ($idrow[$fname['fieldname']] === "") {$aDataentryoutput .= " selected"; }
+                                    $aDataentryoutput .= ">...</option>\n";
                                     for ($ii = $minvalue; $ii <= $maxvalue; $ii += $stepvalue) {
                                         $aDataentryoutput .= "<option value='$ii'";
-                                        if ($idrow[$fname['fieldname']] == $ii) {$aDataentryoutput .= " selected"; }
+                                        if ($idrow[$fname['fieldname']] === "$ii") {$aDataentryoutput .= " selected"; }
                                         $aDataentryoutput .= ">$ii</option>\n";
                                     }
                                 }

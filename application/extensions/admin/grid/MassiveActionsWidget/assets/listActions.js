@@ -47,11 +47,11 @@ var onClickListAction =  function () {
         $oCheckedItems = $gridid.yiiGridView('getChecked', $('.listActions').data('pk')); // So we can join
         var newForm = jQuery('<form>', {
             'action': $actionUrl,
-            'target': '_blank',
+            'target': $that.data('target') ?? '_blank',
             'method': 'POST'
         }).append(jQuery('<input>', {
             'name': $that.data('input-name'),
-            'value': $oCheckedItems.join("|"),
+            'value': $oCheckedItems.join($that.data('input-separator') ?? '|'),
             'type': 'hidden'
         })).append(jQuery('<input>', {
             'name': LS.data.csrfTokenName,
@@ -153,6 +153,12 @@ var onClickListAction =  function () {
     /* Define what should be done when user confirm the mass action */
     /* remove all existing action before adding the new one */
     $modalButton.off('click').on('click', function(){
+        var $form = $modal.find('form');
+        if ($form.data('trigger-validation')) {
+            if (!$form[0].reportValidity()) {
+                return;
+            }
+        }
 
         // Custom datas comming from the modal (like sid)
         var $postDatas  = {sItems:$oCheckedItems};

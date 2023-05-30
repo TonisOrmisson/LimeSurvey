@@ -32,9 +32,15 @@ class index extends CAction
 
         $this->_loadRequiredHelpersAndLibraries();
         $param       = $this->_getParameters(func_get_args(), $_POST);
-        $surveyid    = $param['sid'];
+        $surveyid    = (int) $param['sid'];
         $thisstep    = $param['thisstep'];
         $move        = getMove();
+
+        /* reset all session before all other action */
+        if (isset($param['newtest']) && $param['newtest'] == "Y") {
+            killSurveySession($surveyid);
+            resetQuestionTimers($surveyid);
+        }
 
         /* Get client token by POST or GET value */
         $clienttoken = trim($param['token']);
@@ -74,11 +80,6 @@ class index extends CAction
         $loadname = $param['loadname'];
         $loadpass = $param['loadpass'];
         $sitename = Yii::app()->getConfig('sitename');
-
-        if (isset($param['newtest']) && $param['newtest'] == "Y") {
-            killSurveySession($surveyid);
-            resetQuestionTimers($surveyid);
-        }
 
         $surveyExists   = ($oSurvey != null);
         $isSurveyActive = ($surveyExists && $oSurvey->isActive);
@@ -455,6 +456,7 @@ class index extends CAction
             $thissurvey['aLoadForm'] = $aLoadForm;
             //$oTemplate->registerAssets();
             $thissurvey['include_content'] = 'load';
+            $thissurvey['trackUrlPageName'] = 'load';
             Yii::app()->twigRenderer->renderTemplateFromFile("layout_global.twig", array('oSurvey'=>Survey::model()->findByPk($surveyid), 'aSurveyInfo'=>$thissurvey), false);
         }
 

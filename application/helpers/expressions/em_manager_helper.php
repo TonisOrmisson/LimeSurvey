@@ -153,10 +153,20 @@
         private $pageRelevanceInfo;
 
         /**
-        *
-        * @var array
+        * @var array|null $pageTailorInfo
+        * Array of array of information about HTML id to update with javascript function
+        * [[
+        *   'questionNum' : question number
+        *   'num' : internal number of javascript function
+        *   'id' : id of HTML element
+        *   'raw' : Raw Expression
+        *   'result' :
+        *   'vars' : var used in javascript function
+        *   'js' : final javascript function
+        * ]]
         */
         private $pageTailorInfo;
+
         /**
         * internally set to true (1) for survey.php so get group-specific logging but keep javascript variable namings consistent on the page.
         * @var boolean
@@ -260,7 +270,7 @@
         */
         private $groupId2groupSeq;
         /**
-        * map question # to an incremental count of question order across the whole survey
+        * Map question # to an incremental count of question order across the whole survey
         *
         * @example [157] = 13 // means that that 14th question in the survey has qid=157
         *
@@ -1629,7 +1639,7 @@
                                     if (trim($qattr['date_min'])!='')
                                     {
                                         $mindate=$qattr['date_min'];
-                                        if ((strlen($mindate)==4) && ($mindate>=1900) && ($mindate<=2099))
+                                        if ((strlen($mindate)==4))
                                         {
                                             // backward compatibility: if only a year is given, add month and day
                                             $date_min='\''.$mindate.'-01-01'.' 00:00\'';
@@ -1698,7 +1708,7 @@
                                     if (trim($qattr['date_max'])!='')
                                     {
                                         $maxdate=$qattr['date_max'];
-                                        if ((strlen($maxdate)==4) && ($maxdate>=1900) && ($maxdate<=2099))
+                                        if ((strlen($maxdate)==4))
                                         {
                                             // backward compatibility: if only a year is given, add month and day
                                             $date_max='\''.$maxdate.'-12-31 23:59'.'\'';
@@ -2573,8 +2583,8 @@
                     $sgqa = $qinfo['sgqa'];
                     switch ($type)
                     {
-                        case '|': //List - dropdown
-                            $eqn = "(" . $sgqa . "_filecount >= (" . $min_num_of_files . "))";
+                        case '|':
+                            $eqn = "(" . $sgqa . "_filecount.NAOK >= (" . $min_num_of_files . "))";
                             break;
                         default:
                             break;
@@ -2607,8 +2617,8 @@
                     $sgqa = $qinfo['sgqa'];
                     switch ($type)
                     {
-                        case '|': //List - dropdown
-                            $eqn = "(" . $sgqa . "_filecount <= (" . $max_num_of_files . "))";
+                        case '|':
+                            $eqn = "(is_empty(" . $sgqa . "_filecount.NAOK) || " . $sgqa . "_filecount.NAOK <= (" . $max_num_of_files . "))";
                             break;
                         default:
                             break;
@@ -3740,9 +3750,9 @@
                 if($this->sPreviewMode=='group' || $this->sPreviewMode=='question') $fielddata['grelevance']=1;
 
                 $questionNum = $fielddata['qid'];
-                $relevance = (isset($fielddata['relevance'])) ? $fielddata['relevance'] : 1;
-                $SQrelevance = (isset($fielddata['SQrelevance'])) ? $fielddata['SQrelevance'] : 1;
-                $grelevance = (isset($fielddata['grelevance'])) ? $fielddata['grelevance'] : 1;
+                $relevance = (isset($fielddata['relevance'])) ? trim($fielddata['relevance']) : 1;
+                $SQrelevance = (isset($fielddata['SQrelevance'])) ? trim($fielddata['SQrelevance']) : 1;
+                $grelevance = (isset($fielddata['grelevance'])) ? trim($fielddata['grelevance']) : 1;
                 $hidden = (isset($qattr[$questionNum]['hidden'])) ? ($qattr[$questionNum]['hidden'] == '1') : false;
                 $scale_id = (isset($fielddata['scale_id'])) ? $fielddata['scale_id'] : '0';
                 $preg = (isset($fielddata['preg'])) ? $fielddata['preg'] : NULL; // a perl regular exrpession validation function
@@ -4258,7 +4268,7 @@
                 //                . "','relevance':'" . (($relevance != '') ? htmlspecialchars(preg_replace('/[[:space:]]/',' ',$relevance),ENT_QUOTES) : 1)
                 //                . "','readWrite':'" . $readWrite
                 //                . "','grelevance':'" . (($grelevance != '') ? htmlspecialchars(preg_replace('/[[:space:]]/',' ',$grelevance),ENT_QUOTES) : 1)
-                . "','default':'" . (is_null($defaultValue) ? '' : str_replace("'", "\'", $defaultValue))
+                . "','default':'" . (is_null($defaultValue) ? '' : json_encode($defaultValue)) // Don't found usage in em_javascript, used in expression ?
                 . "','rowdivid':'" . (is_null($rowdivid) ?  '' : $rowdivid)
                 . "','onlynum':'" . ($onlynum ? '1' : '')
                 . "','gseq':" . $groupSeq
@@ -4314,13 +4324,10 @@
                     'jsName'=>'',
                     'readWrite'=>'N',
                 );
-                // DON'T set $this->knownVars['TOKEN'] = $blankVal; becuase optout/optin can need it, then don't replace this from templatereplace
+                // DON'T set $this->knownVars['TOKEN'] = $blankVal; because optout/optin can need it, then don't replace this from templatereplace
                 foreach ($attrs as $key)
                 {
-                    if (preg_match('/^(firstname|lastname|email|usesleft|token|attribute_\d+)$/',$key))
-                    {
-                        $this->knownVars['TOKEN:' . strtoupper($key)] = $blankVal;
-                    }
+                    $this->knownVars['TOKEN:' . strtoupper($key)] = $blankVal;
                 }
             }
             // set default value for reserved 'this' variable
@@ -5155,14 +5162,13 @@
                         }
 
                         // Set certain variables normally set by StartProcessingGroup()
-                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup, See self::InitGroupRelevanceInfo();
+                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup
                         $qInfo = $LEM->questionSeq2relevance[$LEM->currentQuestionSeq];
                         $LEM->currentQID=$qInfo['qid'];
                         $LEM->currentGroupSeq=$qInfo['gseq'];
                         if ($LEM->currentGroupSeq > $LEM->maxGroupSeq) {
                             $LEM->maxGroupSeq = $LEM->currentGroupSeq;
                         }
-                        self::InitGroupRelevanceInfo();
                         $LEM->ProcessAllNeededRelevance($LEM->currentQuestionSeq);
                         $LEM->_CreateSubQLevelRelevanceAndValidationEqns($LEM->currentQuestionSeq);
                         $result = $LEM->_ValidateQuestion($LEM->currentQuestionSeq);
@@ -5372,14 +5378,13 @@
                         }
 
                         // Set certain variables normally set by StartProcessingGroup()
-                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup? see self::InitGroupRelevanceInfo();
+                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup?
                         $qInfo = $LEM->questionSeq2relevance[$LEM->currentQuestionSeq];
                         $LEM->currentQID=$qInfo['qid'];
                         $LEM->currentGroupSeq=$qInfo['gseq'];
                         if ($LEM->currentGroupSeq > $LEM->maxGroupSeq) {
                             $LEM->maxGroupSeq = $LEM->currentGroupSeq;
                         }
-                        self::InitGroupRelevanceInfo();;
                         $LEM->ProcessAllNeededRelevance($LEM->currentQuestionSeq);
                         $LEM->_CreateSubQLevelRelevanceAndValidationEqns($LEM->currentQuestionSeq);
                         $result = $LEM->_ValidateQuestion($LEM->currentQuestionSeq);
@@ -5557,9 +5562,9 @@
                             if (!preg_match('/_filecount$/', $key))
                             {
                                 $aFiles = json_decode($val);
-                                $iSize=@count($aFiles);
-                                if (!is_null($aFiles) && $iSize > 0)
+                                if (!empty($aFiles) && is_array($aFiles))
                                 {
+                                    $iSize = count($aFiles);
                                     for ($i = 0; $i < $iSize; $i++)
                                     {
                                         // Decode html entities
@@ -5884,7 +5889,7 @@
                         }
 
                         // Set certain variables normally set by StartProcessingGroup()
-                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup? see self::InitGroupRelevanceInfo();
+                        $LEM->groupRelevanceInfo=array();   // TODO only important thing from StartProcessingGroup?
                         if (!isset($LEM->questionSeq2relevance[$LEM->currentQuestionSeq])) {
                             return NULL;    // means an invalid question - probably no sub-quetions
                         }
@@ -5894,7 +5899,6 @@
                         if ($LEM->currentGroupSeq > $LEM->maxGroupSeq) {
                             $LEM->maxGroupSeq = $LEM->currentGroupSeq;
                         }
-                        self::InitGroupRelevanceInfo();;
                         $LEM->ProcessAllNeededRelevance($LEM->currentQuestionSeq);
                         $LEM->_CreateSubQLevelRelevanceAndValidationEqns($LEM->currentQuestionSeq);
                         $result = $LEM->_ValidateQuestion($LEM->currentQuestionSeq,$force);
@@ -7163,33 +7167,6 @@
         }
 
         /**
-         * Init groupRelevanceInfo with qid as 0 for expression not related to question
-         * see issue #17966
-         * @return void
-         */
-        private static function InitGroupRelevanceInfo()
-        {
-            $LEM =& LimeExpressionManager::singleton();
-            if (is_null($LEM->currentGroupSeq)) {
-                return;
-            }
-            $LEM->groupRelevanceInfo = [
-                [
-                    'qid' => 0,
-                    'gseq' => $LEM->currentGroupSeq,
-                    'eqn' => '',
-                    'result' => true,
-                    'numJsVars' => 0,
-                    'relevancejs' => '',
-                    'relevanceVars' => '',
-                    'jsResultVar' => '',
-                    'type' => '',
-                    'hidden' => false,
-                    'hasErrors' => false,
-                ]
-            ];
-        }
-        /**
         * This should be called each time a new group is started, whether on same or different pages. Sets/Clears needed internal parameters.
         * @param int|null $gseq - the group sequence
         * @param boolean|null $anonymized - whether anonymized
@@ -7209,7 +7186,6 @@
             if (!is_null($gseq))
             {
                 $LEM->currentGroupSeq = $gseq;
-                self::InitGroupRelevanceInfo();
                 if (!is_null($surveyid))
                 {
                     $LEM->setVariableAndTokenMappingsForExpressionManager($surveyid,$forceRefresh,$anonymized);
@@ -7357,6 +7333,7 @@
 
             $jsParts = array();
             $inputParts = array();
+            /* string[] all needed variable for LEMalias2varName and LEMvarNameAttr */
             $allJsVarsUsed = array();
             $rowdividList = array();   // list of subquestions needing relevance entries
             /* All function for expression manager */
@@ -7415,6 +7392,21 @@
                     }
                 }
             }
+            /**
+             * @var array[] the javascript and related variable,
+             * reconstruct from $LEM->pageTailorInfo to get questionId as key
+             **/
+            $pageTailorInfo = array();
+            if (!empty($LEM->pageTailorInfo)) {
+                foreach ($LEM->pageTailorInfo as $tailors) {
+                    if (is_array($tailors)) {
+                        foreach ($tailors as $tailor) {
+                            $pageTailorInfo[$tailor['questionNum']][] = $tailor;
+                        }
+                    }
+                }
+            }
+
             $valEqns = array();
             $relEqns = array();
             $relChangeVars = array();
@@ -7437,22 +7429,13 @@
                     $valParts = array();    // validation
                     $relJsVarsUsed = array();   // vars used in relevance and tailoring
                     $valJsVarsUsed = array();   // vars used in validations
-                    foreach ($LEM->pageTailorInfo as $tailor)
-                    {
-                        if (is_array($tailor))
-                        {
-                            foreach ($tailor as $sub)
-                            {
-                                if ($sub['questionNum'] == $arg['qid'])
-                                {
-                                    $tailorParts[] = $sub['js'];
-                                    $vars = explode('|',$sub['vars']);
-                                    if (is_array($vars))
-                                    {
-                                        $allJsVarsUsed = array_merge($allJsVarsUsed,$vars);
-                                        $relJsVarsUsed = array_merge($relJsVarsUsed,$vars);
-                                    }
-                                }
+                   if (!empty($pageTailorInfo[$arg['qid']])) {
+                        foreach ($pageTailorInfo[$arg['qid']] as $tailor) {
+                            $tailorParts[] = $tailor['js'];
+                            $vars = array_filter(explode('|', $tailor['vars']));
+                            if (!empty($vars)) {
+                                $allJsVarsUsed = array_merge($allJsVarsUsed, $vars);
+                                $relJsVarsUsed = array_merge($relJsVarsUsed, $vars);
                             }
                         }
                     }
@@ -7502,6 +7485,7 @@
 
                     $relChangeVars[] = "  relChange" . $arg['qid'] . "=false;\n"; // detect change in relevance status
 
+                    /* relevance stat on question (need $arg['qid']) and set group always relevant */
                     if (($relevance == '' || $relevance == '1' || ($arg['result'] == true && $arg['numJsVars']==0)) && count($tailorParts) == 0 && count($subqParts) == 0 && count($subqValidations) == 0 && count($validationEqns) == 0)
                     {
                         // Only show constitutively true relevances if there is tailoring that should be done.
@@ -8034,9 +8018,32 @@
                     }
                 }
             }
-
+            /* Tailoring out of question scope */
+            if (!empty($pageTailorInfo[0])) {
+                $jsParts[] = "LEMrel0(sgqa);\n";
+            }
             $jsParts[] = "\n}\n";
-
+            /* Tailoring out of question scope for global action */
+            if (!empty($pageTailorInfo[0])) {
+                $tailorParts = [];
+                $tailorJsVarsUsed = [];
+                foreach ($pageTailorInfo[0] as $tailor) {
+                    $tailorParts[] = $tailor['js'];
+                    $vars = array_filter(explode('|', $tailor['vars']));
+                    if (!empty($vars)) {
+                        $tailorJsVarsUsed = array_unique(array_merge($tailorJsVarsUsed, $vars));
+                    }
+                }
+                $allJsVarsUsed = array_merge($allJsVarsUsed, $tailorJsVarsUsed);
+                $globalJS = "function LEMrel0(sgqa){\n";
+                $globalJS .= "  var UsesVars = ' " . implode(' ', $tailorJsVarsUsed) . " ';\n";
+                $globalJS .= "  if (typeof sgqa !== 'undefined' && !LEMregexMatch('/ java' + sgqa + ' /', UsesVars)) {\n";
+                $globalJS .= "    return;\n";
+                $globalJS .= "  }\n";
+                $globalJS .= implode("", $tailorParts);
+                $globalJS .= "}\n";
+                $relEqns[] = $globalJS;
+            }
             $jsParts[] = implode("\n",$relEqns);
             $jsParts[] = implode("\n",$valEqns);
 
@@ -8980,13 +8987,13 @@ report~numKids > 0~message~{name}, you said you are {age} and that you have {num
                                 {
                                     $json = $value;
                                     $aFiles = json_decode($json);
-                                    $iSize=@count($aFiles);
                                     // if the files have not been saved already,
                                     // move the files from tmp to the files folder
-
                                     $tmp = $LEM->surveyOptions['tempdir'] . 'upload'. DIRECTORY_SEPARATOR;
-                                    if (!is_null($aFiles) && $iSize > 0)
+                                    /* json return null, true or false, and here : must return an array */
+                                    if (!empty($aFiles) && is_array($aFiles))
                                     {
+                                        $iSize = count($aFiles);
                                         // Move the (unmoved, temp) files from temp to files directory.
                                         // Check all possible file uploads
                                         for ($i = 0; $i < $iSize; $i++)

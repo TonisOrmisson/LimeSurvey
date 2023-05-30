@@ -112,7 +112,7 @@ function loadanswers()
                     $_SESSION['survey_' . $surveyid][$column] = '';
                 } elseif ($_SESSION['survey_' . $surveyid]['fieldmap'][$column]['type'] == '|' && !preg_match('/_filecount$/', $column)) {
                     $aFiles = json_decode($value);
-                    $iSize = @count($aFiles);
+                    $iSize = count(empty($aFiles) ? [] : $aFiles);
                     if (!is_null($aFiles) && $iSize > 0) {
                         for ($i = 0; $i < $iSize; $i++) {
                             // Encode html entities
@@ -1994,9 +1994,10 @@ function checkCompletedQuota($surveyid, $return = false)
 
     if ($closeSurvey) {
         killSurveySession($surveyid);
-
         if ($sAutoloadUrl == 1 && $sUrl != "") {
-            header("Location: ".$sUrl);
+            /* Same than end url of survey */
+            $headToSurveyUrl = htmlspecialchars_decode($sUrl);
+            header("Location: " . $headToSurveyUrl);
         }
     }
     $thissurvey['include_content'] = 'quotas';

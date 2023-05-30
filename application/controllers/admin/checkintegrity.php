@@ -487,7 +487,6 @@ class CheckIntegrity extends Survey_Common_Action
         Yii::app()->setConfig('Updating', true);
 
         foreach ($oSurveys as $oSurvey) {
-
             if ($oSurvey->isActive && !$oSurvey->hasResponsesTable) {
                 Survey::model()->updateByPk($oSurvey->sid, array('active'=>'N'));
                 $bDirectlyFixed = true;
@@ -496,7 +495,8 @@ class CheckIntegrity extends Survey_Common_Action
 
         /** Check for active surveys if questions are in the correct group **/
         foreach ($oSurveys as $oSurvey) {
-
+            // This actually clears the schema cache, not refreshes it
+            $oDB->schema->refresh();
             // We get the active surveys
             if ($oSurvey->isActive && $oSurvey->hasResponsesTable) {
 
@@ -529,20 +529,19 @@ class CheckIntegrity extends Survey_Common_Action
                                 // It was just the QID....
                                 $sQID      =  $sDirtyQid;
                             }
-                            if ((string) intval($sQID) !== $sQID) {
-                                throw new \Exception('sQID is not an integer: ' . $sQID);
-                            }
 
                             // Here, we get the question as defined in backend
-                            $oQuestion = Question::model()->findByAttributes([ 'qid' => $sQID , 'language' => $oSurvey->language, 'sid' => $oSurvey->sid ]);
+                            try {
+                                $oQuestion = Question::model()->findByAttributes([ 'qid' => $sQID , 'language' => $oSurvey->language, 'sid' => $oSurvey->sid ]);
+                            } catch (Exception $e) {
+                                // QID potentially invalid , see #17458, reset $oQuestion
+                                $oQuestion = null;
+                            }
                             if (is_a($oQuestion, 'Question')){
-
                                 // We check if its GID is the same as the one defined in the column name
                                 if ($oQuestion->gid != $sGid){
-
                                     // If not, we change the column name
                                     $sNvColName = $oSurvey->sid . 'X'. $oQuestion->groups->gid . 'X' . $sDirtyQid;
-
                                     if ( array_key_exists( $sNvColName, $aColumns ) ){
                                         // This case will not happen often, only when QID + Subquestion ID == QID of a question in the target group
                                         // So we'll change the group of the question question group table (so in admin interface, not in frontend)
@@ -553,14 +552,14 @@ class CheckIntegrity extends Survey_Common_Action
                                         $oDB->createCommand()->renameColumn($model->tableName(), $oColumn->name , $sNvColName);
                                         $oTransaction->commit();
                                     }
-
-
                                 }
                             } else {
                                 // QID not found: The function to split the fieldname into the SGQA data is not 100% reliable
                                 // So for certain question types (for example Text Array) the field name cannot be properly derived
+                                // This happen if subquestions code are number only for example
                                 // In this case just ignore the field - see also https://bugs.limesurvey.org/view.php?id=15642
                                 // There is still a extremely  low chance that an unwanted rename happens if a collision like this happens in the same survey
+                                \Yii::log(sprintf("Invalid question id %s when checkintegrity in survey %s", $sQID, $oSurvey->sid), \CLogger::LEVEL_INFO, 'application.controller.admin.checkintegrity');
                             }
                         }
                     }
@@ -568,9 +567,9 @@ class CheckIntegrity extends Survey_Common_Action
             }
         }
 
+        $oDB->schema->refresh();
         $oDB->schemaCachingDuration = 3600;
         $oDB->schema->getTables();
-        $oDB->schema->refresh();
         $oDB->active = false;
         $oDB->active = true;
         User::model()->refreshMetaData();
@@ -695,8 +694,7 @@ class CheckIntegrity extends Survey_Common_Action
         $oCriteria = new CDbCriteria;
         $oCriteria->join = 'LEFT JOIN {{questions}} q ON t.qid=q.qid';
         $oCriteria->condition = 'q.qid IS NULL';
-        $aRecords = DefaultValue::model()->findAll($oCriteria);
-        $aDelete['defaultvalues'] = count($aRecords);
+        $aDelete['defaultvalues'] = DefaultValue::model()->count($oCriteria);
 
         /**********************************************************************/
         /*     Check quotas                                                   */
@@ -705,7 +703,7 @@ class CheckIntegrity extends Survey_Common_Action
         $oCriteria = new CDbCriteria;
         $oCriteria->join = 'LEFT JOIN {{surveys}} s ON t.sid=s.sid';
         $oCriteria->condition = '(s.sid IS NULL)';
-        $aDelete['quotas'] = count(Quota::model()->findAll($oCriteria));
+        $aDelete['quotas'] = Quota::model()->count($oCriteria);
 
         /**********************************************************************/
         /*     Check quota languagesettings                                   */
@@ -713,7 +711,7 @@ class CheckIntegrity extends Survey_Common_Action
         $oCriteria = new CDbCriteria;
         $oCriteria->join = 'LEFT JOIN {{quota}} s ON t.quotals_quota_id=s.id';
         $oCriteria->condition = '(s.id IS NULL)';
-        $aDelete['quotals'] = count(QuotaLanguageSetting::model()->findAll($oCriteria));
+        $aDelete['quotals'] = QuotaLanguageSetting::model()->count($oCriteria);
 
         /**********************************************************************/
         /*     Check quota members                                   */
@@ -722,7 +720,7 @@ class CheckIntegrity extends Survey_Common_Action
         $oCriteria->join = 'LEFT JOIN {{questions}} q ON t.qid=q.qid LEFT JOIN {{surveys}} s ON t.sid=s.sid';
         $oCriteria->condition = '(q.qid IS NULL) OR (s.sid IS NULL)';
 
-        $aDelete['quotamembers'] = count(QuotaMember::model()->findAll($oCriteria));
+        $aDelete['quotamembers'] = QuotaMember::model()->count($oCriteria);
 
         /**********************************************************************/
         /*     Check assessments                                              */
@@ -770,6 +768,8 @@ class CheckIntegrity extends Survey_Common_Action
             foreach ($aLanguages as $langname) {
                 if ($langname) {
                     $oLanguageSettings = SurveyLanguageSetting::model()->find('surveyls_survey_id=:surveyid AND surveyls_language=:langname', array(':surveyid'=>$survey->sid, ':langname'=>$langname));
+                    // A simple find starts to eat up memory, so we need to free it
+                    gc_collect_cycles();
                     if (!$oLanguageSettings) {
                         $oLanguageSettings = new SurveyLanguageSetting;
                         $languagedetails = getLanguageDetails($langname);

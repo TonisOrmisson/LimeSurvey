@@ -1297,12 +1297,6 @@ class tokens extends Survey_Common_Action
         $aData['sidemenu']["token_menu"] = true;
         $aData['token_bar']['closebutton']['url'] = 'admin/tokens/sa/index/surveyid/' . $iSurveyId; // Close button
 
-        if (Yii::app()->request->getParam('action') == "remind") {
-            $aData['token_bar']['sendreminderbutton'] = true;
-        } else {
-            $aData['token_bar']['sendinvitationbutton'] = true; // Invitation button
-        }
-
         $aTokenIds = $this->getTokenIds();
         $sSubAction = $this->getSubAction();
         $bIsInvitation = $sSubAction == 'invite';
@@ -1425,10 +1419,11 @@ class tokens extends Survey_Common_Action
                     $modsubject = Replacefields($modsubject, $fieldsarray);
                     $modmessage = Replacefields($modmessage, $fieldsarray);
 
-                    if (!App()->request->getPost('bypassdatecontrol') == '1' && trim($emrow['validfrom']) != '' && convertDateTimeFormat($emrow['validfrom'], 'Y-m-d H:i:s', 'U') * 1 > date('U') * 1) {
+                    $now = dateShift(date("Y-m-d H:i:s"), "Y-m-d H:i", Yii::app()->getConfig('timeadjust'));
+                    if (!App()->request->getPost('bypassdatecontrol') == '1' && trim($emrow['validfrom']) != '' && strtotime($emrow['validfrom']) > strtotime($now)) {
                         $tokenoutput .= $emrow['tid'] . " " . htmlspecialchars(ReplaceFields(gT("Email to {FIRSTNAME} {LASTNAME} ({EMAIL}) delayed: Token is not yet valid.", 'unescaped'), $fieldsarray)) . "<br />";
                         $bInvalidDate = true;
-                    } elseif (!App()->request->getPost('bypassdatecontrol') == '1' && trim($emrow['validuntil']) != '' && convertDateTimeFormat($emrow['validuntil'], 'Y-m-d H:i:s', 'U') * 1 < date('U') * 1) {
+                    } elseif (!App()->request->getPost('bypassdatecontrol') == '1' && trim($emrow['validuntil']) != '' && strtotime($emrow['validuntil']) < strtotime($now)) {
                         $tokenoutput .= $emrow['tid'] . " " . htmlspecialchars(ReplaceFields(gT("Email to {FIRSTNAME} {LASTNAME} ({EMAIL}) skipped: Token is not valid anymore.", 'unescaped'), $fieldsarray)) . "<br />";
                         $bInvalidDate = true;
                     } else {
@@ -2371,38 +2366,45 @@ class tokens extends Survey_Common_Action
         $oldtable = "tokens_$iSurveyId";
         $newtable = "old_tokens_{$iSurveyId}_$date";
         $newtableDisplay = Yii::app()->db->tablePrefix . $newtable;
-        if (!Yii::app()->request->getQuery('ok')) {
+        if (!App()->request->getPost('ok')) {
             $aData['sidemenu']['state'] = false;
             $this->_renderWrappedTemplate('token', array(
                 'message' => array(
                     'title' => gT("Delete survey participants table"),
-                    'message' => gT("If you delete this table tokens will no longer be required to access this survey.") . "<br />" . gT("A backup of this table will be made if you proceed. Your system administrator will be able to access this table.") . "<br />\n"
+                    'message' => CHtml::form(
+                            array("admin/tokens/sa/kill", 'surveyid' => $iSurveyId),
+                            'post',
+                            array('id' => 'deletetokentable', 'name' => 'deletetokentable')
+                        )
+                        .gT("If you delete this table tokens will no longer be required to access this survey.") . "<br />" . gT("A backup of this table will be made if you proceed. Your system administrator will be able to access this table.") . "<br />\n"
                         . sprintf('("%s")<br /><br />', $newtableDisplay)
-                        . "<input class='btn btn-danger' type='submit' value='"
-                        . gT("Delete table") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/kill/surveyid/{$iSurveyId}/ok/Y") . "', '_top')\" />\n"
-                        . "<input class='btn btn-default' type='submit' value='"
-                        . gT("Cancel") . "' onclick=\"window.open('" . $this->getController()->createUrl("admin/tokens/sa/index/surveyid/{$iSurveyId}") . "', '_top')\" />\n"
+                        . "<button class='btn btn-danger' type='submit' value='Y' name='ok' >"
+                        . gT("Delete table") . "</button>\n"
+                        . "<a class='btn btn-default' href='" . $this->getController()->createUrl("admin/tokens/sa/index/surveyid/{$iSurveyId}") . "'>"
+                        . gT("Cancel") . "</a>\n"
+                        . "</form>"
                 )
             ), $aData);
-        } else /* The user has confirmed they want to delete the tokens table */ {
-            Yii::app()->db->createCommand()->renameTable("{{{$oldtable}}}", "{{{$newtable}}}");
-
-            //Remove any survey_links to the CPDB
-            SurveyLink::model()->deleteLinksBySurvey($iSurveyId);
-
-            $aData['sidemenu']['state'] = false;
-            $this->_renderWrappedTemplate('token', array(
-                'message' => array(
-                    'title' => gT("Delete survey participants table"),
-                    'message' => '<br />' . gT("The tokens table has now been removed and tokens are no longer required to access this survey.") . "<br /> " . gT("A backup of this table has been made and can be accessed by your system administrator.") . "<br />\n"
-                        . sprintf('("%s")<br /><br />', $newtableDisplay)
-                        . "<input type='submit' class='btn btn-default' value='"
-                        . gT("Main Admin Screen") . "' onclick=\"window.open('" . Yii::app()->getController()->createUrl("admin/survey/sa/view/surveyid/" . $iSurveyId) . "', '_top')\" />"
-                )
-            ), $aData);
-
-            LimeExpressionManager::SetDirtyFlag(); // so that knows that survey participants tables have changed
+            App()->end();
         }
+        /* The user has confirmed they want to delete the tokens table */
+        Yii::app()->db->createCommand()->renameTable("{{{$oldtable}}}", "{{{$newtable}}}");
+
+        //Remove any survey_links to the CPDB
+        SurveyLink::model()->deleteLinksBySurvey($iSurveyId);
+
+        $aData['sidemenu']['state'] = false;
+        $this->_renderWrappedTemplate('token', array(
+            'message' => array(
+                'title' => gT("Delete survey participants table"),
+                'message' => '<br />' . gT("The tokens table has now been removed and tokens are no longer required to access this survey.") . "<br /> " . gT("A backup of this table has been made and can be accessed by your system administrator.") . "<br />\n"
+                    . sprintf('("%s")<br /><br />', $newtableDisplay)
+                    . "<a class='btn btn-default' href='" . $this->getController()->createUrl("admin/survey/sa/view/surveyid/" . $iSurveyId) . "'>"
+                    . gT("Main Admin Screen") . "</a>"
+            )
+        ), $aData);
+
+        LimeExpressionManager::SetDirtyFlag(); // so that knows that survey participants tables have changed
     }
 
     /**
@@ -2752,6 +2754,12 @@ class tokens extends Survey_Common_Action
         $bHtml = (getEmailFormat($iSurveyId) == 'html');
         $bEmail = $sSubAction == 'invite';
         $aTokenIds = $this->getTokenIds();
+
+        if ($sSubAction == "remind") {
+            $aData['token_bar']['sendreminderbutton'] = true;
+        } else {
+            $aData['token_bar']['sendinvitationbutton'] = true; // Invitation button
+        }
 
         // Fill empty email template by default text
         foreach ($aSurveyLangs as $sSurveyLanguage) {
