@@ -63,7 +63,10 @@ class TestBaseClassView extends TestBaseClassWeb
             $screenshot = self::$webDriver->takeScreenshot();
             file_put_contents(self::$screenshotsFolder. '/'.$name.'.png', $screenshot);
         }
-        //$body = $this->webDriver->findElement(WebDriverBy::tagName('body'));
+        $body = $this->webDriver->findElement(WebDriverBy::tagName('body'));
+        $this->assertStringNotContainsStringIgnoringCase("deprecated", $body->getText());
+        $this->assertStringNotContainsStringIgnoringCase("error", $body->getText());
+        $this->assertStringNotContainsStringIgnoringCase("exception", $body->getText());
         //var_dump($body->getText());
         $this->assertNotEmpty(
             $element,
