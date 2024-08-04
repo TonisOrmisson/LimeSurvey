@@ -99,19 +99,7 @@ class TestBaseClassWeb extends TestBaseClass
         return self::$webDriver->get($url);
     }
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        if(file_exists(self::$errorLogFileName)) {
-            unlink(self::$errorLogFileName);
-        }
-    }
 
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        $this->assertFileNotExists(self::$errorLogFileName);
-    }
 
     /**
      * Get URL to admin view.

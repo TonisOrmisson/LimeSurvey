@@ -74,6 +74,20 @@ class TestBaseClass extends TestCase
         \Yii::import('application.helpers.globalsettings_helper', true);
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        if(file_exists(self::$errorLogFileName)) {
+            unlink(self::$errorLogFileName);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->assertFileNotExists(self::$errorLogFileName);
+    }
+
     /**
      * @param string $fileName
      * @param integer $asuser
