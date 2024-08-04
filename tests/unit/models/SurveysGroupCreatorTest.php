@@ -13,6 +13,7 @@ class SurveysGroupCreatorTest extends TestCase
 {
     public static function setupBeforeClass(): void
     {
+        parent::setUpBeforeClass();
         \Yii::import('application.helpers.common_helper', true);
         \Yii::import('application.helpers.globalsettings_helper', true);
     }

@@ -212,7 +212,11 @@ jobs:
       - name: Run unit tests
         env:
           XDEBUG_MODE: coverage
-        run: php vendor/bin/phpunit --testdox --stop-on-failure tests/unit
+        run: php vendor/bin/phpunit --testdox tests/unit
+
+      - name: Show error log if exists
+        if: failure()
+        run: if [ -f tmp/runtime/error.log ]; then cat tmp/runtime/error.log; fi
 
       - name: Upload cov.xml
         uses: actions/upload-artifact@v4

@@ -11,6 +11,7 @@ class QuestionTest extends BaseModelTestCase
 
     public static function setupBeforeClass(): void
     {
+        parent::setUpBeforeClass();
         \Yii::import('application.helpers.common_helper', true);
     }
 

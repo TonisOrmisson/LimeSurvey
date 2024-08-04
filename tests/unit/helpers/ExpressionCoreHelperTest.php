@@ -47,6 +47,8 @@ class ExpressionManagerCoreTest extends TestBaseClass
      */
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         // Check that node is installed.
         $output = [];
         exec('which node ', $output);

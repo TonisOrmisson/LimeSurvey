@@ -15,6 +15,8 @@ class EmCacheHelperTest extends TestBaseClass
      */
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         \Yii::import('application.helpers.expressions.em_manager_helper', true);
 
         // Emcache is only used from frontend, or when SurveyController is set.

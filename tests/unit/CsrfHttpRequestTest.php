@@ -8,6 +8,7 @@ class CsrfHttpRequestTest extends TestBaseClass
 
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
         self::$noCsrfValidationRoutes = \Yii::app()->request->noCsrfValidationRoutes;
     }
 
