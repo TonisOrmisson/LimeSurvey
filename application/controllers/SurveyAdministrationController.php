@@ -1152,7 +1152,10 @@ class SurveyAdministrationController extends LSBaseController
         //todo permission check ?!?
 
         $survey = Survey::model()->findByPk($iSurveyID);
-        $menus = $survey->getSurveyMenus($position);
+        $menus = [];
+        if(!empty($survey)) {
+            $menus = $survey->getSurveyMenus($position);
+        }
         return $this->renderPartial(
             '/admin/super/_renderJson',
             array(
