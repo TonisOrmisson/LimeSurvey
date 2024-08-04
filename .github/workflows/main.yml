@@ -148,6 +148,9 @@ jobs:
             DOMAIN: localhost
         run: php vendor/bin/phpunit --testdox --stop-on-failure tests/functional
 
+      - name: Show error log if exists
+        run: if [ -f tmp/runtime/error.php ]; then cat tmp/runtime/error.php; fi
+
       - name: Upload Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
