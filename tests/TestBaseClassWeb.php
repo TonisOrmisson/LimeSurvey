@@ -51,6 +51,9 @@ class TestBaseClassWeb extends TestBaseClass
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
+        if(file_exists(self::$errorLogFileName)) {
+            unlink(self::$errorLogFileName);
+        }
 
         $domain = getenv('DOMAIN');
         if (empty($domain)) {
@@ -71,13 +74,17 @@ class TestBaseClassWeb extends TestBaseClass
 
         // Anyone can preview surveys.
         self::$testHelper->enablePreview();
+        self::assertFileNotExists(self::$errorLogFileName);
+
     }
+
 
     /**
      * @return void
      */
     public static function tearDownAfterClass(): void
     {
+        self::assertFileNotExists(self::$errorLogFileName);
         parent::tearDownAfterClass();
         self::$webDriver->quit();
     }

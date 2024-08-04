@@ -16,6 +16,9 @@ class TestBaseClass extends TestCase
     /** @var  string $tempFolder*/
     protected static $tempFolder;
 
+    /** @var  string $errorLogFileName The applcation error file name */
+    protected static $errorLogFileName;
+
     /** @var  string $screenshotsFolder */
     protected static $screenshotsFolder;
 
@@ -64,6 +67,7 @@ class TestBaseClass extends TestCase
         self::$viewsFolder = self::$dataFolder . "/views";
         self::$surveysFolder = self::$dataFolder . '/surveys';
         self::$tempFolder = __DIR__ . '/tmp';
+        self::$errorLogFileName = __DIR__ . '/../tmp/runtime/error123.log';
         self::$screenshotsFolder = self::$tempFolder . '/screenshots';
         self::$testHelper->importAll();
 

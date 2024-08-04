@@ -103,6 +103,10 @@ jobs:
           # NB: There can be a difference in assets used when debug = 0 or 2 (minified version or not)
           # sed -i '60s/.*/        "debug"=>2,/' application/config/config.php
           # cat application/config/config.php
+          
+          ## add error log to 
+          sed -i "52 i  \'log\' => [\'routes\' => [\'errors\' => [\'class\' => \'CFileLogRoute\',\'levels\' => \'error\',\'logFile\' => \'error.log\']]]," application/config/config-sample-mysql.php
+          cat application/config/config.php
 
       - name: Test the server
         run: |
