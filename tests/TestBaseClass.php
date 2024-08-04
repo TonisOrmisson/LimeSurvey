@@ -67,7 +67,7 @@ class TestBaseClass extends TestCase
         self::$viewsFolder = self::$dataFolder . "/views";
         self::$surveysFolder = self::$dataFolder . '/surveys';
         self::$tempFolder = __DIR__ . '/tmp';
-        self::$errorLogFileName = __DIR__ . '/../tmp/runtime/error123.log';
+        self::$errorLogFileName = __DIR__ . '/../tmp/runtime/error.log';
         self::$screenshotsFolder = self::$tempFolder . '/screenshots';
         self::$testHelper->importAll();
 

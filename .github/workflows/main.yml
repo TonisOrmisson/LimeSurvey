@@ -104,8 +104,9 @@ jobs:
           # sed -i '60s/.*/        "debug"=>2,/' application/config/config.php
           # cat application/config/config.php
           
-          ## add error log to 
+          ## add error file-logging to config 
           sed -i "52 i  \'log\' => [\'routes\' => [\'errors\' => [\'class\' => \'CFileLogRoute\',\'levels\' => \'error\',\'logFile\' => \'error.log\']]]," application/config/config.php
+          LINENR=$(awk '/components/ {print NR+1}' application/config/config.php); sed -i "$LINENR i  \'log\' =>  [\'routes\' => [\'errors\' => [\'class\' => \'CFileLogRoute\',\'levels\' => \'error\',\'logFile\' => \'error.log\']]]," application/config/config.php
           cat application/config/config.php
 
       - name: Test the server
