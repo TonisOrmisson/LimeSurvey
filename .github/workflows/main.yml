@@ -146,7 +146,7 @@ jobs:
       - name: Run functional tests
         env:
             DOMAIN: localhost
-        run: php vendor/bin/phpunit --testdox tests/functional
+        run: php vendor/bin/phpunit --testdox  --stop-on-failure tests/functional
 
       - name: Show error log if exists
         if: failure()
@@ -212,7 +212,7 @@ jobs:
       - name: Run unit tests
         env:
           XDEBUG_MODE: coverage
-        run: php vendor/bin/phpunit --testdox tests/unit
+        run: php vendor/bin/phpunit --testdox --stop-on-failure tests/unit
 
       - name: Show error log if exists
         if: failure()

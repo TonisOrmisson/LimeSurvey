@@ -1153,7 +1153,7 @@ class SurveyAdministrationController extends LSBaseController
 
         $survey = Survey::model()->findByPk($iSurveyID);
         $menus = [];
-        if(!empty($survey)) {
+        if (!empty($survey)) {
             $menus = $survey->getSurveyMenus($position);
         }
         return $this->renderPartial(
