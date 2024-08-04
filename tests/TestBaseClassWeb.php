@@ -51,9 +51,6 @@ class TestBaseClassWeb extends TestBaseClass
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        if(file_exists(self::$errorLogFileName)) {
-            unlink(self::$errorLogFileName);
-        }
 
         $domain = getenv('DOMAIN');
         if (empty($domain)) {
@@ -84,7 +81,6 @@ class TestBaseClassWeb extends TestBaseClass
      */
     public static function tearDownAfterClass(): void
     {
-        static::assertFileNotExists(self::$errorLogFileName);
         parent::tearDownAfterClass();
         self::$webDriver->quit();
     }
@@ -101,6 +97,20 @@ class TestBaseClassWeb extends TestBaseClass
             throw new \Exception('$url must be a string, is ' . json_encode($url));
         }
         return self::$webDriver->get($url);
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        if(file_exists(self::$errorLogFileName)) {
+            unlink(self::$errorLogFileName);
+        }
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        $this->assertFileNotExists(self::$errorLogFileName);
     }
 
     /**
