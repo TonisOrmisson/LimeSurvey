@@ -74,7 +74,7 @@ class TestBaseClassWeb extends TestBaseClass
 
         // Anyone can preview surveys.
         self::$testHelper->enablePreview();
-        self::assertFileNotExists(self::$errorLogFileName);
+        static::assertFileNotExists(self::$errorLogFileName);
 
     }
 
@@ -84,7 +84,7 @@ class TestBaseClassWeb extends TestBaseClass
      */
     public static function tearDownAfterClass(): void
     {
-        self::assertFileNotExists(self::$errorLogFileName);
+        static::assertFileNotExists(self::$errorLogFileName);
         parent::tearDownAfterClass();
         self::$webDriver->quit();
     }
