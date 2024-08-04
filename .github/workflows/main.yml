@@ -146,7 +146,7 @@ jobs:
       - name: Run functional tests
         env:
             DOMAIN: localhost
-        run: php vendor/bin/phpunit --testdox --stop-on-failure tests/functional
+        run: php vendor/bin/phpunit --testdox tests/functional
 
       - name: Show error log if exists
         if: failure()
