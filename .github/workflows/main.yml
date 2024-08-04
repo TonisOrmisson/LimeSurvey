@@ -105,7 +105,7 @@ jobs:
           # cat application/config/config.php
           
           ## add error log to 
-          sed -i "52 i  \'log\' => [\'routes\' => [\'errors\' => [\'class\' => \'CFileLogRoute\',\'levels\' => \'error\',\'logFile\' => \'error.log\']]]," application/config/config-sample-mysql.php
+          sed -i "52 i  \'log\' => [\'routes\' => [\'errors\' => [\'class\' => \'CFileLogRoute\',\'levels\' => \'error\',\'logFile\' => \'error.log\']]]," application/config/config.php
           cat application/config/config.php
 
       - name: Test the server
