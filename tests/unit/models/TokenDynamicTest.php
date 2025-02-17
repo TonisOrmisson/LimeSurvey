@@ -256,15 +256,15 @@ class TokenDynamicTest extends TestBaseClass
     public function validationProvider()
     {
         return [
-            '1233456792453456' => true,
-            'abcderghijklmnopeqrst' => true,
-            '1a2b3c4d5e' => true,
-            '1a2b3c4d5e_1a2b3c4d5e_1a2b3c4d5e' => true,
+            ['1233456792453456', true],
+            ['abcderghijklmnopeqrst', true],
+            ['1a2b3c4d5e', true],
+            ['1a2b3c4d5e_1a2b3c4d5e_1a2b3c4d5e', true],
 
-            '1a2b3c4d5e-1a2b3c4d5e-1a2b3c4d5e' => false,
-            '1a2b3c4d5e.1a2b3c4d5e.1a2b3c4d5e' => false,
-            '1a2b3c4d5e%1a2b3c4d5e%1a2b3c4d5e' => false,
-            'toooooooooooooooooooooolooooooooooooooong' => false,
+            ['1a2b3c4d5e-1a2b3c4d5e-1a2b3c4d5e', false],
+            ['1a2b3c4d5e.1a2b3c4d5e.1a2b3c4d5e', false],
+            ['1a2b3c4d5e%1a2b3c4d5e%1a2b3c4d5e', false],
+            ['toooooooooooooooooooooolooooooooooooooong', false],
         ];
     }
 
