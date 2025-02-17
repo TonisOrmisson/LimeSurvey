@@ -229,4 +229,44 @@ class TokenDynamicTest extends TestBaseClass
         $token->setAttributes($tokenData, false);
         $this->assertFalse($token->canBeEmailed(), 'Survey can be edited after completion, the token should not be able to be emailed.');
     }
+
+
+    /**
+     * @dataProvider validationProvider
+     */
+    public function testTokenValidation($tokenValue, $isValid)
+    {
+        $tokenData = array(
+            'token' => $tokenValue,
+            'completed' => 'N',
+        );
+        self::$testSurvey->oOptions->alloweditaftercompletion = 'Y';
+
+        $token = new TokenDynamic(self::$surveyId);
+        $token->setAttributes($tokenData, false);
+        $validationResult = $token->validate();
+
+        if ($isValid) {
+            $this->assertTrue($validationResult);
+        } else {
+            $this->assertFalse($validationResult);
+        }
+    }
+
+    public function validationProvider()
+    {
+        return [
+            '1233456792453456' => true,
+            'abcderghijklmnopeqrst' => true,
+            '1a2b3c4d5e' => true,
+            '1a2b3c4d5e_1a2b3c4d5e_1a2b3c4d5e' => true,
+
+            '1a2b3c4d5e-1a2b3c4d5e-1a2b3c4d5e' => false,
+            '1a2b3c4d5e.1a2b3c4d5e.1a2b3c4d5e' => false,
+            '1a2b3c4d5e%1a2b3c4d5e%1a2b3c4d5e' => false,
+            'toooooooooooooooooooooolooooooooooooooong' => false,
+        ];
+    }
+
+
 }
