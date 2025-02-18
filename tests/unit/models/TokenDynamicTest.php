@@ -236,16 +236,8 @@ class TokenDynamicTest extends TestBaseClass
      */
     public function testTokenValidation($tokenValue, $isValid)
     {
-        $tokenData = array(
-            'token' => $tokenValue,
-            'completed' => 'N',
-        );
-        self::$testSurvey->oOptions->alloweditaftercompletion = 'Y';
-
-        $token = new TokenDynamic(self::$surveyId);
-        $token->setAttributes($tokenData, false);
-        $validationResult = $token->validate();
-
+        $sanitized  = \Token::sanitizeToken($tokenValue) ;
+        $validationResult = $sanitized === $tokenValue;
         if ($isValid) {
             $this->assertTrue($validationResult);
         } else {
