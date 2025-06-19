@@ -17432,6 +17432,7 @@ a {
 ol.breadcrumb.title-bar-breadcrumb {
   background: transparent;
   color: #1E1E1E;
+  flex-wrap: nowrap;
 }
 ol.breadcrumb.title-bar-breadcrumb a {
   color: #14AE5C;
@@ -17443,6 +17444,9 @@ ol.breadcrumb.title-bar-breadcrumb a:hover {
 ol.breadcrumb.title-bar-breadcrumb li {
   background: transparent;
   color: #1E1E1E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
 }
 ol.breadcrumb.title-bar-breadcrumb li.active {
   color: #1E1E1E;
@@ -17474,8 +17478,15 @@ ol.breadcrumb.title-bar-breadcrumb li.active {
   padding-left: 6px;
 }
 
+.ls-breadcrumb {
+  margin-bottom: 0.65em;
+}
 .ls-breadcrumb h1, .ls-breadcrumb .h1 {
   margin: 0;
+}
+
+#breadcrumb-container {
+  width: 100%;
 }
 
 .footer {
@@ -17939,6 +17950,12 @@ ol.breadcrumb.title-bar-breadcrumb li.active {
 .box-widget .box-widget-card.card-link .box-widget-card {
   border: solid #6E748C 3px;
   color: #6E748C;
+}
+.box-widget .box-widget-card.card-placeholder {
+  cursor: default;
+  background-color: #fff;
+  box-shadow: none;
+  border: none;
 }
 .box-widget .box-widget-loadmore {
   width: 100%;
