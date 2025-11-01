@@ -99,7 +99,7 @@ var UserManagement = function () {
                         $('#UserManagement-action-modal').find('.modal-content').html(result.html);
                         if (!result.hasOwnProperty('html')) {
                             triggerModalClose();
-                            window.LS.ajaxAlerts(result.message, 'success', {showCloseButton: true});
+                            window.LS.ajaxAlerts(result.message, 'success', {showCloseButton: true, useHtml: true, showIcon: true});
                             if (result.hasOwnProperty('href')) {
                                 setTimeout(function() {
                                     const modalSize = result.hasOwnProperty('modalsize') ? result.modalsize : '';
@@ -262,6 +262,12 @@ var UserManagement = function () {
 
     var wireDatePicker = function () {
         const expires = document.getElementById('expires');
+
+        // This function is used with multiple modals, and not all modals have an expiration date
+        if (!expires) {
+            return;
+        }
+
         let cleared = false;
         initDatePicker(expires);
 
@@ -312,9 +318,6 @@ var UserManagement = function () {
                 $(this).prop('checked', toggled);
             })
         });
-        //$('input[name="alltemplates"]').on('switchChange.bootstrapSwitch', function (event, state) {
-            //$('input[id$="_use"]').prop('checked', state).trigger('change');
-        //});
         $('.UserManagement--action--openmodal').on('click', function () {
             var href = $(this).data('href');
             var modalSize = $(this).data('modalsize');

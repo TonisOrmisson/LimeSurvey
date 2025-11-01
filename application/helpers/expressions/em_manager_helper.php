@@ -4819,7 +4819,7 @@ class LimeExpressionManager
                         // display new question : Ging backward : maxQuestionSeq>currentQuestionSeq is always true.
                         $message .= $LEM->_UpdateValuesInDatabase();
                         $LEM->runtimeTimings[] = [__METHOD__, (microtime(true) - $now)];
-                        return [
+                        $LEM->lastMoveResult = [
                             'at_start'      => false,
                             'finished'      => false,
                             'message'       => $message,
@@ -4835,6 +4835,7 @@ class LimeExpressionManager
                             'notRelevantSteps'   => $notRelevantSteps,
                             'hiddenSteps'   => $hiddenSteps
                         ];
+                        return $LEM->lastMoveResult;
                     }
                 }
                 break;
@@ -6518,17 +6519,19 @@ class LimeExpressionManager
         foreach ($sgqas as $sgqa) {
             $validityString = self::getValidityString($sgqa);
             if ($validityString && $qrel && !$qhidden) {
-                /* Add the string to be showned , no js error or another class ? */
-                $stringToParse .= App()->twigRenderer->renderPartial(
-                    '/survey/questions/question_help/error_tip.twig',
-                    [
-                        'qid'       => $qid,
-                        'coreId'    => "vmsg_{$qid}_dberror",
-                        'vclass'    => 'dberror',
-                        'coreClass' => 'ls-em-tip em_dberror',
-                        'vtip'      => $validityString,
-                    ]
-                );
+                /* Add the string if current question is valid , see #18229: Faulty message on numeric questions */
+                if ($qvalid) {
+                    $stringToParse .= App()->twigRenderer->renderPartial(
+                        '/survey/questions/question_help/error_tip.twig',
+                        [
+                            'qid'       => $qid,
+                            'coreId'    => "vmsg_{$qid}_dberror",
+                            'vclass'    => 'dberror',
+                            'coreClass' => 'ls-em-tip em_dberror',
+                            'vtip'      => $validityString,
+                        ]
+                    );
+                }
                 /* Set this question invalid (only if move next due to $force) */
                 $qvalid = false;
             }

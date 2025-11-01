@@ -575,7 +575,8 @@ class QuestionAdministrationController extends LSBaseController
                             [
                                 'questionId' => $question->qid,
                                 'landOnSideMenuTab' => $landOnSideMenuTab,
-                                'tabOverviewEditor' => $tabOverviewEditorValue
+                                'tabOverviewEditor' => $tabOverviewEditorValue,
+                                'gid' => $question->gid    // Needed by adminsidepanel to know the context (ie. in createFullQuestionLink)
                             ]
                         );
                 }
@@ -2420,7 +2421,7 @@ class QuestionAdministrationController extends LSBaseController
         $advancedSettings = $questionAttributeHelper->groupAttributesByCategory($advancedSettings);
 
         // This category is "general setting".
-        unset($advancedSettings['Attribute']);
+        unset($advancedSettings[gT('Attribute')]);
 
         return $advancedSettings;
     }

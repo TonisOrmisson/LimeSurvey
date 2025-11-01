@@ -516,6 +516,11 @@ class Statistics extends SurveyCommonAction
         if (!Permission::model()->hasSurveyPermission($surveyid, 'statistics', 'read')) {
             throw new CHttpException(403, gT("You do not have permission to access this page."));
         }
+        // Break for sortmethod bad parameter (mantis #20145)
+        $sortmethod = strtoupper($sortmethod);
+        if ($sortmethod && !in_array($sortmethod, ['ASC', 'DESC'])) {
+            throw new CHttpException(400, gT("Invalid request."));
+        }
         Yii::app()->loadHelper('admin/statistics');
         $helper = new statistics_helper();
         $aData['data'] = $helper->_listcolumn($surveyid, $column, $sortby, $sortmethod, $sorttype);
@@ -823,7 +828,6 @@ class Statistics extends SurveyCommonAction
      */
     protected function renderWrappedTemplate($sAction = 'export', $aViewUrls = array(), $aData = array(), $sRenderFile = false)
     {
-        yii::app()->clientScript->registerPackage('bootstrap-switch');
         yii::app()->clientScript->registerPackage('jspdf');
         $oSurvey = Survey::model()->findByPk($aData['surveyid']);
 
