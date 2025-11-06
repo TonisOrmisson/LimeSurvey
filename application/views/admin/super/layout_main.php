@@ -1,42 +1,52 @@
 <?php
-
 //All paths relative from /application/views
 
+/**
+ * @var SurveyCommonAction $this
+ * @var array $aData
+ * @var string $content the html of the page to be rendered inside the layout
+ *
+ * todo: remove this view when all controllers are refactored
+ */
 //headers will be generated with the template file /admin/super/header.php
-$this->_showHeaders($aData);
-    //The adminmenu bar will be generated from /admin/super/adminmenu.php
-    $this->_showadminmenu($aData);
-    // Generated through /admin/usergroup/usergroupbar_view
-    $this->_userGroupBar($aData);
-    echo "<!-- BEGIN LAYOUT_MAIN -->";
-    // Generated through /admin/super/fullpagebar_view
-    $this->_fullpagebar($aData);
+$this->showHeaders($aData);
+//The adminmenu bar will be generated from /admin/super/adminmenu.php
+$this->showadminmenu($aData);
+$layoutHelper = new LayoutHelper();
+?>
 
-    $this->_updatenotification();
-    $this->_notifications();
-    
-    //The load indicator for pjax
-    echo ' <div id="pjax-file-load-container" class="ls-flex-row col-12"><div style="height:2px;width:0px;"></div></div>';
+<?= $layoutHelper->renderTopbarTemplate($aData) ?>
+<!-- BEGIN LAYOUT_MAIN -->
 
-        echo '<!-- Full page, started in Survey_Common_Action::render_wrapped_template() -->
-                    <div class="container-fluid full-page-wrapper" id="in_survey_common_action">
-                        ';
+<div class='container-fluid'>
+    <?= $this->updatenotification() ?>
+</div>
 
-        echo $content;
+<?= $this->notifications() ?>
 
-    echo '</div>';
-    echo "<!-- END LAYOUT_MAIN -->";
-    
-    // Footer
-    if (!isset($aData['display']['endscripts']) || $aData['display']['endscripts'] !== false) {
-        Yii::app()->getController()->_loadEndScripts();
-    }
+<!--The load indicator for pjax-->
+<div id="pjax-file-load-container" class="ls-flex-row col-12">
+    <div style="height:2px;width:0;"></div>
+</div>
 
-if (!Yii::app()->user->isGuest) {
-    if (!isset($aData['display']['footer']) || $aData['display']['footer'] !== false) {
-        Yii::app()->getController()->_getAdminFooter('http://manual.limesurvey.org', gT('LimeSurvey online manual'));
-    }
-} else {
-    echo '</body>
-    </html>';
+<?php $containerClass = !App()->user->isGuest ? 'container-fluid' : 'container-fluid ps-0' ?>
+<!-- Full page, started in SurveyCommonAction::renderWrappedTemplate() -->
+<div class="<?= $containerClass ?>" id="in_survey_common_action">
+    <?= $content ?>
+</div>
+<!-- END LAYOUT_MAIN -->
+
+<?php
+// Footer
+if (!isset($aData['display']['endscripts']) || $aData['display']['endscripts'] !== false) {
+    App()->getController()->loadEndScripts();
 }
+?>
+<?php if (!App()->user->isGuest) : ?>
+    <?php if (!isset($aData['display']['footer']) || $aData['display']['footer'] !== false) : ?>
+        <?= App()->getController()->getAdminFooter('http://manual.limesurvey.org', gT('LimeSurvey online manual')) ?>
+    <?php endif; ?>
+<?php else : ?>
+    </body>
+    </html>
+<?php endif; ?>

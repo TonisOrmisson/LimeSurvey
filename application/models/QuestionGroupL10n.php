@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -17,13 +16,12 @@
 /**
  * Class SurveyLanguageSetting
  *
- * @property string $language Question language code. Note: There is a unique key on qid & language columns combined
- * @property string $question Question dieplay text. The actual question.
- * @property string $help Question help-text for display
+ * @property string $language QuestionGroup language code. Note: There is a unique key on qid & language columns combined
+ * @property string $group_name QuestionGroup dieplay text. The actual question.
+ * @property string $description QuestionGroup help-text for display
  */
 class QuestionGroupL10n extends LSActiveRecord
 {
-
     /** @inheritdoc */
     public function tableName()
     {
@@ -40,10 +38,10 @@ class QuestionGroupL10n extends LSActiveRecord
      * @inheritdoc
      * @return self
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -52,21 +50,27 @@ class QuestionGroupL10n extends LSActiveRecord
     {
         $alias = $this->getTableAlias();
         return array(
-            'group' => array(self::BELONGS_TO, 'group', '', 'on' => "$alias.gid = group.gid"),
+            'group' => array(self::BELONGS_TO, QuestionGroup::class, '', 'on' => "$alias.gid = group.gid"),
         );
     }
 
     public function defaultScope()
     {
-        return array('index'=>'language');
-    }   
+        return array('index' => 'language');
+    }
 
     /** @inheritdoc */
     public function rules()
     {
         return array(
             array('group_name,description', 'LSYii_Validators'),
-            array('language', 'length', 'min' => 2, 'max'=>20), // in array languages ?
+            array('language', 'length', 'min' => 2, 'max' => 20), // in array languages ?
+            array('gid', 'unique', 'criteria' => array(
+                'condition' => 'language=:language',
+                'params' => array(':language' => $this->language)
+                ),
+                'message' => sprintf(gT("Group ID (gid): “%s” already set with language ”%s”."), $this->gid, $this->language),
+            ),
         );
     }
 
@@ -74,9 +78,8 @@ class QuestionGroupL10n extends LSActiveRecord
     public function attributeLabels()
     {
         return array(
-            'language' => gt('Language'),
-            'group_name' => gt('Group name')
+            'language' => gT('Language'),
+            'group_name' => gT('Group name'),
         );
     }
-    
 }

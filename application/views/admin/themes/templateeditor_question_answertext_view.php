@@ -1,6 +1,7 @@
 <?php
-App()->getController()->renderPartial('/survey/questions/answer/longfreetext/answer', array(
-        'extraclass'             => 'col-sm-12',
+echo App()->twigRenderer->renderQuestion('/survey/questions/answer/longfreetext/answer', array(
+        'bIsThemeEditor'         => true,
+        'extraclass'             => 'col-12',
         'coreClass'              =>"ls-answers answer-item text-item",
         'withColumn'             =>true,
         'kpclass'                => '',
@@ -10,6 +11,7 @@ App()->getController()->renderPartial('/survey/questions/answer/longfreetext/ans
         'dispVal'                => gT('Some text in this answer'),
         'tiwidth'                => 40,
         'maxlength'              => '',
-        'inputsize'              => null
+        'inputsize'              => null,
+        'placeholder'            => ''
     ));
 ?>

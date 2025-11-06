@@ -14,7 +14,7 @@
     <?php unset($aResults['global']); ?>
     <table class="table table-striped">
         <thead>
-            <th><?php eT('Token ID');?></th>
+            <th><?php eT('Participant ID');?></th>
             <th><?php eT('Status');?></th>
         </thead>
         <tbody>
@@ -28,7 +28,7 @@
                             <?php echo $result['message']; ?>
                         </td>
                     <?php else: ?>
-                        <td class="text-warning">
+                        <td class="text-danger">
                             <?php echo $result['message']; ?>
                         </td>
                     <?php endif;?>

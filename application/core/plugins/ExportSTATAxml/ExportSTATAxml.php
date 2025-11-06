@@ -1,12 +1,16 @@
 <?php
+
 class ExportSTATAxml extends \LimeSurvey\PluginManager\PluginBase
 {
     
     protected $storage = 'DbStorage';
        
-    static protected $description = 'Core: Export survey results to a STATA xml file';
-    static protected $name = 'STATA Export';
-    
+    protected static $description = 'Core: Export survey results to a STATA xml file';
+    protected static $name = 'STATA Export';
+
+    /** @inheritdoc this plugin didn't have any public method */
+    public $allowedPublicMethods = array();
+
     public function init()
     {
         
@@ -24,7 +28,7 @@ class ExportSTATAxml extends \LimeSurvey\PluginManager\PluginBase
             'label' => 'Export for Stata',
             'options' => array('113' => 'version 8 through 12', '117'  => 'version 13 and up'),
             'default' => '113',
-            'submitonchange'=> false
+            'submitonchange' => false
             )
         );
 
@@ -53,7 +57,7 @@ class ExportSTATAxml extends \LimeSurvey\PluginManager\PluginBase
             default:
                 break;
         }
-    }   
+    }
     
     /**
      * Registers this export type
@@ -64,7 +68,7 @@ class ExportSTATAxml extends \LimeSurvey\PluginManager\PluginBase
         $exports = $event->get('exportplugins');
         
         // Yes we overwrite existing classes if available
-        $exports['stataxml'] = get_class();
+        $exports['stataxml'] = get_class($this);
         $event->set('exportplugins', $exports);
     }
     

@@ -16,13 +16,13 @@
             'type'        => 'action',
             'action'      => 'delete',
             'url'         =>  App()->createUrl('/admin/menus/sa/massDelete/'),
-            'iconClasses' => 'text-danger fa fa-trash',
+            'iconClasses' => 'ri-delete-bin-fill text-danger',
             'text'        =>  gT('Delete'),
             'grid-reload' => 'yes',
 
             // modal
             'actionType'    => 'modal',
-            'modalType'     => 'yes-no',
+            'modalType'     => 'cancel-delete',
             'keepopen'      => 'no',
             'sModalTitle'   => gT('Delete menus'),
             'htmlModalBody' => gT('Are you sure you want to delete the selected menus and all related submenus and entries?'),
@@ -36,14 +36,14 @@
             'type' => 'action',
             'action' => 'batchEdit',
             'url' => App()->createUrl('/admin/menus/sa/batchEdit/'),
-            'iconClasses' => 'fa fa-download',
+            'iconClasses' => 'ri-download-fill',
             'text' => gT('Batch edit'),
             'grid-reload' => 'yes',
             //modal
             'actionType' => 'modal',
-            'modalType'     => 'yes-no',
+            'modalType'     => 'cancel-save',
             'keepopen'      => 'yes',
-            'yes'           => gT('Apply'),
+            'yes'           => gT('Save'),
             'no'            => gT('Cancel'),
             'sModalTitle'   => gT('Batch edit the menus'),
             'htmlModalBody' => $this->renderPartial('./surveymenu/massive_action/_update', [], true)

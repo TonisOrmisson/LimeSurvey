@@ -17,7 +17,202 @@
  * Copyright (c) 2013 Kevin van Zonneveld (http://kvz.io)
  * and Contributors (http://phpjs.org/authors)
  */
+/**
+ * checkconditions : javascript function attach to some element
+ * Launch ExprMgr_process_relevance_and_tailoring with good value
+ * @todo : move this directly to event
+ */
+function checkconditions(value, name, type, evt_type)
+{
+    if (typeof evt_type === 'undefined')
+    {
+        evt_type = 'onchange';
+    }
+    if (type == 'radio' || type == 'select-one')
+    {
+        $('#java'+name).val(value);
+    }
+    else if (type == 'checkbox')
+    {
+        if ($('#answer'+name).is(':checked'))
+        {
+            $('#java'+name).val('Y');
+        } else
+        {
+            $('#java'+name).val('');
+        }
+    }
+    else if (type == 'text' && name.match(/other$/))
+    {
+        $('#java'+name).val(value);
+    }
 
+    aQuestionsWithDependencies = $('#aQuestionsWithDependencies').data('qids');
+
+    var questionCode;
+    if(typeof name !== 'undefined') {
+        var parts = name.split('X');
+        questionCode = parts[2];
+        var LEMvarNameAttr = LEMvarNameAttr || {};
+        if (LEMvarNameAttr['java' + name] != undefined) {
+            questionCode = '' + LEMvarNameAttr['java' + name].qid;
+        }
+    }
+
+    /*
+    // STILL NOT WORKING !!!!!
+    // But we're getting closer... 
+    var $isRelevant = $.inArray(questionCode, aQuestionsWithDependencies);// NEED TO ADD THE QUESTIONS WITH CONDITIONS BEFORE WE CAN USE IT !!!!
+    if($.isFunction(window.ExprMgr_process_relevance_and_tailoring ) && $isRelevant!=-1) {
+        ExprMgr_process_relevance_and_tailoring(evt_type,name,type);
+    }*/
+    try{
+        ExprMgr_process_relevance_and_tailoring(evt_type,name,type);
+    } catch(e) {
+        console.ls.error(e);
+    }
+}
+
+/**
+ * fixnum_checkconditions : javascript function attach to some element
+ * Update the answer of the user to be numeric and launch checkconditions
+ *
+ * Also checks if any of the arrow keys is pressed to avoid unecessary hassle.
+ * @todo : move this directly to event
+ */
+function fixnum_checkconditions(value, name, type, evt_type, intonly)
+{
+    /* Do we have to check if LSvar is set and is valid ? */
+    if(window.event){
+        var keyPressed =  window.event.keyCode || 0;
+        if(
+                keyPressed == 37 //left arrow
+            ||  keyPressed == 39 //right arrow
+        ){return false; }
+    }
+
+    var decimalValue;
+    var newval = new String(value);
+    var checkNumericRegex = new RegExp(/^(-)?[0-9]*(,|\.|)[0-9]*$/);
+    var cleansedValue = newval.replace(numRegex,'');
+    /**
+    * If have to use parsed value.
+    */
+    if(!LSvar.bNumRealValue)
+    {
+        if(checkNumericRegex.test(value)) {
+            try{
+                decimalValue = new Decimal(cleansedValue);
+            } catch(e){
+                try{
+                    decimalValue = new Decimal(cleansedValue.replace(',','.'));
+                } catch(e){
+                    decimalValue = new Decimal(NaN);
+                }
+            }
+
+            if (typeof intonly !=='undefined' && intonly==1) {
+                newval = decimalValue.trunc();
+            }
+        } else {
+            newval = cleansedValue;
+        }
+
+    }
+
+    /**
+     * If have to fix numbers automatically.
+     */
+    if(LSvar.bFixNumAuto)
+    {
+        // If the field value needs to be auto-corrected, we will do it with a timeout in order to avoid
+        // interfering with the user's typing. We will use window.correctNumberField to track one timer
+        // per field, and clear it when the user starts typing again.
+
+        if (typeof window.correctNumberField === 'undefined') {
+            window.correctNumberField = {};
+        }
+
+        if (window.correctNumberField[name] != null) {
+            clearTimeout(window.correctNumberField[name]);
+            window.correctNumberField[name] = null;
+        }
+
+        var addition = "";
+
+        var matchFollowingZeroes =  cleansedValue.match(/^-?([0-9])*(,|\.)(0+)$/); /* 1.0 : keep .0 */
+        var matchMustGetZeroes =  cleansedValue.match(/^-?([0-9])*(,|\.)([0-9]*)$/); /* Maybe have 0 */
+        if(matchFollowingZeroes){
+            addition = LEMradix+matchFollowingZeroes[3];
+        } else if(matchMustGetZeroes) {
+            /* Don‘t find good regexp … */
+            while (cleansedValue.substr(-1) === "0") {
+                addition += "0";
+                cleansedValue = cleansedValue.slice(0, -1);
+            }
+        }
+
+        if(decimalValue == undefined){
+            try{
+                decimalValue = new Decimal(cleansedValue);
+            } catch(e){
+                try{
+                    decimalValue = new Decimal(cleansedValue.replace(',','.'));
+                } catch(e){
+                    decimalValue = new Decimal(NaN);
+
+                }
+            }
+        }
+
+        /**
+         * Work on length of the number
+         * Avoid numbers longer than 20 characters before the decimal separator and 10 after the decimal separator.
+         */
+        // Treat decimal part, if there is one.
+        // Trim after 10th decimal if larger than 10 decimals.
+        if(decimalValue.dp()>10){
+            decimalValue.toDecimalPlaces(10);
+        }
+
+        /**
+         * Set display value
+         */
+        displayVal = decimalValue.toString();
+        if (displayVal=='NaN')
+        {
+            newval=displayVal;
+            if(cleansedValue == '' && value != cleansedValue) {
+                window.correctNumberField[name] = setTimeout(function(){$('#answer'+name).val(cleansedValue).trigger("keyup");}, 500);
+            }
+        }
+        else{
+            if(LEMradix==",")
+                displayVal = displayVal.replace(/\./,',');
+
+            newval = displayVal+addition
+
+            if (name.match(/other$/)) {
+                if($('#answer'+name+'text').val() != newval){
+                    $('#answer'+name+'text').val(newval);
+                }
+            }
+
+            if(value != newval){
+                window.correctNumberField[name] = setTimeout(function(){$('#answer'+name).val(newval).trigger("keyup");}, 1500);
+            }
+        }
+    }
+
+    /**
+     * Check conditions
+     */
+    if (typeof evt_type === 'undefined')
+    {
+        evt_type = 'onchange';
+    }
+    checkconditions(newval, name, type, evt_type);
+}
 /**
  * Default event to trigger on answer part
  * Launch function according to anser-item type
@@ -35,20 +230,36 @@ $(document).on("keyup change",".answer-item textarea:not([onkeyup]),.answer-item
     }
 });
 /* select/dropdown item */
-$(document).on("change",".select-item select:not([onchange]),.dropdown-item select:not([onchange])",function(event){
+$(document).on("change",".select-item select:not([onchange]),.ls-dropdown-item select:not([onchange]), select.list-question-select:not([onchange])",function(event){
     checkconditions($(this).val(), $(this).attr('name'), 'select-one', 'change')
 });
 /* radio/button item */
-$(document).on("change",".radio-item :radio:not([onclick]), .button-item :radio:not([onclick])",function(event){
+$(document).on("change",".radio-item :radio:not([onclick]), .button-item :radio:not([onclick]), .ls-button-radio",function(event){
     checkconditions($(this).val(), $(this).attr('name'), 'radio', 'click')
 });
 /* checkbox item */
-$(document).on("change",".checkbox-item :checkbox:not([onclick])",function(event){
+$(document).on("change",".checkbox-item :checkbox:not([onclick]),.button-item :checkbox:not([onclick]), .ls-button-checkbox",function(event){
     checkconditions($(this).val(), $(this).attr('name'), 'checkbox', 'click')
 });
-/* hidden item */
-$(document).on("change",".answer-item :hidden",function(event){
-    checkconditions($(this).val(), $(this).attr('name'), 'text', 'keyup')
+/* upload item */
+$(document).on("updated",".upload-item :hidden",function(event){
+    checkconditions($(this).val(), $(this).attr('name'), 'upload', 'updated')
+});
+/* equation item */
+$(document).on("updated",".hidden-item :hidden",function(event){
+    /* equation item must have a name */
+    if(!$(this).attr('name')) {
+        return;
+    }
+    checkconditions($(this).val(), $(this).attr('name'), 'equation', 'updated')
+});
+/* new multiple choice bootstrap buttons */
+$(document).on("change","input:checkbox.button-item.btn-check",function(event){
+    checkconditions($(this).val(), $(this).attr('name'), 'checkbox', 'click')
+});
+/* new singlechoice radio bootstrap buttons */
+$(document).on("change","input:radio.button-item.btn-check",function(event){
+    checkconditions($(this).val(), $(this).attr('name'), 'radio', 'click')
 });
 /**
  * For number
@@ -205,12 +416,37 @@ function LEMsum()
     return result.toString();
 }
 
-function LEMintval(a)
+/**
+ * return interger value of mixedVar (near like PHP floatval)
+ * @param mixed mixedVar
+ * @return integer
+ * @see: https://locutus.io/php/var/intval
+ * original by: Kevin van Zonneveld (https://kvz.io)
+ * improved by: stensi
+ * adapated for LimeSurvey by Denis Chenu
+ *   example 1: intval('150.03LimeSurvey')
+ *   returns 1: 150
+ *   example 2: intval('LimeSurvey: 10')
+ *   returns 2: 0
+ *   example 3: intval('-50.1 + 8')
+ *   returns 3: -50
+ *   example 4: intval(1 > 0)
+ *   returns 4: 1
+ */
+function LEMintval(mixedVar)
 {
-    if (isNaN(a)) {
-        return NaN;
+    var type = typeof mixedVar
+    if (type === 'boolean') {
+        return +mixedVar;
+    } 
+    if (type === 'string') {
+        tmp = parseInt(mixedVar, 10)
+        return (isNaN(tmp) || !isFinite(tmp)) ? 0 : tmp;
     }
-    return Math.floor(+a);
+    if (type === 'number' && isFinite(mixedVar)) {
+        return mixedVar < 0 ? Math.ceil(mixedVar) : Math.floor(mixedVar);
+    }
+    return 0;
 }
 
 function LEMis_null(a)
@@ -244,14 +480,12 @@ function LEMis_int(mixed_var)
 }
 /**
  * Test if mixed_var is a PHP numeric value
- * From: http://phpjs.org/functions/is_numeric/
+ * Do not use locutus because of LEMradix
  */
 function LEMis_numeric(mixed_var)
 {
     var isNumericRegex = new RegExp(/^(-)?\d*(,|\.)?\d*$/);
     return ( ( ( typeof mixed_var === 'string' && isNumericRegex.test(mixed_var)) || typeof mixed_var === 'number') && mixed_var !== '' && !isNaN(mixed_var));
-    // var whitespace = " \n\r\t\f\x0b\xa0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u2028\u2029\u3000";
-    // return (typeof mixed_var === 'number' || (typeof mixed_var === 'string' && whitespace.indexOf(mixed_var.slice(-1)) === -1)) && mixed_var !== '' && !isNaN(mixed_var);
 }
 
 function LEMis_string(a)
@@ -307,6 +541,32 @@ function LEMconvert_value( fValueToReplace, iStrict, sTranslateFromList, sTransl
 }
 
 /**
+ * return float value of mixedVar (near like PHP floatval)
+ * @param mixed mixedVar
+ * @return float
+ * @see: https://locutus.io/php/floatval/
+ * original by: Michael White (https://getsprink.com)
+ * updated for LimeSurvey by Denis Chenu
+ *      note 1: The native parseFloat() method of JavaScript returns NaN
+ *      note 1: when it encounters a string before an int or float value.
+ *   example 1: floatval('150.03LimeSurvey')
+ *   returns 1: 150.03
+ *   example 2: floatval('LimeSurvey: 10')
+ *   returns 2: 0
+ *   example 3: floatval('-50.1 + 8')
+ *   returns 3: -50.1
+ *   example 4: floatval(1 > 0)
+ *   returns 4: 1
+ */
+function LEMfloatval(mixedVar)
+{
+    var type = typeof mixedVar;
+    if (type === 'boolean') {
+        return +mixedVar
+    }
+    return (parseFloat(mixedVar) || 0)
+}
+/**
  * If $test is true, return $iftrue, else return $iffalse
  * @param mixed testDone
  * @param mixed ifTrue
@@ -350,6 +610,62 @@ function LEMlist()
 }
 
 /**
+ * Implementation of listifop( cmpAttr, op, value, retAttr, glue, sgqa1, ..., sgqaN )
+ * Returns a list of retAttr from sgqa1...sgqaN which pass the critiera (cmpAttr op value)
+ */
+function LEMlistifop()
+{
+    // takes variable number of arguments
+    var result = "";
+    var cmpAttr = arguments[0];
+    var op = arguments[1];
+    var value = arguments[2];
+    var retAttr = arguments[3];
+    var glue = arguments[4];
+
+    var validAttributes = "/code|gid|grelevance|gseq|jsName|mandatory|NAOK|qid|qseq|question|readWrite|relevanceStatus|relevance|rowdivid|sgqa|shown|type|valueNAOK|value/";
+
+    if ( ! cmpAttr.match( validAttributes ) ) {
+        return cmpAttr +" not recognized ?!";
+    }
+    if ( ! retAttr.match( validAttributes ) ) {
+        return retAttr +" not recognized ?!";
+    }
+
+    if ( op == 'RX' ) {
+        var reg = new RegExp( value.substr( 1, value.length-2 ) );
+    }
+
+    for ( i=5; i < arguments.length; ++i ) {
+        var sgqa = arguments[i];
+        var cmpVal = LEMval( sgqa +"."+ cmpAttr ); // Equal to LimeExpressionManager::GetVarAttribute($sgqa,$cmpAttr,null,-1,-1) ?
+        var match = false;
+
+        switch(op)
+        {
+            case '==': case 'eq': match = (cmpVal == value); break;
+            case '>=': case 'ge': match = (cmpVal >= value); break;
+            case '>':  case 'gt': match = (cmpVal > value);  break;
+            case '<=': case 'le': match = (cmpVal <= value); break;
+            case '<':  case 'lt': match = (cmpVal < value);  break;
+            case '!=': case 'ne': match = (cmpVal != value); break;
+            case 'RX': try { match = reg.test( cmpVal ); }
+            catch (err) { return "Invalid RegEx"; } break;
+        }
+
+        if ( match ) {
+            retVal = LEMval( sgqa +"."+ retAttr ); // Equal to LimeExpressionManager::GetVarAttribute($sgqa,$retAttr,null,-1,-1) ?
+            if ( result != "" ) {
+                result += glue;
+            }
+            result += retVal;
+        }
+    }
+
+    return result;
+}
+
+/**
  *  Returns Natural logarithm of a number
  */
 
@@ -371,6 +687,144 @@ function LEMlog()
     }else{
         return Math.log(arguments[0])/Math.log(base);
     }
+}
+
+/**
+ * max like php in LimeSurvey, start by https://github.com/kvz/locutus/blob/master/src/php/math/max.js
+ * @see https://bugs.limesurvey.org/view.php?id=14337
+ * Review for ExpressionManager
+ **/
+function LEMmax () {
+  // original at: http://locutus.io/php/max/
+  // original by: Onno Marsman (https://twitter.com/onnomarsman)
+  //  revised by: Denis Chenu for LimeSurvey specific
+  //      note 1: Long code cause we're aiming for maximum PHP compatibility
+  //   example 1: max(1, 3, 5, 6, 7,'')
+  //   returns 1: 7
+  //   example 2: max(1, 'hello','')
+  //   returns 2: 'hello'
+  //   example 3: max('hello', 1,'')
+  //   returns 3: 'hello'
+  //   example 4: max('2hello', 1,'')
+  //   returns 4: '2hello'
+  //   example 5: max('1hello', 2,'')
+  //   returns 5: 2
+  //   example 6: max(-1, -2,'')
+  //   returns 6: -1
+
+  var ar
+  var retVal
+  var i = 0
+  var n = 0
+  var argv = arguments
+  var argc = argv.length
+
+  var _compare = function (current, next) {
+    if(next === '') {
+      return -1;
+    }
+    if(current === '') {
+      return 1;
+    }
+    if (current === next) {
+      return 0
+    }
+    if (isNaN(next) && !isNaN(current)) {
+      return (next.toString() > current.toString() ? 1 : -1)
+    }
+    if (isNaN(current) && !isNaN(next)) {
+      return (next.toString() > current.toString() ? 1 : -1)
+    }
+
+    return (next > current ? 1 : -1)
+  }
+
+  if (argc === 0) {
+    return '';
+  }
+  if (argc === 1) {
+    return argv[0];
+  }
+
+  ar = argv
+  retVal = ar[0]
+  for (i = 1, n = ar.length; i < n; ++i) {
+    if (_compare(retVal, ar[i]) === 1) {
+      retVal = ar[i]
+    }
+  }
+
+  return retVal
+}
+/**
+ * min like php in LimeSurvey : https://github.com/kvz/locutus/blob/master/src/php/math/min.js
+ * @see https://bugs.limesurvey.org/view.php?id=14337
+ * Review for ExpressionManager 
+ **/
+function LEMmin () {
+  // original at: http://locutus.io/php/max/
+  // original by: Onno Marsman (https://twitter.com/onnomarsman)
+  //  revised by: Denis Chenu for LimeSurvey specific
+  //      note 1: Long code cause we're aiming for maximum PHP compatibility
+  //   example 1: min(1, 3, 5, 6, 7)
+  //   returns 1: 1
+  //   example 2: max(1, 'hello')
+  //   returns 2: 1
+  //   example 3: max('hello', 1)
+  //   returns 3: 1
+  //   example 4: max('2hello', 1)
+  //   returns 4: 1
+  //   example 5: max('1hello', 2)
+  //   returns 5: '1hello'
+  //   example 6: min(-1, -2)
+  //   returns 6: -2
+  //   example 7: min(-1, '')
+  //   returns 7: ''
+
+  var ar
+  var retVal
+  var i = 0
+  var n = 0
+  var argv = arguments
+  var argc = argv.length
+
+  var _compare = function (current, next) {
+    if(next === '') {
+      return -1;
+    }
+    if(current === '') {
+      return 1;
+    }
+    if (current === next) {
+      return 0;
+    }
+    if (isNaN(next) && !isNaN(current)) {
+      return 1;
+    }
+    if (isNaN(current) && !isNaN(next)) {
+      return -1
+    }
+
+    return (next > current ? 1 : -1)
+  }
+
+  if (argc === 0) {
+    return '';
+  }
+  if (argc === 1) {
+    return argv[0];
+  }
+
+  ar = argv
+  retVal = ar[0]
+
+  for (i = 1, n = ar.length; i < n; ++i) {
+    if (_compare(retVal, ar[i]) === -1) {
+      retVal = ar[i]
+    }
+  }
+
+  return retVal
 }
 
  /**
@@ -417,7 +871,8 @@ function LEMregexMatch(sRegExp,within)
         var flags = sRegExp.replace(/.*\/([gimy]*)$/, '$1');
         var pattern = sRegExp.replace(new RegExp('^/(.*?)/'+flags+'$'), '$1').trim();
         var reg = new RegExp(pattern, flags); // Note that the /u flag crashes IE11
-        return reg.test(within);
+        var decodedValue = html_entity_decode(within);
+        return reg.test(decodedValue);
     }
     catch (err) {
         return false;
@@ -512,9 +967,6 @@ function LEMval(alias)
     var varName = alias;
     var suffix = 'code';    // the default
     var value = "";
-    if(typeof bNumRealValue == 'undefined'){bNumRealValue=false;} // Allow to update {QCODE} even with text
-
-    /* If passed a number, return that number */
     if (str == '') return '';
     newval = str;
     if (LEMradix === ',') {
@@ -525,8 +977,7 @@ function LEMval(alias)
         try{
             newval = new Decimal(newval);
         } catch(e){
-            if(e)
-                newval = new Decimal(newval.toString().replace(/,/,'.'));
+            // Nothing to do : already done before if needed (accordig to LEMradix)
         }
     }
     if (newval == parseFloat(newval)) {
@@ -709,6 +1160,49 @@ function LEMval(alias)
             if (value === '') {
                 return '';
             }
+            // Always htmlentities user entered values, see #13928
+            switch(attr.type)
+            {
+                case '!': //List - dropdown
+                case 'L': //LIST drop-down/radio-button list
+                case 'O': //LIST WITH COMMENT drop-down/radio-button list + textarea
+                case 'H': //ARRAY (Flexible) - Column Format
+                case 'F': //ARRAY (Flexible) - Row Format
+                case 'R': //RANKING STYLE
+                    if (attr.type == 'O' && varName.match(/comment$/)) {
+                        value = htmlentities(value);
+                    }
+                    else if ((attr.type == 'L' || attr.type == '!') && varName.match(/_other$/)) {
+                        value = htmlentities(value);
+                    }
+                    break;
+                case 'N': //NUMERICAL QUESTION TYPE
+                case 'K': //MULTIPLE NUMERICAL QUESTION
+                case 'Q': //MULTIPLE SHORT TEXT
+                case ';': //ARRAY (Multi Flexi) Text
+                case 'S': //SHORT FREE TEXT
+                case 'T': //LONG FREE TEXT
+                case 'U': //HUGE FREE TEXT
+                case 'D': //DATE
+                case '*': //Equation
+                case '|': //File Upload (unsure need to be htmlentities ?)
+                        value = htmlentities(value);
+                    break;
+                case 'M': //Multiple choice checkbox
+                case 'P': //Multiple choice with comments checkbox + text
+                    if (attr.type == 'P' && varName.match(/comment$/)) {
+                        value = htmlentities(value);
+                    }
+                    break;
+                case 'A': //ARRAY (5 POINT CHOICE) radio-buttons
+                case 'B': //ARRAY (10 POINT CHOICE) radio-buttons
+                case ':': //ARRAY (Multi Flexi) 1 to 10
+                case '5': //5 POINT CHOICE radio-buttons
+                case 'I': //Language Question
+                case 'X': //BOILERPLATE QUESTION
+                default:
+                    // Nothing to update
+            }
 
             if (suffix == 'value' || suffix == 'valueNAOK') {
                 // if in assessment mode, this returns the assessment value
@@ -755,30 +1249,32 @@ function LEMval(alias)
             }
 
             if (typeof attr.onlynum !== 'undefined' && attr.onlynum==1) {
-                if(value=="")
-                {
+                if(value=="") {
                     return "";
                 }
+
                 var checkNumericRegex = new RegExp(/^(-)?[0-9]*(,|\.)[0-9]*$/);
-                if(checkNumericRegex.test(value) && !bNumRealValue)
+                /* Set as number if regexp is OK AND lenght is > 1 (then not fix [-.,] #14533 and no need to fix single number) */
+                if( checkNumericRegex.test(value) && value.length > 1 )
                 {
                     var length = value.length;
                     var firstLetterIsNull = value.split("").shift() === '0';
+                    // @todo : use . or , according to LEMradix !
                     try{
                         var numtest = new Decimal(value);
                     } catch(e){
                         var numtest = new Decimal(value.toString().replace(/,/,'.'));
+                        // Error can still happen maybe but don't catch to know (and fix) it
                     }
-
-                    // If value is on same page : value use LEMradix, else use . (dot) : bug #10001
-                    // if (LEMradix === ',' && onSamePage )
-                    // {
-                    //     value = numtest.toString().replace(/\./,',');
-                    // }
                     value = numtest.valueOf();
                     if(value.length < length && firstLetterIsNull){
                         value = str_repeat('0', length).substr(0,(length - value.length))+''+value.toString();
                     }
+                    value = Number(value); /* If it's a number : always return a number */
+                }
+                /* Always check if value are not updated, see #17963 */
+                if(Number(value).toString() != value.toString() || LSvar.bNumRealValue) {
+                    return value;
                 }
                 return Number(value);
             }
@@ -786,9 +1282,12 @@ function LEMval(alias)
             // convert content in date questions to standard format yy-mm-dd to facilitate use in EM (comparisons, min/max etc.)
             else if (attr.type=='D')  {
                 // get date format pattern of referenced question
-                var sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).text();
-                // if undefined (eg., variable on a previous page), set default format yy-mm-dd HH:MM
-                sdatetimePattern =typeof sdatetimePattern == 'undefined'? 'YYYY-MM-DD HH:mm': sdatetimePattern;
+                var sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).val();
+                if (sdatetimePattern == ''){
+                    sdatetimePattern=$(jsName.replace(/java/g, '#dateformat')).text();
+                }
+                // if empty (eg., variable on a previous page), set default format yy-mm-dd HH:MM
+                sdatetimePattern = sdatetimePattern == ''? 'YYYY-MM-DD HH:mm': sdatetimePattern;
 
                 if (sdatetimePattern==null) {
                     sdatetimePattern="";
@@ -807,16 +1306,23 @@ function LEMval(alias)
                 }
                 return value;
             }
-            else {
-                // If it's not a decimal number, just return value
-                try {
-                    var decimal_safe = new Decimal(value);
-                    return pad(decimal_safe,value.length);
+            else if(!isNaN(parseFloat(value)) && isFinite(value))
+            {
+                var length = value.length;
+                var firstLetterIsNull = value.split("").shift() === '0';
+                try{
+                    var numtest = new Decimal(value);
+                } catch(e){
+                    var numtest = new Decimal(value.toString().replace(/,/,'.'));
                 }
-                catch (ex) {
-                    return value;
+                if(numtest.valueOf().length < length && firstLetterIsNull){
+                    value = value.toString(); /* return string as it is */
+                } else {
+                    value = Number(numtest.valueOf()); /* If it's a number : always return a number */
                 }
             }
+
+            return value;
         }
         case 'rowdivid':
             if (typeof attr.rowdivid === 'undefined' || attr.rowdivid == '') {
@@ -828,17 +1334,18 @@ function LEMval(alias)
     }
 }
 
+
 /** Display number with comma as radix separator, if needed
  */
 function LEMfixnum(value)
 {
     if (LEMradix===',') {
         var newval = String(value);
-        if (parseFloat(newval) != value) {
-            return value;   // unchanged
+        if (!isNaN(parseFloat(newval)) && isFinite(newval)) {
+            newval= newval.split('.').join(',');
+            return newval;
         }
-        newval= newval.split('.').join(',');
-        return newval;
+        return value;   // unchanged
     }
     return value;
 }
@@ -901,6 +1408,8 @@ function LEManyNA()
     for (i=0;i<arguments.length;++i) {
         var arg = arguments[i];
         if (arg.match(/\.NAOK$/)) {
+            /* Must be arg.match(/\.(gid|gseq|mandatory|NAOK|qid|qseq|question|sgqa|shown|type|valueNAOK|relevanceStatus)$/ ? */
+            /* TODO : find a broken logic system (lss broken) */
             continue;
         }
         if (typeof LEMalias2varName[arg] === 'undefined') {

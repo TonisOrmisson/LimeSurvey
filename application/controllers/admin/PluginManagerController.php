@@ -1,10 +1,30 @@
 <?php
 
 /**
+ * LimeSurvey
+ * Copyright (C) 2007-2015 The LimeSurvey Project Team / Carsten Schmitz
+ * All rights reserved.
+ * License: GNU/GPL License v2 or later, see LICENSE.php
+ * LimeSurvey is free software. This version may have been modified pursuant
+ * to the GNU General Public License, and as distributed it includes or
+ * is derivative of works licensed under the GNU General Public License or
+ * other free or open source software licenses.
+ * See COPYRIGHT.php for copyright notices and details.
+ */
+
+use LimeSurvey\ExtensionInstaller\FileFetcherUploadZip;
+use LimeSurvey\ExtensionInstaller\PluginInstaller;
+use LimeSurvey\Menu\Menu;
+use LimeSurvey\Menu\MenuItem;
+
+/**
  * @todo Apply new permission 'extensions' instead of 'settings'.
  */
-class PluginManagerController extends Survey_Common_Action
+class PluginManagerController extends SurveyCommonAction
 {
+    /**
+     * Init
+     */
     public function init()
     {
     }
@@ -24,7 +44,7 @@ class PluginManagerController extends Survey_Common_Action
             $data[] = [
                 'id'          => $oPlugin->id,
                 'name'        => $oPlugin->name,
-                'load_error'  => $oPlugin->load_error,
+                'load_error'  => $oPlugin->getLoadError(),
                 'description' => '',
                 'active'      => $oPlugin->active,
                 'settings'    => []
@@ -35,22 +55,46 @@ class PluginManagerController extends Survey_Common_Action
             Yii::app()->user->setState('pageSize', intval(Yii::app()->request->getParam('pageSize')));
         }
 
-        $aData['fullpagebar']['returnbutton']['url'] = 'index';
-        $aData['fullpagebar']['returnbutton']['text'] = gT('Return to admin home');
         $aData['data'] = $data;
         $aData['plugins'] = $aoPlugins;
-        $aData['scanFilesUrl'] = $this->getController()->createUrl(
+        $aData['extraMenus'] = $this->getExtraMenus();
+
+        if (!Permission::model()->hasGlobalPermission('settings', 'read')) {
+            Yii::app()->setFlashMessage(gT("No permission"), 'error');
+            $this->getController()->redirect(array('/admin'));
+        }
+
+        $scanFilesUrl = $this->getController()->createUrl(
             '/admin/pluginmanager',
             [
                 'sa' => 'scanFiles',
             ]
         );
 
-        if (!Permission::model()->hasGlobalPermission('settings', 'read')) {
-            Yii::app()->setFlashMessage(gT("No permission"), 'error');
-            $this->getController()->redirect(array('/admin'));
-        }
-        $this->_renderWrappedTemplate('pluginmanager', 'index', $aData);
+        $aData['topbar']['title'] = gT('Plugins');
+        $aData['topbar']['backLink'] = App()->createUrl('dashboard/view');
+
+        $aData['topbar']['middleButtons'] = Yii::app()->getController()->renderPartial(
+            '/admin/pluginmanager/partial/topbarBtns/leftSideButtons',
+            [
+                'showUpload' => !Yii::app()->getConfig('demoMode') && !Yii::app()->getConfig('disablePluginUpload'),
+                'scanFilesUrl' => $scanFilesUrl,
+            ],
+            true
+        );
+
+        $this->renderWrappedTemplate('pluginmanager', 'index', $aData);
+    }
+
+    /**
+     * @return Menu[]
+     */
+    protected function getExtraMenus()
+    {
+        $event = new PluginEvent('beforePluginManagerMenuRender', $this);
+        $result = App()->getPluginManager()->dispatchEvent($event);
+        $extraMenus = $result->get('extraMenus') ?? [];
+        return $extraMenus;
     }
 
     /**
@@ -66,6 +110,19 @@ class PluginManagerController extends Survey_Common_Action
 
         $oPluginManager = App()->getPluginManager();
         $result = $oPluginManager->scanPlugins();
+
+        // Add delete URL for each plugin
+        foreach ($result as $name => &$scannedPlugin) {
+            if (isset($scannedPlugin['pluginType']) && $scannedPlugin['pluginType'] == 'upload') {
+                $scannedPlugin['deleteUrl'] = $this->getController()->createUrl(
+                    '/admin/pluginmanager',
+                    [
+                        'sa' => 'deleteFiles',
+                        'plugin' => $name,
+                    ]
+                );
+            }
+        }
 
         Yii::app()->setFlashMessage(
             sprintf(
@@ -83,17 +140,60 @@ class PluginManagerController extends Survey_Common_Action
                 'sa' => 'installPluginFromFile'
             ]
         );
-        $data['fullpagebar']['returnbutton']['url'] = 'pluginmanager';
-        $data['fullpagebar']['returnbutton']['text'] = gT('Return to plugin manager');
+        $scanFilesUrl = $this->getController()->createUrl(
+            '/admin/pluginmanager',
+            [
+                'sa' => 'scanFiles',
+            ]
+        );
 
-        $this->_renderWrappedTemplate(
+        $data['topbar']['title'] = gT('Plugins - scanned files');
+        $data['topbar']['backLink'] = $this->getController()->createUrl('/admin/pluginmanager');
+        $data['topbar']['middleButtons'] = Yii::app()->getController()->renderPartial(
+            '/admin/pluginmanager/partial/topbarBtns/leftSideButtons',
+            [
+                'showUpload' => false,
+                'scanFilesUrl' => $scanFilesUrl,
+            ],
+            true
+        );
+
+        $this->renderWrappedTemplate(
             'pluginmanager',
             'scanFilesResult',
             $data
         );
+    }
 
-        //$indexUrl = $this->getController()->createUrl('/admin/pluginmanager');
-        //$this->getController()->redirect($indexUrl);
+    /**
+     * Delete files
+     * @param $plugin
+     */
+    public function deleteFiles($plugin)
+    {
+        $this->requirePostRequest();
+        $this->checkUpdatePermission();
+
+        // Pre supposes the plugin is in the uploads folder. Other plugins are not deletable by button.
+        $pluginDir = Yii::getPathOfAlias(App()->getPluginManager()->pluginDirs['upload']) . DIRECTORY_SEPARATOR . $plugin;
+
+        if (!file_exists($pluginDir)) {
+            Yii::app()->setFlashMessage(gT('Plugin folder does not exist.'), 'error');
+            $this->getController()->redirect($this->getPluginManagerUrl());
+        }
+
+        if (!is_writable($pluginDir)) {
+            Yii::app()->setFlashMessage(gT('Plugin files cannot be deleted due to permissions problem.'), 'error');
+            $this->getController()->redirect($this->getPluginManagerUrl());
+        }
+
+        if (!rmdirr($pluginDir)) {
+            Yii::app()->setFlashMessage(gT('Could not remove plugin files.'), 'error');
+            $this->getController()->redirect($this->getPluginManagerUrl());
+        } else {
+            Yii::app()->setFlashMessage(gT('Plugin files successfully deleted.'), 'success');
+            $this->getController()->redirect($this->getPluginManagerUrl());
+        }
     }
 
     /**
@@ -115,6 +215,10 @@ class PluginManagerController extends Survey_Common_Action
 
         $oPlugin = Plugin::model()->findByPk($pluginId);
         if ($oPlugin && $oPlugin->active == 0) {
+            if (!$oPlugin->isCompatible()) {
+                $this->errorAndRedirect(gT('The plugin is not compatible with your version of LimeSurvey.'));
+            }
+
             // Load the plugin:
             App()->getPluginManager()->loadPlugin($oPlugin->name, $pluginId);
             $result = App()->getPluginManager()->dispatchEvent(
@@ -179,6 +283,7 @@ class PluginManagerController extends Survey_Common_Action
 
     /**
      * Configure for plugin
+     * @param int $id
      */
     public function configure($id)
     {
@@ -194,7 +299,12 @@ class PluginManagerController extends Survey_Common_Action
         }
 
         $plugin      = Plugin::model()->findByPk($id);
-        $oPluginObject = App()->getPluginManager()->loadPlugin($plugin->name, $plugin->id);
+        $oPluginObject = App()->getPluginManager()->loadPlugin($plugin->name, $plugin->id, false);
+
+        if (empty($oPluginObject)) {
+            Yii::app()->user->setFlash('error', gT('Could not load plugin'));
+            $this->getController()->redirect($url);
+        }
 
         if (!$oPluginObject->readConfigFile()) {
             Yii::app()->user->setFlash('error', gT('Found no configuration file for this plugin.'));
@@ -227,23 +337,47 @@ class PluginManagerController extends Survey_Common_Action
 
         // Prepare settings to be send to the view.
         $aSettings = $oPluginObject->getPluginSettings();
-
+        // Add button if permission
+        $aButtons = array();
+        if (Permission::model()->hasGlobalPermission('settings', 'update')) {
+            $url = App()->createUrl("admin/pluginmanager/sa/index");
+            $aButtons = array(
+                'cancel' => array(
+                    'label' => '<span class="ri-close-fill"></span> ' . gT('Close'),
+                    'class' => array('btn btn-danger'),
+                    'type'  => 'link',
+                    'href' => $url,
+                ),
+                'redirect' => array(
+                    'label' => '<span class="ri-chat-check-fill"></span> ' . gT('Save and close'),
+                    'class' => array('btn btn-outline-secondary'),
+                    'role'  => 'button',
+                    'type'  => 'submit',
+                    'value' => $url,
+                ),
+                'save' => array(
+                    'label' => '<span class="ri-check-fill"></span> ' . gT('Save'),
+                    'class' => array('btn btn-primary'),
+                    'type'  => 'submit'
+                ),
+            );
+        }
         // Send to view plugin porperties: name and description
         $aPluginProp = App()->getPluginManager()->getPluginInfo($plugin->name);
 
-        $fullPageBar = [];
-        $fullPageBar['returnbutton']['url'] = 'admin/pluginmanager/sa/index';
-        $fullPageBar['returnbutton']['text'] = gT('Return to plugin list');
+        $topbar['title'] = gT('Plugins') . ' ' . $plugin['name'];
+        $topbar['backLink'] = $this->getController()->createUrl('/admin/pluginmanager', ['sa' => 'index']);
 
-        $this->_renderWrappedTemplate(
+        $this->renderWrappedTemplate(
             'pluginmanager',
             'configure',
             [
                 'settings'     => $aSettings,
+                'buttons'      => $aButtons,
                 'plugin'       => $plugin,
                 'pluginObject' => $oPluginObject,
                 'properties'   => $aPluginProp,
-                'fullpagebar'  => $fullPageBar
+                'topbar' => $topbar
             ]
         );
     }
@@ -277,13 +411,13 @@ class PluginManagerController extends Survey_Common_Action
             $plugin->load_error_message = '';
             $result = $plugin->update();
             if ($result) {
-                Yii::app()->user->setFlash('success', sprintf(gt('Reset load error for plugin %d'), $pluginId));
+                Yii::app()->user->setFlash('success', sprintf(gT('Reset load error for plugin %s (%s)'), $plugin->name, $plugin->plugin_type));
             } else {
-                Yii::app()->user->setFlash('error', sprintf(gt('Could not update plugin %d'), $pluginId));
+                Yii::app()->user->setFlash('error', sprintf(gT('Could not update plugin %s (%s)'), $plugin->name, $plugin->plugin_type));
             }
             $this->getController()->redirect($url);
         } else {
-            Yii::app()->user->setFlash('error', sprintf(gt('Found no plugin with id %d'), $pluginId));
+            Yii::app()->user->setFlash('error', sprintf(gT('Found no plugin with id %d'), $pluginId));
             $this->getController()->redirect($url);
         }
     }
@@ -295,13 +429,10 @@ class PluginManagerController extends Survey_Common_Action
     public function installPluginFromFile()
     {
         // Check permissions.
-        if (!Permission::model()->hasGlobalPermission('settings', 'update')) {
-            Yii::app()->setFlashMessage(gT('No permission'), 'error');
-            $this->getController()->redirect($this->getPluginManagerUrl());
-        }
+        $this->checkUpdatePermission();
 
         $request = Yii::app()->request;
-        $pluginName = $request->getPost('pluginName');
+        $pluginName = sanitize_alphanumeric($request->getPost('pluginName'));
 
         $pluginManager = App()->getPluginManager();
         $pluginInfo = $pluginManager->getPluginInfo($pluginName);
@@ -317,7 +448,7 @@ class PluginManagerController extends Survey_Common_Action
             $this->getController()->redirect($this->getPluginManagerUrl());
         } else {
             list($result, $errorMessage) = $pluginManager->installPlugin(
-                $pluginInfo['pluginConfig'],
+                $pluginInfo['extensionConfig'],
                 $pluginInfo['pluginType']
             );
             if ($result) {
@@ -342,10 +473,7 @@ class PluginManagerController extends Survey_Common_Action
     public function uninstallPlugin()
     {
         // Check permissions.
-        if (!Permission::model()->hasGlobalPermission('settings', 'update')) {
-            Yii::app()->setFlashMessage(gT('No permission'), 'error');
-            $this->getController()->redirect($this->getPluginManagerUrl());
-        }
+        $this->checkUpdatePermission();
 
         // Get plugin id from post.
         $request = Yii::app()->request;
@@ -379,75 +507,162 @@ class PluginManagerController extends Survey_Common_Action
      */
     public function upload()
     {
-        // Check permissions.
-        if (!Permission::model()->hasGlobalPermission('settings', 'update')) {
-            Yii::app()->setFlashMessage(gT('No permission'), 'error');
-            $this->getController()->redirect($this->getPluginManagerUrl());
-        }
+        $this->checkUploadEnabled();
 
-        Yii::app()->loadLibrary('admin.pclzip');
-        $pluginManager = App()->getPluginManager();
+        $this->checkUpdatePermission();
 
         // Redirect back if demo mode is set.
         $this->checkDemoMode();
 
-        // Redirect back at file size error.
-        $this->checkFileSizeError();
+        $installer = $this->getInstaller();
 
-        $sNewDirectoryName = sanitize_dirname(pathinfo($_FILES['the_file']['name'], PATHINFO_FILENAME));
-        // TODO: Customize folders from config.php?
-        $uploadDir = Yii::getPathOfAlias($pluginManager->pluginDirs['upload']);
-        $destdir = $uploadDir . DIRECTORY_SEPARATOR . $sNewDirectoryName;
+        try {
+            $installer->fetchFiles();
+            $this->getController()->redirect($this->getPluginManagerUrl('uploadConfirm'));
+        } catch (Exception $ex) {
+            $installer->abort();
+            $this->errorAndRedirect(gT('Could not fetch files.') . ' ' . $ex->getMessage());
+        }
+
+        //$tempdir = Yii::app()->getConfig("tempdir");
+        //$destdir = createRandomTempDir($tempdir, 'install_');
 
         // Redirect back if $destdir is not writable OR if it already exists.
-        $this->checkDestDir($destdir, $sNewDirectoryName);
+        //$this->checkDestDir($destdir, $sNewDirectoryName);
 
         // All OK if we're here.
-        mkdir($destdir);
-
-        $this->extractZipFile($destdir);
+        //$this->extractZipFile($destdir);
     }
 
     /**
-     * @param string $destdir
+     * Show confirm page after a plugin zip archive was successfully
+     * uploaded.
      * @return void
      */
-    protected function extractZipFile($destdir)
+    public function uploadConfirm()
     {
-        if (!is_file($_FILES['the_file']['tmp_name'])) {
-            Yii::app()->setFlashMessage(
-                gT("An error occurred uploading your file. This may be caused by incorrect permissions for the application /tmp folder."),
-                'error'
+        $this->checkUploadEnabled();
+
+        $this->checkUpdatePermission();
+
+        /** @var PluginInstaller */
+        $installer = $this->getInstaller();
+
+        try {
+
+            /** @var ExtensionConfig */
+            $config = $installer->getConfig();
+
+            if (empty($config)) {
+                $installer->abort();
+                $this->errorAndRedirect(gT('Could not read plugin configuration file.'));
+            }
+
+            if (!$installer->isWhitelisted()) {
+                $installer->abort();
+                $this->errorAndRedirect(gT('The plugin is not in the plugin allowlist.'));
+            }
+
+            if (!$config->isCompatible()) {
+                $installer->abort();
+                $this->errorAndRedirect(gT('The plugin is not compatible with your version of LimeSurvey.'));
+            }
+
+            // Show confirmation page.
+            $abortUrl = $this->getPluginManagerUrl('abortUploadedPlugin');
+            $plugin = Plugin::model()->find('name = :name', [':name' => $config->getName()]);
+            $data = [
+                'config'   => $config,
+                'abortUrl' => $abortUrl,
+                'plugin'   => $plugin,
+                'isUpdate' => !empty($plugin)
+            ];
+            $this->renderWrappedTemplate(
+                'pluginmanager',
+                'uploadConfirm',
+                $data
             );
-            rmdirr($destdir);
-            $this->getController()->redirect($this->getPluginManagerUrl());
+        } catch (Exception $ex) {
+            $installer->abort();
+            $this->errorAndRedirect($ex->getMessage());
         }
+    }
 
-        $zip = new PclZip($_FILES['the_file']['tmp_name']);
-        $aExtractResult = $zip->extract(
-            PCLZIP_OPT_PATH,
-            $destdir,
-            PCLZIP_CB_PRE_EXTRACT,
-            'pluginExtractFilter'
-        );
+    /**
+     * After clicking "Install" on upload confirm page, run this action
+     * and then redirect to plugin manager start page.
+     * @return void
+     */
+    public function installUploadedPlugin()
+    {
+        $this->checkUploadEnabled();
 
-        if ($aExtractResult === 0) {
+        $this->checkUpdatePermission();
+
+        /** @var LSHttpRequest */
+        $request = Yii::app()->request;
+
+        /** @var boolean */
+        $isUpdate = $request->getPost('isUpdate') == 'true';
+
+        /** @var PluginInstaller */
+        $installer = $this->getInstaller();
+        $installer->setPluginType('upload');
+
+        try {
+            if ($isUpdate) {
+                $installer->update();
+                Yii::app()->user->setFlash(
+                    'success',
+                    gT('The plugin was successfully updated. You might need to deactivate it and activate it again to apply changes.')
+                );
+            } else {
+                $installer->install();
+                Yii::app()->user->setFlash(
+                    'success',
+                    gT('The plugin was successfully installed. You need to activate it before you can use it.')
+                );
+            }
+        } catch (Throwable $ex) {
+            $installer->abort();
             Yii::app()->user->setFlash(
                 'error',
-                gT("This file is not a valid ZIP file archive. Import failed.")
-                . ' ' . $zip->error_string
-            );
-            rmdirr($destdir);
-            $this->getController()->redirect($this->getPluginManagerUrl());
-        } else {
-            $pluginManager = App()->getPluginManager();
-            list($result, $errorMessage) = $pluginManager->installUploadedPlugin($destdir);
-            Yii::app()->user->setFlash(
-                'success',
-                gT('The plugin was successfully uploaded.')
+                gT('The plugin could not be installed or updated:')
+                . ' '
+                . $ex->getMessage()
             );
         }
+
         $this->getController()->redirect($this->getPluginManagerUrl());
+    }
+
+    /**
+     * @return void
+     */
+    public function abortUploadedPlugin()
+    {
+        $this->checkUpdatePermission();
+
+        $installer = $this->getInstaller();
+        $installer->abort();
+        Yii::app()->user->setFlash(
+            'warning',
+            gT('Installation aborted.')
+        );
+        $this->getController()->redirect($this->getPluginManagerUrl());
+    }
+
+    /**
+     * @return PluginInstaller
+     * @todo Might have different file fetcher.
+     */
+    protected function getInstaller()
+    {
+        $fileFetcher = new FileFetcherUploadZip();
+        $fileFetcher->setUnzipFilter('pluginExtractFilter');
+        $installer = new PluginInstaller();
+        $installer->setFileFetcher($fileFetcher);
+        return $installer;
     }
 
     /**
@@ -496,37 +711,58 @@ class PluginManagerController extends Survey_Common_Action
     }
 
     /**
-     * Redirect if file size is too big.
-     * @return void
-     * @todo Duplicate from themes.php.
+     * Return URL to plugin manager index..
+     * @param string $sa Controller subaction.
+     * @param array $extraParam
+     * @return string
      */
-    protected function checkFileSizeError()
+    protected function getPluginManagerUrl($sa = null, $extraParams = [])
     {
-        if ($_FILES['the_file']['error'] == 1 || $_FILES['the_file']['error'] == 2) {
-            Yii::app()->setFlashMessage(
-                sprintf(
-                    gT("Sorry, this file is too large. Only files up to %01.2f MB are allowed."),
-                    getMaximumFileUploadSize() / 1024 / 1024
-                ),
-                'error'
-            );
+        $params = [
+            'sa' => $sa ? $sa : 'index'
+        ];
+        if ($extraParams) {
+            $params = array_merge($params, $extraParams);
+        }
+        return $this->getController()->createUrl(
+            '/admin/pluginmanager',
+            $params
+        );
+    }
+
+    /**
+     * Sets an error flash message and redirects to plugin manager start page.
+     * @param string $msg Error message.
+     * @return void
+     */
+    protected function errorAndRedirect($msg)
+    {
+        Yii::app()->setFlashMessage($msg, 'error');
+        $this->getController()->redirect($this->getPluginManagerUrl());
+    }
+
+    /**
+     * Blocks action if user has no setting update permission.
+     * @return void
+     */
+    protected function checkUpdatePermission()
+    {
+        if (!Permission::model()->hasGlobalPermission('settings', 'update')) {
+            Yii::app()->setFlashMessage(gT('No permission'), 'error');
             $this->getController()->redirect($this->getPluginManagerUrl());
         }
     }
 
-
     /**
-     * Return URL to plugin manager index..
-     * @return string
+     * Blocks action if plugin upload is disabled.
+     * @return void
      */
-    protected function getPluginManagerUrl()
+    protected function checkUploadEnabled()
     {
-        return $this->getController()->createUrl(
-            '/admin/pluginmanager',
-            [
-                'sa' => 'index'
-            ]
-        );
+        if (Yii::app()->getConfig('disablePluginUpload')) {
+            Yii::app()->setFlashMessage(gT('Plugin upload is disabled'), 'error');
+            $this->getController()->redirect($this->getPluginManagerUrl());
+        }
     }
 
     /**
@@ -536,33 +772,30 @@ class PluginManagerController extends Survey_Common_Action
      * @param string $aViewUrls View url(s)
      * @param array $aData Data to be passed on. Optional.
      */
-    protected function _renderWrappedTemplate($sAction = 'pluginmanager', $aViewUrls = [], $aData = [], $sRenderFile = false)
+    protected function renderWrappedTemplate($sAction = 'pluginmanager', $aViewUrls = [], $aData = [], $sRenderFile = false)
     {
-        parent::_renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
+        parent::renderWrappedTemplate($sAction, $aViewUrls, $aData, $sRenderFile);
     }
 }
 
 /**
- * PCLZip callback for plugin ZIP install.
- * @param mixed $p_event
- * @param mixed $p_header
+ * Callback for plugin ZIP install. Filters files by extension.
+ * @param mixed $file
  * @return int Return 1 for yes (file can be extracted), 0 for no
  */
-function pluginExtractFilter($p_event, &$p_header)
+function pluginExtractFilter($file)
 {
     $aAllowExtensions = explode(
         ',',
-        Yii::app()->getConfig('allowedpluginuploads')
+        Yii::app()->getConfig('allowedpluginuploads', '')
     );
-    $info = pathinfo($p_header['filename']);
-    // Deny files with multiple extensions in general
-    if (substr_count($info['basename'], '.') > 1) {
-        return 0;
-    }
+    $info = pathinfo((string) $file['name']);
 
-    if ($p_header['folder']
+    if (
+        $file['is_folder']
         || !isset($info['extension'])
-        || in_array($info['extension'], $aAllowExtensions)) {
+        || in_array($info['extension'], $aAllowExtensions)
+    ) {
         return 1;
     } else {
         return 0;

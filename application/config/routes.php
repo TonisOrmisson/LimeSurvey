@@ -23,7 +23,7 @@ $route['<_sid:\d+>/*'] = "survey/index/sid/<_sid>";
 $route['<sid:\d+>'] = array('survey/index', 'matchValue'=>true);
 
 //Admin Routes
-$route['admin/index'] = "admin";
+$route['admin/index'] = "admin"; // this can not be changed to "dashboard/view" as long as the AdminController exists, will break "path" urlFormat
 $route['admin/<action:\w+>/sa/<sa:\w+>/*'] = 'admin/<action>/sa/<sa>';
 $route['admin/<action:\w+>/<sa:\w+>/*'] = 'admin/<action>/sa/<sa>';
 
@@ -31,15 +31,39 @@ $route['admin/<action:\w+>/<sa:\w+>/*'] = 'admin/<action>/sa/<sa>';
 $route['admin/labels/<_action:\w+>'] = "admin/labels/index/<_action>";
 $route['admin/labels/<_action:\w+>/<_lid:\d+>'] = "admin/labels/index/<_action>/<_lid>";
 
-//Expression Manager tests
+//ExpressionScript Engine tests
 $route['admin/expressions'] = "admin/expressions/index";
+
+// REST
+// - Resource index
+// - Resource index with id
+// - Resource index with id and basetable (for survey responses)
+$route['rest/<_api_version:\w+>/<_entity>/<_id>'] = array(
+    'rest',
+    'verb' => 'GET, PUT, PATCH, POST, DELETE',
+    'matchValue' => false
+);
+$route['rest/<_api_version:\w+>/<_entity>'] = array(
+    'rest',
+    'verb' => 'GET, PUT, PATCH, POST, DELETE',
+    'matchValue' => false
+);
+
+$route['rest/<_api_version:\w+>/<_entity>/<_id>/<_basetable>'] = array(
+    'rest',
+    'verb' => 'GET, PUT, PATCH, POST, DELETE',
+    'matchValue' => false
+);
 
 //optout - optin
 $route['optout/<_sid:\d+>/(:any)/(:any)'] = "optout/index/<_sid>/$2/$3";
 $route['optout/tokens/<surveyid:\d+>'] = array('optout/tokens', 'matchValue'=>true);
+$route['optout/participants/<surveyid:\d+>'] = array('optout/participants', 'matchValue'=>true);
 $route['optin/tokens/<surveyid:\d+>'] = array('optin/tokens', 'matchValue'=>true);
-$route['statistics_user/<surveyid:\d+>'] = array('statistics_user/action', 'matchValue'=>true);
+$route['optin/participants/<surveyid:\d+>'] = array('optin/participants', 'matchValue'=>true);
+$route['statistics_user/<surveyid:\d+>'] = array('StatisticsUser/action', 'matchValue'=>true);
+$route['statistics_user/action'] = 'StatisticsUser/action';
 
-$route['<_controller:\w+>/<_action:\w+>'] = '<_controller>/<_action>';
+//$route['<_controller:\w+>/<_action:\w+>'] = '<_controller>/<_action>';
 
 return $route;

@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey (tm)
  * Copyright (C) 2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -19,12 +18,9 @@
  * Class Label
  *
  * @property integer $id Primary Key
- * @property integer $lid Related Label Set
- * @property string $code
- * @property string $title
- * @property integer $sortorder
- * @property string $language
- * @property integer $assessment_value
+ * @property integer $label_id Related Label ID
+ * @property string $title title
+ * @property string $language connected language
  */
 class LabelL10n extends LSActiveRecord
 {
@@ -49,10 +45,10 @@ class LabelL10n extends LSActiveRecord
      * @inheritdoc
      * @return LabelL10n
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -60,9 +56,9 @@ class LabelL10n extends LSActiveRecord
     public function rules()
     {
         return array(
-            array('label_id', 'numerical', 'integerOnly'=>true),
+            array('label_id', 'numerical', 'integerOnly' => true),
             array('title', 'LSYii_Validators'),
-            array('language', 'length', 'min' => 2, 'max'=>20), // in array languages ?
+            array('language', 'length', 'min' => 2, 'max' => 20), // in array languages ?
         );
     }
 
@@ -75,10 +71,9 @@ class LabelL10n extends LSActiveRecord
             'label' => array(self::BELONGS_TO, 'Label', 'label_id')
         );
     }
-    
+
     public function defaultScope()
     {
-        return array('index'=>'language');
-    }    
-
+        return array('index' => 'language');
+    }
 }

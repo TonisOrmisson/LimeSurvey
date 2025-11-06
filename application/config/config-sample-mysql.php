@@ -29,12 +29,13 @@ return array(
             'connectionString' => 'mysql:host=localhost;port=3306;dbname=limesurvey;',
             'emulatePrepare' => true,
             'username' => 'root',
-            'password' => '',
+            'password' => 'root',
             'charset' => 'utf8mb4',
             'tablePrefix' => 'lime_',
         ),
 
-        // Uncomment the following line if you need table-based sessions
+        // Uncomment the following lines if you need table-based sessions.
+        // Note: Table-based sessions are currently not supported on MSSQL server.
         // 'session' => array (
             // 'class' => 'application.core.web.DbHttpSession',
             // 'connectionID' => 'db',

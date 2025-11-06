@@ -39,7 +39,9 @@ margin:0;
     }
 }
 
-
+.file-preview span {
+    margin-left: 1em;
+}
 
 .file-info label{
     float:left;
@@ -68,6 +70,7 @@ margin:0;
 }
 .upload-div{
     text-align: center;
+    margin-bottom: 0.5em;    
 }
 .uploadmsg {
     text-align: center;
@@ -82,4 +85,18 @@ img.uploaded {
     height: auto;
     max-height: 100px;
     max-width: 96%;
+    padding: 5px;
 }
+
+.uploadedfiles tbody tr td {
+    text-align: left;
+}
+
+.dir-rtl .uploadedfiles tbody tr td {
+    text-align: right;
+}
+
+.uploadedfiles thead tr th {
+    font-weight: bold;
+}
+

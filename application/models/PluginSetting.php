@@ -26,7 +26,6 @@
 
 class PluginSetting extends CActiveRecord
 {
-
     /**
      * @inheritdoc
      * @return PluginSetting
@@ -56,10 +55,10 @@ class PluginSetting extends CActiveRecord
     public function rules()
     {
         return array(
-            array('plugin_id', 'numerical', 'integerOnly'=>true), // 'allowEmpty'=>false ?
-            array('model', 'length', 'max'=>255, 'allowEmpty'=>true),
-            array('model_id', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
-            array('key', 'length', 'max'=>255),
+            array('plugin_id', 'numerical', 'integerOnly' => true), // 'allowEmpty'=>false ?
+            array('model', 'length', 'max' => 255, 'allowEmpty' => true),
+            array('model_id', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+            array('key', 'length', 'max' => 255),
         );
     }
 }

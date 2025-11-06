@@ -1,27 +1,19 @@
-<div class="<?php echo $sizeClass; ?> ls-flex-column ls-panelboxes-panelbox" >
-    <div class="panel panel-primary panel-clickable ls-panelboxes-panelbox-inner selector__<?=str_replace(' ', '_', strtolower($title))?>" 
-        id="panel-<?php echo $position; ?>"
-         data-url="<?php echo $url; ?>"<?php if ($external) {
-        echo ' data-target="_blank"';
-    } ?>  >
-        <div class="panel-heading">
-            <div class="panel-title h4"><?php eT($title); ?></div>
+<div class="<?php echo $sizeClass; ?> ls-flex-column ls-panelboxes-panelbox">
+    <div class="card card-primary card-clickable ls-panelboxes-panelbox-inner selector__<?php echo CHtml::encode(str_replace(' ', '_', strtolower(strip_tags((string)$title)))) ?>"
+         id="card-<?php echo $position; ?>"
+         data-url="<?php echo CHtml::encode($url); ?>" <?php if ($external) : ?>
+        data-target="_blank" <?php endif; ?>>
+        <div class="card-header">
+            <div class="card-title"><?php echo viewHelper::filterScript(gT($title)); ?></div>
         </div>
-        <div class="panel-body">
-            <div class="panel-body-ico">
-                <a href="<?php echo $url; ?>"<?php if ($external) {
-                    echo ' target="_blank"';
-                } ?>>
-		<span class="sr-only"><?php eT($title); ?></span>
-                <span class="icon-<?php echo $ico; ?>" style="font-size: 4em">
-                </span>
-                </a>
-            </div>
-            <div class="panel-body-link">
-                <a href="<?php echo $url; ?>"<?php if ($external) {
-                    echo ' target="_blank"';
-                } ?>><?php eT($description); ?></a>
-            </div>
+        <div class="card-body d-flex">
+            <?php echo viewHelper::filterScript(gT($description)); ?>
+        </div>
+        <div class="card-footer d-flex">
+            <button class="btn btn-outline-secondary" role="button">
+                <i class="<?php echo CHtml::encode($ico); ?>"></i>
+                <?php echo viewHelper::filterScript(gT($buttontext)); ?>
+            </button>
         </div>
     </div>
 </div>

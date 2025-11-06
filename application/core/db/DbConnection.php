@@ -1,6 +1,7 @@
 <?php
+
 /**
-* @property boolean $active Whether the DB connection is established. 
+* @property boolean $active Whether the DB connection is established.
 */
 class DbConnection extends \CDbConnection
 {
@@ -20,12 +21,12 @@ class DbConnection extends \CDbConnection
     protected function initConnection($pdo)
     {
         parent::initConnection($pdo);
-        $driver = strtolower($pdo->getAttribute(PDO::ATTR_DRIVER_NAME));
+        $driver = strtolower((string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME));
         if (in_array($driver, array('mysql', 'mysqli'))) {
             $pdo->exec("SET collation_connection='utf8mb4_unicode_ci'");
             if (Yii::app()->getConfig('debug') > 1) {
-                $pdo->exec("SET SESSION SQL_MODE='STRICT_ALL_TABLES,ANSI'");
-            } 
+                $pdo->exec("SET SESSION SQL_MODE='STRICT_ALL_TABLES,IGNORE_SPACE,ONLY_FULL_GROUP_BY'");
+            }
         }
     }
         
@@ -47,7 +48,7 @@ class DbConnection extends \CDbConnection
                     return $value;
         } else {
             // the driver doesn't support quote (e.g. oci)
-            return "'".addcslashes(str_replace("'", "''", $str), "\000\n\r\\\032")."'";
+            return "'" . addcslashes(str_replace("'", "''", $str), "\000\n\r\\\032") . "'";
         }
     }
 }

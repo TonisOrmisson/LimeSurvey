@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
    * LimeSurvey
    * Copyright (C) 2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -12,7 +11,7 @@
    * other free or open source software licenses.
    * See COPYRIGHT.php for copyright notices and details.
    *
-     *	Files Purpose: lots of common functions
+     *  Files Purpose: lots of common functions
 */
 
 /**
@@ -32,10 +31,10 @@ class QuotaLanguageSetting extends LSActiveRecord
      * @inheritdoc
      * @return QuotaLanguageSetting
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var QuotaLanguageSetting $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -71,14 +70,26 @@ class QuotaLanguageSetting extends LSActiveRecord
             array('quotals_message', 'required'),
             array('quotals_name', 'LSYii_Validators'), // No access in quota editor, set to quota.name
             array('quotals_message', 'LSYii_Validators'),
-            array('quotals_url', 'LSYii_Validators', 'isUrl'=>true),
+            array('quotals_url', 'LSYii_Validators', 'isUrl' => true),
             array('quotals_urldescrip', 'LSYii_Validators'),
-            array('quotals_url', 'urlValidator'),
+            array('quotals_url', 'LSYii_FilterValidator', 'filter' => 'trim', 'skipOnEmpty' => true),
+            // Validate if quotals_url is  not empty if quota->autoload_url is set,
+            // disable the rules when copying/import survey, valid survey can have empty quotals_url with autoload_url, for example if autoload_url wa set after ir language added aftgr
+            array('quotals_url', 'urlValidator', 'except' => 'import'),
+            array('quotals_name', 'length', 'min' => 0, 'max' => 255),
+            array('quotals_url', 'length', 'min' => 0, 'max' => 255),
+            array('quotals_urldescrip', 'length', 'min' => 0, 'max' => 255),
         );
     }
+
+    /**
+     * Validate if url is set and not empty if autoload_url is activated
+     * To be used in rules
+     */
     public function urlValidator()
     {
-        if ($this->quota->autoload_url == 1 && !$this->quotals_url) {
+        // $quota might be still empty while doing an import
+        if (!empty($this->quota) && $this->quota->autoload_url == 1 && !$this->quotals_url) {
             $this->addError('quotals_url', gT('URL must be set if autoload URL is turned on!'));
         }
     }
@@ -86,9 +97,9 @@ class QuotaLanguageSetting extends LSActiveRecord
     public function attributeLabels()
     {
         return array(
-            'quotals_message'=> gT("Quota message:"),
-            'quotals_url'=> gT("URL:"),
-            'quotals_urldescrip'=> gT("URL Description:"),
+            'quotals_message' => gT("Quota message:"),
+            'quotals_url' => gT("URL:"),
+            'quotals_urldescrip' => gT("URL Description:"),
         );
     }
 
@@ -99,9 +110,13 @@ class QuotaLanguageSetting extends LSActiveRecord
      */
     public function insertRecords($data)
     {
-        $settings = new self;
+        $settings = new self();
         foreach ($data as $k => $v) {
-                    $settings->$k = $v;
+            if ($k === 'autoload_url') {
+                $settings->quota->autoload_url = $v;
+            } else {
+                $settings->$k = $v;
+            }
         }
         return $settings->save();
     }

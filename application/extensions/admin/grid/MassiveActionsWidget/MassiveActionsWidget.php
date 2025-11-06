@@ -17,6 +17,22 @@
      */
     class massiveActionsWidget extends CWidget
     {
+
+        /** @var string[] these are the names of the views in MassiveActionsWidget/../modals/ */
+        private const NAME_OF_MODEL_VIEWS = [
+            'yes-no',
+            'empty',
+            'yes-no-lg',
+            'empty-lg',
+            'cancel-apply',
+            'cancel-change',
+            'cancel-resend',
+            'cancel-add',
+            'cancel-save',
+            'cancel-delete',
+            'cancel-export',
+        ];
+
         // Selector variables
         public $pk;                         // The primary key of the grid
         public $gridid;                     // The id of the related grid
@@ -33,7 +49,7 @@
             foreach($this->aActions as $key => $aAction)
             {
                 // Not all action require a modal (eg: downloads, etc)
-                if( isset($aAction['actionType']) && $aAction['actionType']=='modal')
+                if (isset($aAction['actionType']) && $aAction['actionType'] === 'modal')
                 {
                     // Modal type define the view to render in views/modal
                     if ($this->isView($aAction['modalType']))
@@ -63,8 +79,15 @@
 
         }
 
+        /**
+         * Check if the view is in the list
+         *
+         * @param $display string this is the name of one of the files in
+         *                        extensions/admin/MassiveActionsWidget/views/modals
+         * @return bool
+         */
         private function isView($display)
         {
-            return in_array($display, array('yes-no', 'empty'));
+            return in_array($display, self::NAME_OF_MODEL_VIEWS);
         }
     }

@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
+
 /*
    * LimeSurvey
    * Copyright (C) 2013 The LimeSurvey Project Team / Carsten Schmitz
@@ -35,10 +34,10 @@ class ExpressionError extends LSActiveRecord
      * @inheritdoc
      * @return ExpressionError
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -64,5 +63,4 @@ class ExpressionError extends LSActiveRecord
     {
         return $this->db->insert('expression_errors', $data);
     }
-
 }

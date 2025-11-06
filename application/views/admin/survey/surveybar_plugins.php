@@ -12,7 +12,10 @@
 <?php foreach ($beforeSurveyBarRender as $menu): ?>
     <div class='btn-group'>
         <?php if ($menu->isDropDown()): ?>
-            <button class="dropdown-toggle" data-toggle="dropdown" href="#">
+	    <button class="dropdown-toggle btn btn-outline-secondary" data-bs-toggle="dropdown" href="#">
+              <?php if ($menu->getIconClass()): ?>
+                  <span class="<?php echo $menu->getIconClass(); ?>"></span>&nbsp;
+              <?php endif; ?>
               <?php echo $menu->getLabel(); ?>
               &nbsp;
               <span class="caret"></span>
@@ -20,7 +23,7 @@
             <ul class="dropdown-menu" role="menu">
                 <?php foreach ($menu->getMenuItems() as $menuItem): ?>
                     <?php if ($menuItem->isDivider()): ?>
-                        <li class="divider"></li>
+                        <li class="dropdown-divider"></li>
                     <?php elseif ($menuItem->isSmallText()): ?>
                         <li class="dropdown-header"><?php echo $menuItem->getLabel(); ?></li>
                     <?php else: ?>
@@ -37,7 +40,7 @@
                 <?php endforeach; ?>
             </ul>
         <?php else : ?>
-            <a class='btn btn-default' href="<?php echo $menu->getHref(); ?>">
+            <a class='btn btn-outline-secondary' href="<?php echo $menu->getHref(); ?>">
                 <?php if ($menu->getIconClass()): ?>
                     <span class="<?php echo $menu->getIconClass(); ?>"></span>&nbsp;
                 <?php endif; ?>

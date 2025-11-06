@@ -1,11 +1,21 @@
-<div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-    <div class="modal-title h4" id="participant_edit_modal"><?php if ($editType == 'add'): eT('Add participant'); else: eT('Edit participant'); endif; ?></div>
-</div>
+<?php
+if ($editType == 'add'){
+    $modalTitle = gT('Add participant');
+    $buttonTitle = gT('Add');
+}else{
+    $modalTitle = gT('Edit participant');
+    $buttonTitle = gT('Save');
+}
+
+Yii::app()->getController()->renderPartial(
+    '/layouts/partial_modals/modal_header',
+    ['modalTitle' => $modalTitle]
+);
+?>
 <div class="modal-body edit-participant-modal-body ">
 <?php
     $form = $this->beginWidget(
-        'bootstrap.widgets.TbActiveForm',
+        'yiistrap_fork.widgets.TbActiveForm',
         array(
             'id' => 'editPartcipantActiveForm',
             'action' => array('admin/participants/sa/editParticipant'),
@@ -14,7 +24,7 @@
     );
 ?>
     <input type="hidden" name="oper" value="<?php echo $editType; ?>" />
-    <input type="hidden" name="Participant[participant_id]" value="<?php echo $model->participant_id; ?>" />
+    <?=$form->hiddenField($model, 'participant_id')?>
     <?php
         echo "<legend>".gT("Basic attributes")."</legend>";
         $baseControlGroupHtmlOptions = array(
@@ -23,59 +33,68 @@
              'required' => 'required'
         );
     ?>
-        <div class='form-group'>
-            <label class='control-label '>
+        <div class='mb-3'>
+            <label class='form-label '>
                 <?php eT('First name:'); ?>
             </label>
             <div class=''>
-                <input class='form-control' name='Participant[firstname]' value='<?php echo $model->firstname; ?>' />
+                <?=$form->textField($model, 'firstname')?>
             </div>
-            <label class='control-label '>
+            <label class='form-label '>
                 <?php eT('Last name:'); ?>
             </label>
             <div class=''>
-                <input class='form-control' name='Participant[lastname]' value='<?php echo $model->lastname; ?>' />
+                <?=$form->textField($model, 'lastname')?>
             </div>
         </div>
-        <div class='form-group'>
-            <label class='control-label '>
-                <?php eT('E-mail:'); ?>
+        <div class='mb-3'>
+            <label class='form-label '>
+                <?php eT('Email:'); ?>
             </label>
             <div class='0'>
-                <input class='form-control' name='Participant[email]' value='<?php echo $model->email; ?>' />
+                <?=$form->textField($model, 'email')?>
             </div>
         </div>
-        <div class='form-group'>
-            <label class='control-label '><?php eT("Blacklist user:"); ?></label>
+        <div class='mb-3'>
+            <label class='form-label '><?php eT("Language:"); ?></label>
             <div class=''>
-                &nbsp;
-                <input name='Participant[blacklisted]' type='checkbox' <?php if ($model->blacklisted == 'Y'): echo ' checked="checked" '; endif; ?> data-size='small' data-on-color='warning' data-off-color='primary' data-off-text='<?php eT('No'); ?>' data-on-text='<?php eT('Yes'); ?>' class='action_changeBlacklistStatus ls-bootstrap-switch' />
+                <?= $form->dropDownList(
+                        $model,
+                        'language',
+                        $model->languageOptions,
+                        [
+                            'empty' => gT('Select language...'),
+                            'class' => 'form-select'
+                        ]
+                    ); ?>
+            </div>
+        </div>
+        <div class='mb-3'>
+            <label class='form-label '><?php eT("Participant is on blocklist:"); ?></label>
+            <div>
+                <?php $this->widget('ext.ButtonGroupWidget.ButtonGroupWidget', [
+                    'model'         => $model,
+                    'attribute'     => 'blacklisted',
+                    'checkedOption' => $model->blacklisted ?? 'N',
+                    'selectOptions' => [
+                        'Y' => gT('Yes'),
+                        'N' => gT('No'),
+                    ]
+                ]); ?>
             </div>
         </div>
 
         <!-- Change owner -->
         <?php if ($model->isOwnerOrSuperAdmin()): ?>
-            <div class='form-group'>
-                <label class='control-label '><?php eT("Owner:"); ?></label>
-                <div class=''>
-                <select class='form-control' id='owner_uid' name='Participant[owner_uid]'>
-
-                    <?php // When we add a new user, owner is default to current user ?>
-                    <?php if ($editType == 'add'): ?>
-                        <?php foreach ($users as $user): ?>
-                            <option <?php if (Yii::app()->user->id == $user->uid): echo ' selected="selected" '; endif; ?> value='<?php echo $user->uid; ?>'><?php echo $user->full_name; ?></option>
-                        <?php endforeach; ?>
-
-                    <?php // When we add a user, owner is set to current owner ?>
-                    <?php else: ?>
-                        <?php foreach ($users as $user): ?>
-                            <option <?php if ($model->owner_uid == $user->uid): echo ' selected="selected" '; endif; ?> value='<?php echo $user->uid; ?>'><?php echo $user->full_name; ?></option>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-
-                </select>
-                </div>
-                <div class=''></div>
+        <?php  ?>
+            <div class='mb-3'>
+                <label class='form-label '><?php eT("Owner:"); ?></label>
+                <?php
+                    // When we add a new user, owner is default to current user
+                    $selected = ($editType == 'add') ? Yii::app()->user->id : $model->owner_uid;
+                    $listUsers = CHtml::listData($users,'uid','full_name');
+                    echo CHtml::dropDownList('Participant[owner_uid]',$selected,$listUsers,array('id'=>'owner_uid','class'=>'form-select'));
+                ?>
             </div>
         <?php endif; ?>
 
@@ -85,7 +104,7 @@
 
             <!-- Two inputs on each row -->
             <?php if ($i % 2 == 0): ?>
-                <div class='form-group'>
+                <div class='mb-3'>
             <?php endif; ?>
 
             <?php switch ($attribute['attribute_type']):
@@ -107,7 +126,7 @@
 
             <?php endswitch; ?>
 
-            <!-- Close form-group div -->
+            <!-- Close mb-3 div -->
             <?php if ($i % 2 == 0): ?>
                 </div>
             <?php endif; ?>
@@ -116,9 +135,12 @@
     <?php endif; ?>
 </div>
 <div class="modal-footer">
-    <button type="button" class="btn btn-default" data-dismiss="modal"><?php eT('Close') ?></button>
-    <button type="button" class="btn btn-primary action_save_modal_editParticipant"><?php eT("Save")?></button>
+    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal"><?php eT('Cancel') ?></button>
+    <button role="button" type="button" class="btn btn-primary action_save_modal_editParticipant">
+        <?php echo $buttonTitle; ?>
+    </button>
 </div>
+
 <?php
 $this->endWidget();
 ?>

@@ -1,6 +1,11 @@
 <?php $myfield = "{$surveyid}X{$flt[1]}X{$flt[0]}"; $niceqtext=flattenText($flt[5]); ?>
 
 <?php
+    // If boilerplate don't render anything
+    if (in_array( $flt[2],[Question::QT_X_TEXT_DISPLAY,Question::QT_ASTERISK_EQUATION])) return;
+
+    // Get qidattributes for this question
+    $qidattributes = QuestionAttribute::model()->getQuestionAttributes($flt[0]);
 
     //$specialQuestionTypes = array("M","P","T","S","Q","|","","N","K","D");
     $specialQuestionTypes = array(Question::QT_M_MULTIPLE_CHOICE, Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS);
@@ -8,6 +13,13 @@
     {
         $myfield = $flt[2].$myfield;
     }
+
+    // Array (Numbers) questions, have two "modes": dropdowns or text inputs
+    // When using text inputs, we need to treat them as single numerical questions
+    if ($flt[2] == Question::QT_COLON_ARRAY_NUMBERS && !empty($qidattributes['input_boxes'])) {
+        $myfield = $flt[2] . $myfield;
+    }
+
     $counter2 = 0;
 ?>
 
@@ -16,7 +28,7 @@
 
     <div class="question-filter-container grow-3 nofloat ls-space padding all-10">
     <?php echo "<!-- Question type :  $flt[2] -->"; ?>
-        <?php if ($flt[2]==Question::QT_M_MULTIPLE_CHOICE || $flt[2]==Question::QT_VERTICAL_FILE_UPLOAD || $flt[2]==Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS || $flt[2]==Question::QT_L_LIST_DROPDOWN || $flt[2]==Question::QT_5_POINT_CHOICE || $flt[2]==Question::QT_G_GENDER_DROPDOWN || $flt[2]==Question::QT_I_LANGUAGE || $flt[2]==Question::QT_O_LIST_WITH_COMMENT || $flt[2]==Question::QT_Y_YES_NO_RADIO || $flt[2]==Question::QT_EXCLAMATION_LIST_DROPDOWN): ?>
+        <?php if ($flt[2]==Question::QT_M_MULTIPLE_CHOICE || $flt[2]==Question::QT_VERTICAL_FILE_UPLOAD || $flt[2]==Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS || $flt[2]==Question::QT_L_LIST || $flt[2]==Question::QT_5_POINT_CHOICE || $flt[2]==Question::QT_G_GENDER || $flt[2]==Question::QT_I_LANGUAGE || $flt[2]==Question::QT_O_LIST_WITH_COMMENT || $flt[2]==Question::QT_Y_YES_NO_RADIO || $flt[2]==Question::QT_EXCLAMATION_LIST_DROPDOWN): ?>
             <!--  TYPE =='M' || 'P' || 'N' || 'L' || '5' || 'G' || 'I' || 'O' || 'Y' || '!' -->
             <div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">
                 <input type='checkbox'
@@ -46,7 +58,7 @@
         <?php
         switch ($flt[2])
         {
-            case Question::QT_K_MULTIPLE_NUMERICAL_QUESTION: // Multiple Numerical
+            case Question::QT_K_MULTIPLE_NUMERICAL: // Multiple Numerical
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 //go through all the (multiple) answers
                 foreach($result[$key1] as $row1)
@@ -56,15 +68,15 @@
                     foreach($row1 as $row)
                     {
                         /*
-                        * filter form for numerical input
+                        * filter form for Numerical input
                         * - checkbox
                         * - greater than
                         * - less than
                         */
 
-                        $myfield1="K".$myfield.$row->title;
-                        $myfield2="K{$myfield}".$row->title."G";
-                        $myfield3="K{$myfield}".$row->title."L";
+                        $myfield1="K".$myfield.$row['title'];
+                        $myfield2="K{$myfield}".$row['title']."G";
+                        $myfield3="K{$myfield}".$row['title']."L";
                         if ($counter2 == 4) { echo "\t</tr>\n\t<tr>\n"; $counter2=0;}
 
                         //checkbox
@@ -72,7 +84,7 @@
                         echo "<input type='checkbox'  name='summary[]' value='$myfield1'";
 
                         //check SGQA -> do we want to pre-check the checkbox?
-                        if (isset($summary) && (array_search("K{$surveyid}X{$flt[1]}X{$flt[0]}{$row->title}", $summary) !== FALSE))
+                        if (isset($summary) && (array_search("K{$surveyid}X{$flt[1]}X{$flt[0]}{$row['title']}", $summary) !== FALSE))
                         {
                             echo " checked='checked'";
                         }
@@ -80,16 +92,21 @@
                         echo " />&nbsp;";
 
                         //show speaker
-                        echo $oStatisticsHelper::_showSpeaker($flt[3]." - ".flattenText($row->questionL10ns[$language]->question,true))
-                        ."</div>\n";?>
+                        echo $oStatisticsHelper::_showSpeaker($flt[3]." - ".flattenText($row['question'],true))
+                        ."</div>
 
-                        <span class='smalltext'><?php eT("Number greater than");?>:</span><br />
-                        <?php echo CHtml::textField($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array('onkeypress'=>"return goodchars(event,'0123456789.,')"));?>
-                        <br>
-                        <span class='smalltext'><?php eT("Number less than");?>:</span><br>
-                        <?php echo CHtml::textField($myfield3,isset($_POST[$myfield3])?$_POST[$myfield3]:'',array('onkeypress'=>"return goodchars(event,'0123456789.,')"));?>
-                        <br>
-                        <?php
+                        <div class='mb-3 row'>
+                        <label for='".$myfield2."' class='col-md-4 form-label'>".gT("Number greater than:")."</label>
+                        <div class='col-md-6'>"
+                        .CHtml::numberField($myfield2,$_POST[$myfield2] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                        ."</div>
+                        </div>
+                        <div class='mb-3 row'>
+                        <label for='N".$myfield3."' class='col-md-4 form-label'>".gT("Number less than:")."</label>
+                        <div class='col-md-6'>"
+                        .CHtml::numberField($myfield3,$_POST[$myfield3] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                        ."</div>
+                        </div>";                
                     }
 
                 }
@@ -97,7 +114,7 @@
 
 
 
-            case Question::QT_Q_MULTIPLE_SHORT_TEXT: // Multiple Short Text
+            case Question::QT_Q_MULTIPLE_SHORT_TEXT: // Multiple short text
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 //get subqestions
                 $result[$key1] = Question::model()->getQuestionsForStatistics('title, question', "parent_qid='$flt[0]'", 'question_order');
@@ -107,22 +124,22 @@
                 $count = 0;
                 foreach($result[$key1] as $row)
                 {
-                    echo '<div class="row"><div class="col-sm-12">';
+                    echo '<div class="row"><div class="col-md-12">';
 
                     //we have one input field for each answer
-                    $myfield2 = "Q".$myfield.$row->title;
+                    $myfield2 = "Q".$myfield.$row['title'];
                     echo "&nbsp;&nbsp; <input type='checkbox'  name='summary[]' value='$myfield2'";
 
-                    if (isset($summary) && (array_search("Q{$surveyid}X{$flt[1]}X{$flt[0]}{$row->title}", $summary) !== FALSE))
+                    if (isset($summary) && (array_search("Q{$surveyid}X{$flt[1]}X{$flt[0]}{$row['title']}", $summary) !== FALSE))
                     {
                         echo " checked='checked'";
                     }
 
                     echo " />&nbsp;";
-                    echo $oStatisticsHelper::_showSpeaker($flt[3]." - ".flattenText($row->questionL10ns[$language]->question,true))
+                    echo $oStatisticsHelper::_showSpeaker($flt[3]." - ".flattenText($row['question'],true))
                     ."<br /><p style='padding: 1em;'>\n"
                     ."\t<span class='smalltext'>".gT("Responses containing").":</span><br />\n";
-                    echo CHtml::textField($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array());
+                    echo CHtml::textField($myfield2,$_POST[$myfield2] ?? '',array('class'=>'form-control'));
                     echo "</p>";
                     echo '</div></div>';
                 }
@@ -145,7 +162,7 @@
                 ."<br />\n"
                 ."\t<span class='smalltext'>".gT("Responses containing").":</span>
                 </div>\n"
-                .CHtml::textArea($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array('rows'=>'3','cols'=>'40'));
+                .CHtml::textArea($myfield2,$_POST[$myfield2] ?? '',array('rows'=>'3','cols'=>'40'));
                 break;
 
 
@@ -163,7 +180,7 @@
                 ."<br />\n"
                 ."\t<span class='smalltext'>".gT("Responses containing").":</span>
                 </div>\n"
-                .CHtml::textField($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array());
+                .CHtml::textField($myfield2,$_POST[$myfield2] ?? '',array('class'=>'form-control'));
                 break;
 
 
@@ -187,17 +204,21 @@
                     </label>
                 </div>
                 <?php
-                $myfield2="{$myfield}G";
-                $myfield3="{$myfield}L";
-                echo "\t<span class='smalltext'>".gT("Number greater than").":</span><br />\n"
-                .CHtml::textField('N'.$myfield2,isset($_POST[$myfield2])?'N'.$_POST[$myfield2]:'',array( 'onkeypress'=>"return goodchars(event,'0123456789.,')" ))
-                ."\t<br />\n"
-                ."\t<span class='smalltext'>".gT("Number less than").":</span><br />\n"
-                .CHtml::textField('N'.$myfield3,isset($_POST[$myfield3])?'N'.$_POST[$myfield3]:'',array( 'onkeypress'=>"return goodchars(event,'0123456789.,')" ))
-                ."\t<br />\n";
-
-                //put field names into array
-
+                $myfield2="N{$myfield}G";
+                $myfield3="N{$myfield}L";
+                echo " 
+                <div class='mb-3 row'>
+                <label for='".$myfield2."' class='col-md-4 form-label'>".gT("Number greater than:")."</label>
+                <div class='col-md-6'>"
+                .CHtml::numberField($myfield2,$_POST[$myfield2] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                ."</div>
+                </div>
+                <div class='mb-3 row'>
+                <label for='N".$myfield3."' class='col-md-4 form-label'>".gT("Number less than:")."</label>
+                <div class='col-md-6'>"
+                .CHtml::numberField($myfield3,$_POST[$myfield3] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                ."</div>
+                </div>";                
                 break;
 
 
@@ -206,12 +227,19 @@
                 // Number of files uploaded for greater and less than X
                 $myfield2 = "{$myfield}G";
                 $myfield3 = "{$myfield}L";
-                echo "\t<span class='smalltext'>".gT("Number of files greater than").":</span><br />\n"
-                .CHtml::textField($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array( 'onkeypress'=>"return goodchars(event,'0123456789.,')" ))
-                ."<br />\n"
-                ."\t<span class='smalltext'>".gT("Number of files less than").":</span><br />\n"
-                .CHtml::textField($myfield3,isset($_POST[$myfield3])?$_POST[$myfield3]:'',array( 'onkeypress'=>"return goodchars(event,'0123456789.,')" ))
-                ."<br />\n";
+                echo"
+                <div class='mb-3 row'>
+                <label for='".$myfield2."' class='col-md-4 form-label'>".gT("Number of files greater than:")."</label>
+                <div class='col-md-6'>"
+                .CHtml::numberField($myfield2,$_POST[$myfield2] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                ."</div>
+                </div>
+                <div class='mb-3 row'>
+                <label for='N".$myfield3."' class='col-md-4 form-label'>".gT("Number of files less than:")."</label>
+                <div class='col-md-6'>"
+                .CHtml::numberField($myfield3,$_POST[$myfield3] ?? '',array( 'class'=>'form-control', 'step'=>'any'))
+                ."</div>
+                </div>";                
                 break;
 
 
@@ -234,8 +262,8 @@
                 */
                 $myfield2="D$myfield";
                 $myfield3=$myfield2."eq";
-                $myfield4=$myfield2."less";
-                $myfield5=$myfield2."more";
+                $myfield4=$myfield2."more";
+                $myfield5=$myfield2."less";
                 echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
                 echo "<input type='checkbox'  name='summary[]' value='$myfield2'";
 
@@ -243,18 +271,60 @@
                 {echo " checked='checked'";}
 
                 echo " />";
-                echo '<strong>'.$oStatisticsHelper::_showSpeaker($niceqtext).'</strong>'
-                ."<br />\n"
+                echo $oStatisticsHelper::_showSpeaker($niceqtext)."
 
-                ."\t<span class='smalltext'>".gT("Date (YYYY-MM-DD) equals").":<br />\n"
-                .CHtml::textField($myfield3,isset($_POST[$myfield3])?$_POST[$myfield3]:'',array() )
-                ."<br />\n"
-                ."\t&nbsp;&nbsp;".gT("Date is")." >=<br />\n"
-                .CHtml::textField($myfield4,isset($_POST[$myfield4])?$_POST[$myfield4]:'',array() )
-                ."<br />"
-                .gT("AND/OR Date is")." <= <br />"
-                .CHtml::textField($myfield5,isset($_POST[$myfield5])?$_POST[$myfield5]:'',array() )
-                ."</span>\n";
+                <div class='mb-3 row' style='margin-top:1em;'>
+                <label for='".$myfield3."' class='col-md-4 col-form-label smalltext'>".gT("Date equals:")."</label>
+                <div class='col-md-8'>";
+                Yii::app()->getController()->widget('ext.DateTimePickerWidget.DateTimePicker', array(
+                    'name' => $myfield3,
+                    'id' => $myfield3,
+                    'value' => $_POST[$myfield3] ?? '',
+                    'pluginOptions' => array(
+                        'format' => $dateformatdetails['jsdate'],
+                        'allowInputToggle' => true,
+                        'showClear' => true,
+                        'locale' => convertLStoDateTimePickerLocale(Yii::app()->session['adminlang'])
+                    )
+                ));                
+                echo "
+                </div>
+              </div>
+              <div class='mb-3 row'>
+              <label for='".$myfield4."' class='col-md-4 col-form-label smalltext'>".gT("Date is >= :")."</label>
+              <div class='col-md-8'>";
+              Yii::app()->getController()->widget('ext.DateTimePickerWidget.DateTimePicker', array(
+                  'name' => $myfield4,
+                  'id' => $myfield4,
+                  'value' => $_POST[$myfield4] ?? '',
+                  'pluginOptions' => array(
+                      'format' => $dateformatdetails['jsdate'] . " HH:mm",
+                      'allowInputToggle' => true,
+                      'showClear' => true,
+                      'locale' => convertLStoDateTimePickerLocale(Yii::app()->session['adminlang'])
+                  )
+              ));                
+              echo "
+              </div>
+            </div>
+            <div class='mb-3 row'>
+            <label for='".$myfield5."' class='col-md-4 col-form-label smalltext'>".gT("And/or Date is <= :")."</label>
+            <div class='col-md-8'>";
+            Yii::app()->getController()->widget('ext.DateTimePickerWidget.DateTimePicker', array(
+                'name' => $myfield5,
+                'id' => $myfield5,
+                'value' => $_POST[$myfield5] ?? '',
+                'pluginOptions' => array(
+                    'format' => $dateformatdetails['jsdate'] . " HH:mm",
+                    'allowInputToggle' => true,
+                    'showClear' => true,
+                    'locale' => convertLStoDateTimePickerLocale(Yii::app()->session['adminlang'])
+                )
+            ));                
+            echo "
+            </div>
+          </div>";            
+
                 echo '</div>';
                 break;
 
@@ -280,7 +350,7 @@
 
 
 
-            case Question::QT_G_GENDER_DROPDOWN: // Gender
+            case Question::QT_G_GENDER: // Gender
                 echo "\t<option value='F'";
 
                 //pre-select values which were marked before
@@ -334,7 +404,7 @@
 
                 //----------------------- ARRAYS --------------------------
 
-            case Question::QT_A_ARRAY_5_CHOICE_QUESTIONS: // ARRAY OF 5 POINT CHOICE QUESTIONS
+            case Question::QT_A_ARRAY_5_POINT: // Array of 5 point choice questions
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 //get answers
                 $result[$key1] = Question::model()->getQuestionsForStatistics('title, question', "parent_qid='$flt[0]' AND language = '{$language}'", 'question_order');
@@ -344,10 +414,10 @@
                 foreach($result[$key1] as $row)
                 {
                     $row = array_values($row);
-                    $myfield2 = $myfield.$row[0];
+                    $myfield2 = $myfield.$row[4];
                     echo "<!-- $myfield2 - ";
 
-                    if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                    if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
 
                     echo " -->\n";
                     echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
@@ -357,9 +427,9 @@
                     if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
 
                     echo " />&nbsp;"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row[1])." - # ".$flt[3])
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row[15])." - # ".$flt[3])
                     ."</div>\n"
-                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple' class='form-control'>\n";
+                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple' class='form-select'>\n";
 
                     //there are always exactly 5 values which have to be listed
                     for ($i=1; $i<=5; $i++)
@@ -381,14 +451,14 @@
 
 
             //just like above only a different loop
-            case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // ARRAY OF 10 POINT CHOICE QUESTIONS
+            case Question::QT_B_ARRAY_10_CHOICE_QUESTIONS: // Array of 10 point choice questions
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 foreach($result[$key1] as $row)
                 {
-                    $myfield2 = $myfield . $row->title;
+                    $myfield2 = $myfield . $row['title'];
                     echo "<!-- $myfield2 - ";
 
-                    if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                    if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
 
                     echo " -->\n";
                     echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
@@ -398,9 +468,9 @@
                     if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
 
                     echo " />&nbsp;"
-                    .'<strong>'.$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row->questionL10ns[$language]->question)." - # ".$flt[3]).'</strong>'
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row['question'])." - # ".$flt[3])
                     ."</div>\n"
-                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row->title}[]' multiple='multiple' class='form-control'>\n";
+                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row['title']}[]' multiple='multiple' class='form-select'>\n";
 
                     //here wo loop through 10 entries to create a larger output form
                     for ($i=1; $i<=10; $i++)
@@ -423,10 +493,10 @@
                 foreach($result[$key1] as $row)
                 {
                     $row=array_values($row);
-                    $myfield2 = $myfield . "$row[0]";
+                    $myfield2 = $myfield . "$row[4]";
                     echo "<!-- $myfield2 - ";
 
-                    if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                    if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
 
                     echo " -->\n";
                     echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
@@ -436,11 +506,11 @@
                     if (isset($summary) && array_search($myfield2, $summary)!== FALSE)
                     {echo " checked='checked'";}
 
-                    echo " />&nbsp;<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row[1])." - # ".$flt[3])
-                    ."</strong>\n"
+                    echo " />&nbsp;"
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row[15])." - # ".$flt[3])
+                    ."\n"
                     ."</div>\n"
-                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple' class='form-control'>\n"
+                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple' class='form-select'>\n"
                     ."\t<option value='Y'";
 
                     //pre-select "yes"
@@ -467,15 +537,15 @@
 
 
             //similiar to the above one
-            case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS: // ARRAY OF Increase/Same/Decrease QUESTIONS
+            case Question::QT_E_ARRAY_INC_SAME_DEC: // Array of Increase/Same/Decrease questions
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 foreach($result[$key1] as $row)
                 {
                     $row=array_values($row);
-                    $myfield2 = $myfield . "$row[0]";
+                    $myfield2 = $myfield . "$row[4]";
                     echo "<!-- $myfield2 - ";
 
-                    if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                    if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
 
                     echo " -->\n";
                     echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
@@ -483,11 +553,11 @@
 
                     if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
 
-                    echo " />&nbsp;<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row[1])." - # ".$flt[3])
-                    ."</strong>\n"
+                    echo " />&nbsp;"
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row[15])." - # ".$flt[3])
+                    ."\n"
                     ."</div>\n"
-                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple'  class='form-control'>\n"
+                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}[]' multiple='multiple'  class='form-select'>\n"
                     ."\t<option value='I'";
 
                     if (isset($_POST[$myfield2]) && is_array($_POST[$myfield2]) && in_array("I", $_POST[$myfield2])) {echo " selected='selected' ";}
@@ -509,24 +579,24 @@
                 $counter=0;
                 break;
 
-            case Question::QT_SEMICOLON_ARRAY_MULTI_FLEX_TEXT:  //ARRAY (Multi Flex) (Text)
+            case Question::QT_SEMICOLON_ARRAY_TEXT:  // Array (Text)
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 foreach($result[$key1] as $key => $row)
                 {
                     $fresult = $fresults[$key1][$key];
                     foreach($fresult as $frow)
                     {
-                        $myfield2 = "T".$myfield . $row->title . "_" . $frow['title'];
+                        $myfield2 = "T".$myfield . $row['title'] . "_" . $frow['title'];
                         echo "<!-- $myfield2 - ";
-                        if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                        if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
                         echo " -->\n";
                         echo "<input type='checkbox'  name='summary[]' value='$myfield2'";
                         if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
-                        echo " />&nbsp;<strong>"
-                        .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row->questionL10ns[$language]->question." [".$frow->questionL10ns[$language]->question."]")." - ".$row->title."/".$frow['title'])
-                        ."</strong><br />\n";
+                        echo " />&nbsp;"
+                        .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row['question']." [".$frow['question']."]")." - ".$row['title']."/".$frow['title'])
+                        ."<br />\n";
                         echo "\t<span class='smalltext'>".gT("Responses containing").":</span><br />\n"
-                        .CHtml::textField($myfield2,isset($_POST[$myfield2])?$_POST[$myfield2]:'',array() );
+                        .CHtml::textField($myfield2,$_POST[$myfield2] ?? '',array('class'=>'form-control') );
                         echo "<hr/>";
                         $counter2++;
                     }
@@ -534,65 +604,121 @@
                 $counter=0;
                 break;
 
-            case Question::QT_COLON_ARRAY_MULTI_FLEX_NUMBERS:  //ARRAY (Multi Flex) (Numbers)
-                //Get qidattributes for this question
+            case Question::QT_COLON_ARRAY_NUMBERS:  // Array (Numbers)
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
-                $qidattributes=QuestionAttribute::model()->getQuestionAttributes($flt[0]);
-                if (trim($qidattributes['multiflexible_max'])!='' && trim($qidattributes['multiflexible_min']) ==''){
-                    $maxvalue=$qidattributes['multiflexible_max'];
-                    $minvalue=1;
-                }
-                if (trim($qidattributes['multiflexible_min'])!='' && trim($qidattributes['multiflexible_max']) ==''){
-                    $minvalue=$qidattributes['multiflexible_min'];
-                    $maxvalue=$qidattributes['multiflexible_min'] + 10;
-                }
-                if (trim($qidattributes['multiflexible_min'])=='' && trim($qidattributes['multiflexible_max']) ==''){
-                    $minvalue=1;
-                    $maxvalue=10;
-                }
-                if (trim($qidattributes['multiflexible_min']) !='' && trim($qidattributes['multiflexible_max']) !=''){
-                    if($qidattributes['multiflexible_min'] < $qidattributes['multiflexible_max']){
-                        $minvalue=$qidattributes['multiflexible_min'];
-                        $maxvalue=$qidattributes['multiflexible_max'];
+                if (empty($qidattributes['input_boxes'])) {
+                    // Inputs are dropdowns, so options are limited.
+                    $minvalue = 1;
+                    $maxvalue = 10;
+                    if (trim((string) $qidattributes['multiflexible_max']) != '' && trim((string) $qidattributes['multiflexible_min']) == '') {
+                        $maxvalue = $qidattributes['multiflexible_max'];
+                        $minvalue = 1;
                     }
-                }
-
-                if (trim($qidattributes['multiflexible_step'])!='') {
-                    $stepvalue=$qidattributes['multiflexible_step'];
-                } else {
-                    $stepvalue=1;
-                }
-                if ($qidattributes['multiflexible_checkbox']!=0)
-                {
-                    $minvalue=0;
-                    $maxvalue=1;
-                    $stepvalue=1;
-                }
-                foreach($result[$key1] as $row)
-                {
-                    //$fresult = Question::model()->getQuestionsForStatistics('*', "parent_qid='{$row->qid}' AND language = '{$language}' AND scale_id = 1", 'question_order, title');
-                    $fresult = Question::model()->findAllByAttributes(['parent_qid'=>$row->qid,'scale_id'=>1]);
-                    foreach ($fresult as $frow) {
-                        $myfield2 = $myfield . $row[0] . "_" . $frow['title'];
-                        echo "<!-- MyField2:  $myfield2 - ";
-                        if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
-                        echo " -->\n";
-                        echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
-                        if ($counter2 == 4) {echo "\t</tr>\n\t<tr>\n"; $counter2=0;}
-                        echo "<input type='checkbox'  name='summary[]' value='$myfield2'";
-                        if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
-                        echo " />&nbsp;<strong>"
-                        .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row[1]." [".$frow['question']."]")." - ".$row[0]."/".$frow['title'])
-                        ."</strong>\n"
-                        ."</div>\n";
-                        echo "\t<select name='{$myfield2}[]' multiple='multiple' rows='5' cols='5' class='form-control'>\n";
-                        for($ii=$minvalue; $ii<=$maxvalue; $ii+=$stepvalue)
-                        {
-                            echo "\t<option value='$ii'";
-                            if (isset($_POST[$myfield2]) && is_array($_POST[$myfield2]) && in_array($frow['code'], $_POST[$myfield2])) {echo " selected='selected' ";}
-                            echo ">$ii</option>\n";
+                    if (trim((string) $qidattributes['multiflexible_min']) != '' && trim((string) $qidattributes['multiflexible_max']) == '') {
+                        $minvalue = $qidattributes['multiflexible_min'];
+                        $maxvalue = $qidattributes['multiflexible_min'] + 10;
+                    }
+                    if (trim((string) $qidattributes['multiflexible_min']) != '' && trim((string) $qidattributes['multiflexible_max']) != '') {
+                        if ($qidattributes['multiflexible_min'] < $qidattributes['multiflexible_max']) {
+                            $minvalue = $qidattributes['multiflexible_min'];
+                            $maxvalue = $qidattributes['multiflexible_max'];
                         }
-                        echo "\t</select>";
+                    }
+
+                    $stepvalue = (trim((string) $qidattributes['multiflexible_step']) != '' && $qidattributes['multiflexible_step'] > 0) ? $qidattributes['multiflexible_step'] : 1;
+
+                    if ($qidattributes['reverse'] == 1) {
+                        $tmp = $minvalue;
+                        $minvalue = $maxvalue;
+                        $maxvalue = $tmp;
+                        $reverse = true;
+                        $stepvalue = -$stepvalue;
+                    } else {
+                        $reverse = false;
+                    }
+
+                    if ($qidattributes['multiflexible_checkbox']!=0)
+                    {
+                        $minvalue=0;
+                        $maxvalue=1;
+                        $stepvalue=1;
+                    }
+                    foreach($result[$key1] as $row)
+                    {
+                        //$fresult = Question::model()->getQuestionsForStatistics('*', "parent_qid='{$row->qid}' AND language = '{$language}' AND scale_id = 1", 'question_order, title');
+                        $fresult = Question::model()->with('questionl10ns')->findAll(array('condition' =>'parent_qid = ' . $row['parent_qid'] . ' AND scale_id = 1', 'order' => 'question_order ASC'));
+                        foreach ($fresult as $frow) {
+                            $myfield2 = $myfield . $row['title'] . "_" . $frow['title'];
+                            echo "<!-- MyField2:  $myfield2 - ";
+                            if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
+                            echo " -->\n";
+                            echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
+                            if ($counter2 == 4) {echo "\t</tr>\n\t<tr>\n"; $counter2=0;}
+                            echo "<input type='checkbox'  name='summary[]' value='$myfield2'";
+                            if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
+                            echo " />&nbsp;"
+                            .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row['question']." [".$frow->questionl10ns[$language]->question."]")." - ".$row['title']."/".$frow['title'])
+                            ."\n"
+                            ."</div>\n";
+                            echo "\t<select name='{$myfield2}[]' multiple='multiple' rows='5' cols='5' class='form-select'>\n";
+                            for($ii=$minvalue; $ii<=$maxvalue; $ii+=$stepvalue)
+                            {
+                                echo "\t<option value='$ii'";
+                                if (isset($_POST[$myfield2]) && is_array($_POST[$myfield2]) && in_array($frow['code'], $_POST[$myfield2])) {echo " selected='selected' ";}
+                                echo ">$ii</option>\n";
+                            }
+                            echo "\t</select>";
+                        }
+                    }
+                } else {
+                    // Inputs are text inputs (numerical), so we treat each single subquestion as a numerical question
+                    foreach($result[$key1] as $row) {
+                        $fresult = Question::model()->with('questionl10ns')->findAll(array(
+                            'condition' => 'parent_qid = ' . $row['parent_qid'] . ' AND scale_id = 1',
+                            'order' => 'question_order ASC'
+                        ));
+                        foreach ($fresult as $frow) {
+                            /*
+                            * filter form for numerical input
+                            * - checkbox
+                            * - greater than
+                            * - less than
+                            */
+                            $myfield1 = $myfield . $row['title'] . "_" . $frow['title'];
+                            $myfield2 = $myfield1 . "G";
+                            $myfield3 = $myfield1 . "L";
+                            if ($counter2 == 4) {
+                                echo "\t</tr>\n\t<tr>\n";
+                                $counter2 = 0;
+                            }
+
+                            //checkbox
+                            echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
+                            echo "<input type='checkbox'  name='summary[]' value='$myfield1'";
+
+                            //check SGQA -> do we want to pre-check the checkbox?
+                            if (isset($summary) && array_search($myfield1, $summary)!== FALSE) {
+                                echo " checked='checked'";
+                            }
+
+                            echo " />&nbsp;";
+
+                            //show speaker
+                            echo $oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row['question']." [".$frow->questionl10ns[$language]->question."]")." - ".$row['title']."/".$frow['title'])
+                                . "</div>
+                                <div class='mb-3 row'>
+                                <label for='" . $myfield2 . "' class='col-md-4 form-label'>" . gT("Number greater than:") . "</label>
+                                <div class='col-md-6'>"
+                                . CHtml::numberField($myfield2, $_POST[$myfield2] ?? '', array('class'=>'form-control', 'step'=>'any'))
+                                . "</div>
+                                </div>
+                                <div class='mb-3 row'>
+                                <label for='N" . $myfield3 . "' class='col-md-4 form-label'>" . gT("Number less than:") . "</label>
+                                <div class='col-md-6'>"
+                                . CHtml::numberField($myfield3, $_POST[$myfield3] ?? '', array('class'=>'form-control', 'step'=>'any'))
+                                . "</div>
+                                </div>";
+                        }
                     }
                 }
                 break;
@@ -602,15 +728,15 @@
             * The only difference is that the labels are applied to column heading
             * or rows respectively
             */
-            case Question::QT_F_ARRAY_FLEXIBLE_ROW: // FlEXIBLE ARRAY
-            case Question::QT_H_ARRAY_FLEXIBLE_COLUMN: // ARRAY (By Column)
+            case Question::QT_F_ARRAY: // Array
+            case Question::QT_H_ARRAY_COLUMN: // Array (By Column)
 
                 //Get answers. We always use the answer code because the label might be too long elsewise
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
                 //check all the answers
                 foreach($result[$key1] as $key=>$row)
                 {
-                    $myfield2 = $myfield . $row->title;
+                    $myfield2 = $myfield . $row['title'];
                     echo "<!-- $myfield2 -->\n";
 
                     if ($counter2 == 4)
@@ -623,10 +749,9 @@
 
                     if (isset($summary) && array_search($myfield2, $summary)!== FALSE) {echo " checked='checked'";}
 
-                    echo " />&nbsp;<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row->questionL10ns[$language]->question)." - # ".$flt[3])
-                    ."</strong>
-                    </div>\n";
+                    echo " />&nbsp;"
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row['question'])." - # ".$flt[3])
+                    ."</div>\n";
 
                     /*
                     * when hoovering the speaker symbol we show the whole question
@@ -645,7 +770,7 @@
                     //for debugging only:
 
                     //creating form
-                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row->title}[]' multiple='multiple' class='form-control'>\n";
+                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row['title']}[]' multiple='multiple' class='form-select'>\n";
 
                     //loop through all possible answers
                     foreach($fresult as $frow)
@@ -655,7 +780,7 @@
                         //pre-select
                         if (isset($_POST[$myfield2]) && is_array($_POST[$myfield2]) && in_array($frow['code'], $_POST[$myfield2])) {echo " selected='selected' ";}
 
-                        echo ">({$frow['code']}) ".flattenText($frow->answerL10ns[$language]->answer,true)."</option>\n";
+                        echo ">({$frow['code']}) ".flattenText($frow->answerl10ns[$language]->answer,true)."</option>\n";
                     }
 
                     echo "\t</select>";
@@ -666,17 +791,18 @@
 
 
 
-                case Question::QT_R_RANKING_STYLE: //RANKING
+                case Question::QT_R_RANKING: // Ranking
 
                 //get some answers
                 //get number of columns
                 $answersCount = count($result[$key1]);
                 $maxDbAnswer=QuestionAttribute::model()->find("qid = :qid AND attribute = 'max_subquestions'",array(':qid' => $flt[0]));
                 $columnsCount=(!$maxDbAnswer || intval($maxDbAnswer->value)<1) ? $answersCount : intval($maxDbAnswer->value); // If max_subquestions is not set or is invalid : get the answer count
+                $columnsCount = min($columnsCount,$answersCount); // Can not be upper than current answers #14899
                 //lets put the answer code and text into the answers array
                 foreach($result[$key1] as $row)
                 {
-                    $answers[]=array($row->code, $row->answerL10ns[$language]->answer);
+                    $answers[]=array($row->code, $row->answerl10ns[$language]->answer);
                 }
 
                 //loop through all answers. if there are 3 items to rate there will be 3 statistics
@@ -691,18 +817,17 @@
                     $myfield3 = $myfield . $i;
                     echo "<!-- $myfield2 --> ";
                     echo '<div class="statistics-responses-label-group ls-space padding bottom-5 top-15 ls-flex-item">';
-                    if (isset($_POST[$myfield2])) {echo htmlspecialchars($_POST[$myfield2]);}
+                    if (isset($_POST[$myfield2])) {echo htmlspecialchars((string) $_POST[$myfield2]);}
 
                     echo "<input type='checkbox'  name='summary[]' value='$myfield2'";
 
                     //pre-check
                     if (isset($summary) && array_search($myfield2, $summary) !== FALSE) {echo " checked='checked'";}
 
-                    echo " />&nbsp;<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", $row->answerL10ns[$language]->answer)." - # ".$flt[3])
-                    ."</strong>
-                    </div>\n"
-                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$i}[]' multiple='multiple' class='form-control'>\n";
+                    echo " />&nbsp;"
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." ".str_replace("'", "`", (string) $row->answerl10ns[$language]->answer)." - # ".$flt[3])
+                    ."</div>\n"
+                    ."\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$i}[]' multiple='multiple' class='form-select'>\n";
 
                     //output lists of ranking items
                     foreach ($answers as $ans)
@@ -729,7 +854,7 @@
                 break;
 
 
-            case Question::QT_1_ARRAY_MULTISCALE: // MULTI SCALE
+            case Question::QT_1_ARRAY_DUAL: // Dual scale
 
                 //special dual scale counter
                 echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
@@ -740,13 +865,13 @@
 
                     //----------------- LABEL 1 ---------------------
                     //myfield2 = answer code.
-                    $myfield2 = $myfield . "$row[0]#0";
+                    $myfield2 = $myfield . "$row[4]#0";
 
                     //3 lines of debugging output
                     echo "<!-- $myfield2 - ";
                     if (isset($_POST[$myfield2]))
                     {
-                        echo htmlspecialchars($_POST[$myfield2]);
+                        echo htmlspecialchars(implode(',',$_POST[$myfield2]));
                     }
                     echo " -->\n";
 
@@ -777,10 +902,8 @@
                     }
 
                     echo " />&nbsp;"
-                    ."<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." [".str_replace("'", "`", $row[1])."] - ".gT("Label").": ".$labeltitle)
-                    ."</strong>
-                    </div>\n";
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." [".str_replace("'", "`", (string) $row[15])."] - ".gT("Label").": ".$labeltitle)
+                    ."</div>\n";
 
                     /* get labels
                     * table "labels" contains
@@ -793,7 +916,7 @@
                     $fresult = Answer::model()->getQuestionsForStatistics('*', "qid='$flt[0]' AND language = '{$language}' AND scale_id = 0", 'sortorder, code');
 
                     //this is for debugging only
-                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}#{0}[]' multiple='multiple' class='form-control'>\n";
+                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[4]}#0[]' multiple='multiple' class='form-select'>\n";
 
                     //list answers
                     foreach($fresult as $frow)
@@ -812,13 +935,13 @@
                     //----------------- LABEL 2 ---------------------
 
                     //myfield2 = answer code
-                    $myfield2 = $myfield . "$row[0]#1";
+                    $myfield2 = $myfield . "$row[4]#1";
 
                     //3 lines of debugging output
                     echo "<!-- $myfield2 - ";
                     if (isset($_POST[$myfield2]))
                     {
-                        echo htmlspecialchars($_POST[$myfield2]);
+                        echo htmlspecialchars(implode(',',$_POST[$myfield2]));
                     }
 
                     echo " -->\n";
@@ -848,14 +971,13 @@
                         $labeltitle2 = '';
                     }
 
-                    echo " />&nbsp;<strong>"
-                    .$oStatisticsHelper::_showSpeaker($niceqtext." [".str_replace("'", "`", $row[1])."] - ".gT("Label").": ".$labeltitle2)
-                    ."</strong>
-                    </div>\n";
+                    echo " />&nbsp;"
+                    .$oStatisticsHelper::_showSpeaker($niceqtext." [".str_replace("'", "`", (string) $row[15])."] - ".gT("Label").": ".$labeltitle2)
+                    ."</div>\n";
                     $fresult = Answer::model()->getQuestionsForStatistics('*', "qid='$flt[0]' AND language = '$language' AND scale_id = 1", 'sortorder, code');
 
                     //this is for debugging only
-                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[0]}#{1}[]' multiple='multiple' class='form-control'>\n";
+                    echo "\t<select name='{$surveyid}X{$flt[1]}X{$flt[0]}{$row[4]}#1[]' multiple='multiple' class='form-select'>\n";
 
                     //list answers
                     foreach($fresult as $frow)
@@ -881,22 +1003,15 @@
                 //loop through answers
                 foreach($result[$key1] as $row)
                 {
-                    echo "\t<option value='{$row->title}'";
+                    echo "\t<option value='{$row['title']}'";
 
                     //pre-check
-                    if (isset($_POST[$myfield]) && is_array($_POST[$myfield]) && in_array($row->title, $_POST[$myfield])) {echo " selected='selected' ";}
+                    if (isset($_POST[$myfield]) && is_array($_POST[$myfield]) && in_array($row['title'], $_POST[$myfield])) {echo " selected='selected' ";}
 
-                    echo '>'.flattenText($row->questionL10ns[$language]->question,true)."</option>\n";
+                    echo '>'.flattenText($row['question'],true)."</option>\n";
                 }
 
                 echo "\t</select>";
-                break;
-
-            //Boilerplate questions are only used to put some text between other questions -> no analysis needed
-            case Question::QT_X_BOILERPLATE_QUESTION: //This is a boilerplate question and it has no business in this script
-            case Question::QT_ASTERISK_EQUATION: // EQUATION
-                echo '<h4 class="question-selector-title">'.$oStatisticsHelper::_showSpeaker($niceqtext).'</h4><br/>';
-                eT("This question type can't be selected.");
                 break;
 
                 /*
@@ -916,7 +1031,7 @@
                     //pre-check
                     if (isset($_POST[$myfield]) && is_array($_POST[$myfield]) && in_array($row->code, $_POST[$myfield])) {echo " selected='selected' ";}
 
-                    echo '>'.flattenText($row->answerL10ns[$language]->answer,true)."</option>\n";
+                    echo '>'.flattenText($row->answerl10ns[$language]->answer,true)."</option>\n";
                 }
 
                 echo "\t</select>\n\t";

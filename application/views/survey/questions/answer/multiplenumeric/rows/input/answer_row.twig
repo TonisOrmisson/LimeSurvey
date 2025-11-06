@@ -19,19 +19,19 @@
 
 <!-- answer_row -->
 
-<li id='javatbd{{ myfname }}' class="question-item answer-item numeric-item text-item form-group{{ extraclass }}{% if alert %} ls-error-mandatory has-error {% endif %}" {{ sDisplayStyle }}>
+<li id='javatbd{{ myfname }}' class="question-item answer-item numeric-item align-items-center text-item row mb-3{{ extraclass }}{% if alert %} ls-error-mandatory has-error {% endif %}" {{ sDisplayStyle }}>
     <!--  color code missing mandatory questions red -->
-    <label class="control-label col-xs-12 col-sm-{{ sLabelWidth }}{{ (sLabelWidth == 0 ? " hidden":"") }}" for="answer{{myfname}}">
-        {{ labelText }}
+    <label class="control-label col-12 col-md-{{ sLabelWidth }}{% if sLabelWidth == 0 %} d-none{% endif %}" for="answer{{myfname}}">
+        {{ processString(labelText) }}
     </label>
 
-    <div class="col-xs-12 col-sm-{{ sInputContainerWidth }}">
-        {% if prefix  or  suffix %}
+    <div class="col-12 col-md-{{ sInputContainerWidth }}">
+        {% if prefix or suffix %}
             <div class="ls-input-group">
         {% endif %}
             {% if prefix %}
                 <div class="ls-input-group-extra prefix-text prefix">
-                    {{ prefix }}
+                    {{ processString(prefix) }}
                 </div>
             {% endif %}
                 {{ C.Html.textField( myfname,dispVal, {
@@ -46,7 +46,7 @@
                 }}
             {% if suffix %}
                 <div class="ls-input-group-extra suffix-text suffix">
-                    {{ suffix }}
+                    {{ processString(suffix) }}
                 </div>
             {% endif %}
         {% if prefix or suffix %}

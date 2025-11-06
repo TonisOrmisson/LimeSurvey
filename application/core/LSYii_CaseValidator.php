@@ -1,4 +1,6 @@
-<?php if (!defined('BASEPATH')) {
+<?php
+
+if (!defined('BASEPATH')) {
     exit('No direct script access allowed');
 }
 /*
@@ -24,7 +26,7 @@ class LSYii_CaseValidator extends CValidator
     {
 
         if ($this->type == 'upper') {
-            if (strtoupper($object->$attribute) == $object->$attribute) {
+            if (strtoupper((string) $object->$attribute) == $object->$attribute) {
                 return;
             } else {
                 $this->addError($object, $attribute, gT('Text needs to be uppercase.'));
@@ -32,7 +34,7 @@ class LSYii_CaseValidator extends CValidator
             }
         } else {
             // default to lowercase
-            if (strtolower($object->$attribute) == $object->$attribute) {
+            if (strtolower((string) $object->$attribute) == $object->$attribute) {
                 return;
             } else {
                 $this->addError($object, $attribute, gT('Text needs to be lowercase.'));
@@ -40,5 +42,4 @@ class LSYii_CaseValidator extends CValidator
             }
         }
     }
-
 }

@@ -3,7 +3,7 @@
 /**
  * This is the model class for table "{{tutorials}}".
  *
- * The followings are the available columns in table '{{tutorials}}':
+ * The following are the available columns in table '{{tutorials}}':
  * @property integer $tid
  * @property string $name
  * @property string $title
@@ -12,13 +12,13 @@
  * @property integer $active
  * @property string $permission
  * @property string $permission_grade
+ * @property string $settings
  *
- * The followings are the available model relations:
+ * The following are the available model relations:
  * @property TutorialEntry[] $tutorialEntries
  */
 class Tutorial extends LSActiveRecord
 {
-    
     /**
      * @return string the associated database table name
      */
@@ -36,13 +36,13 @@ class Tutorial extends LSActiveRecord
         // will receive user inputs.
         return array(
             array('name, description, active, permission, permission_grade', 'required'),
-            array('active', 'numerical', 'integerOnly'=>true),
-            array('name, permission, permission_grade', 'length', 'max'=>128),
-            array('title', 'length', 'max'=>192),
-            array('icon', 'length', 'max'=>64),
+            array('active', 'numerical', 'integerOnly' => true),
+            array('name, permission, permission_grade', 'length', 'max' => 128),
+            array('title', 'length', 'max' => 192),
+            array('icon', 'length', 'max' => 64),
             // The following rule is used by search().
             // @todo Please remove those attributes that should not be searched.
-            array('tid, name, description, active, permission, permission_grade', 'safe', 'on'=>'search'),
+            array('tid, name, description, active, permission, permission_grade', 'safe', 'on' => 'search'),
         );
     }
 
@@ -121,7 +121,7 @@ class Tutorial extends LSActiveRecord
     {
         // @todo Please modify the following code to remove attributes that should not be searched.
 
-        $criteria = new CDbCriteria;
+        $criteria = new CDbCriteria();
 
         $criteria->compare('tid', $this->tid);
         $criteria->compare('name', $this->name, true);
@@ -133,7 +133,7 @@ class Tutorial extends LSActiveRecord
         $criteria->compare('permission_grade', $this->permission_grade, true);
 
         return new CActiveDataProvider($this, array(
-            'criteria'=>$criteria,
+            'criteria' => $criteria,
         ));
     }
 
@@ -148,13 +148,13 @@ class Tutorial extends LSActiveRecord
         if (array_key_exists($tutorialName, $defaultTutorials)) {
             $oTutorial = new Tutorial();
 
-            array_walk($defaultTutorials[$tutorialName], function($attribute, $key) use (&$oTutorial) {
+            array_walk($defaultTutorials[$tutorialName], function ($attribute, $key) use (&$oTutorial) {
                 $oTutorial->setAttribute($key, $attribute);
             });
-            
+
             return $oTutorial;
         }
-       return $this->find('name=:name', [':name' => $tutorialName]);
+        return $this->find('name=:name', [':name' => $tutorialName]);
     }
 
     public function getDefaultTutorials()
@@ -175,7 +175,7 @@ class Tutorial extends LSActiveRecord
         if (!empty($aTutorials)) {
             return array_merge($aTutorials, $this->getDefaultTutorials());
         }
-        
+
         return $this->getDefaultTutorials();
     }
 
@@ -195,7 +195,7 @@ class Tutorial extends LSActiveRecord
     public function getTutorialDataArray($tutorialName)
     {
         $aSteps = [];
-        
+
         if ($this->tid === null) {
             $defaultEntries = LsDefaultDataSets::getTutorialEntryData();
             $this->tid = $tutorialName;
@@ -205,17 +205,17 @@ class Tutorial extends LSActiveRecord
                 $aSteps[] = $oTutorialEntry->getStepFromEntry();
             }
         } else {
-            $aTutorialEntryRelations = TutorialEntryRelation::model()->findAll('tid=:tid', [':tid'=>$this->tid]);
+            $aTutorialEntryRelations = TutorialEntryRelation::model()->findAll('tid=:tid', [':tid' => $this->tid]);
             foreach ($aTutorialEntryRelations as $oTutorialMapEntry) {
                 $oTutorialEntry = $oTutorialMapEntry->tutorialEntry;
-                $aSteps[] = $oTutorialEntry->getStepFromEntry();            
+                $aSteps[] = $oTutorialEntry->getStepFromEntry();
             }
         }
 
         $aTutorialData = json_decode($this->settings, true);
         $aTutorialData['steps'] = $aSteps;
         $aTutorialData['tid'] = $this->tid;
-        
+
         return $aTutorialData;
     }
 

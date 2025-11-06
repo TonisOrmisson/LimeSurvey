@@ -1,15 +1,18 @@
 <?php
+
 class ExportR extends \LimeSurvey\PluginManager\PluginBase
 {
     
     protected $storage = 'DbStorage';
-       
-    static protected $description = 'Core: R-export';
-    static protected $name = 'Export results to R';
-    
+
+    protected static $description = 'Core: R-export';
+    protected static $name = 'Export results to R';
+
+    /** @inheritdoc this plugin didn't have any public method */
+    public $allowedPublicMethods = array();
+
     public function init()
     {
-        
         /**
          * Here you should handle subscribing to the events your plugin will handle
          */
@@ -37,7 +40,7 @@ class ExportR extends \LimeSurvey\PluginManager\PluginBase
                 break;
             
             case 'rdata':
-                default:
+            default:
                 $event->set('label', gT("R (data file)"));
                 break;
         }
@@ -52,8 +55,8 @@ class ExportR extends \LimeSurvey\PluginManager\PluginBase
         $exports = $event->get('exportplugins');
         
         // Yes we overwrite existing classes if available
-        $exports['rsyntax'] = get_class();
-        $exports['rdata'] = get_class();
+        $exports['rsyntax'] = get_class($this);
+        $exports['rdata'] = get_class($this);
         $event->set('exportplugins', $exports);
     }
     

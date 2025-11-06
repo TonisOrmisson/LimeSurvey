@@ -1,4 +1,5 @@
 <?php
+
 /*
  * LimeSurvey (tm)
  * Copyright (C) 2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -15,23 +16,23 @@ class CompileAssetsCommand extends CConsoleCommand
 {
 
     /**
-     * @param array $aArguments
-     * @return void
+     * @param array $args
+     * @return int
      */
-    public function run($aArguments)
+    public function run($args)
     {
-        if (isset($aArguments) && count($aArguments) < 2) {
+        if (isset($args) && count($args) < 2) {
             echo "=========================================================================\n";
             echo "=== Please provide method and path to compile package assets          ===\n";
             echo "=== usage example:                                                    ===\n";
             echo "=== php application/commands/console.php [method] [package] [?silent] ===\n";
             echo "=========================================================================\n";
-            return;
+            return 1;
         }
 
-        $method  = $aArguments[0];
-        $package = $aArguments[1];
-        $silent  = isset($aArguments[2]) ? $aArguments[2] : false;
+        $method  = $args[0];
+        $package = $args[1];
+        $silent  = $args[2] ?? false;
 
         if (!in_array($method, ['gulp', 'bash', 'npm', 'uglify'])) {
             echo "=========================================================================\n";
@@ -39,44 +40,46 @@ class CompileAssetsCommand extends CConsoleCommand
             echo "=== Possible methods are:                                             ===\n";
             echo "=== 'gulp', 'bash', 'npm'                                             ===\n";
             echo "=========================================================================\n";
-            return;
+            return 1;
         }
         echo "=========================================================================\n";
-        echo "=== Compiling package ".$package." with ".$method." \n";
+        echo "=== Compiling package " . $package . " with " . $method . " \n";
         echo "=========================================================================\n";
 
         $sCurrentDir = dirname(__FILE__);
-        $assetsFolder = realpath($sCurrentDir.'/../../assets/');
-        $packageFolder = $assetsFolder.'/packages/'.$package;
+        $assetsFolder = realpath($sCurrentDir . '/../../assets/');
+        $packageFolder = $assetsFolder . '/packages/' . $package;
 
         if (!file_exists($packageFolder)) {
             echo "=========================================================================\n";
             echo "=== ERROR! Package does not exist! Exiting.                           ===\n";
             echo "=== Checked path:                                                     ===\n";
-            echo "=== ".$packageFolder."\n";
+            echo "=== " . $packageFolder . "\n";
             echo "=========================================================================\n";
-            return;
+            return 1;
         }
 
         $logfile = false;
 
         if ($silent == true && $silent !== "1") {
             $logfile = $silent;
-        } else if ($silent == true && $silent === "1") {
+        } elseif ($silent == true && $silent === "1") {
             $logfile = " /dev/null";
         }
 
         switch ($method) {
-            case "gulp" :
+            case "gulp":
                 $this->liveExecuteCommand("(cd {$packageFolder} && {$method})", $logfile);
                 break;
-            case "npm" :
+            case "npm":
                 $this->liveExecuteCommand("(cd {$packageFolder} && {$method} run compile)", $logfile);
                 break;
-            case "bash" :
+            case "bash":
                 $this->liveExecuteCommand("(cd {$packageFolder} && {$method} compile.sh)", $logfile);
                 break;
         }
+
+        return 0;
     }
 
     private function liveExecuteCommand($cmd, $logfile = false)
@@ -95,7 +98,7 @@ class CompileAssetsCommand extends CConsoleCommand
     
         while (!feof($proc)) {
             $live_output     = fread($proc, 4096);
-            $complete_output = $complete_output.$live_output;
+            $complete_output = $complete_output . $live_output;
 
             echo "$live_output";
             @ flush();
@@ -109,7 +112,7 @@ class CompileAssetsCommand extends CConsoleCommand
         // return exit status and intended output
         return array(
                         'exit_status'  => intval($matches[0]),
-                        'output'       => str_replace("Exit status : ".$matches[0], '', $complete_output)
+                        'output'       => str_replace("Exit status : " . $matches[0], '', $complete_output)
                         );
     }
 }

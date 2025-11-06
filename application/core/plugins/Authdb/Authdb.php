@@ -1,11 +1,15 @@
 <?php
+
 class Authdb extends AuthPluginBase
 {
     protected $storage = 'DbStorage';
     protected $_onepass = null;
 
-    static protected $description = 'Core: Database authentication + exports';
-    static protected $name = 'LimeSurvey internal database';
+    protected static $description = 'Core: Database authentication + exports';
+    protected static $name = 'LimeSurvey internal database';
+
+    /** @inheritdoc This plugin doesn't have any public methods */
+    public $allowedPublicMethods = array();
 
     public function init()
     {
@@ -33,22 +37,52 @@ class Authdb extends AuthPluginBase
      */
     public function createNewUser()
     {
-        // Do nothing if the user to be added is not DB type
-        if (flattenText(Yii::app()->request->getPost('user_type')) != 'DB') {
+        if (!Permission::model()->hasGlobalPermission('users', 'create')) {
             return;
         }
+
         $oEvent = $this->getEvent();
-        $new_user = flattenText(Yii::app()->request->getPost('new_user'), false, true);
-        $new_email = flattenText(Yii::app()->request->getPost('new_email'), false, true);
-        if (!validateEmailAddress($new_email)) {
+        $preCollectedUserArray = $oEvent->get('preCollectedUserArray', []);
+        $expires = null;
+        $status = true;
+
+        if (empty($preCollectedUserArray)) {
+            // Do nothing if the user to be added is not DB type
+            if (flattenText(Yii::app()->request->getPost('user_type')) != 'DB') {
+                return;
+            }
+            $new_user = flattenText(Yii::app()->request->getPost('new_user'), false, true);
+            $new_email = flattenText(Yii::app()->request->getPost('new_email'), false, true);
+            $new_full_name = flattenText(Yii::app()->request->getPost('new_full_name'), false, true);
+            $presetPassword = null;
+            if (Yii::app()->request->getPost('status')) {
+                $status = flattenText(Yii::app()->request->getPost('status'), false, true);
+            }
+            if (Yii::app()->request->getPost('expires')) {
+                $expires = flattenText(Yii::app()->request->getPost('expires'), false, true);
+            }
+        } else {
+            $new_user = flattenText($preCollectedUserArray['users_name']);
+            $new_email = flattenText($preCollectedUserArray['email']);
+            $new_full_name = flattenText($preCollectedUserArray['full_name']);
+            $presetPassword = flattenText($preCollectedUserArray['password']);
+            if (!empty($preCollectedUserArray['status'])) {
+                $status = $preCollectedUserArray['status'];
+            }
+            if (!empty($preCollectedUserArray['expires'])) {
+                $expires = $preCollectedUserArray['expires'];
+            }
+        }
+
+        if (!LimeMailer::validateAddress($new_email)) {
             $oEvent->set('errorCode', self::ERROR_INVALID_EMAIL);
             $oEvent->set('errorMessageTitle', gT("Failed to add user"));
             $oEvent->set('errorMessageBody', gT("The email address is not valid."));
             return;
         }
-        $new_full_name = flattenText(Yii::app()->request->getPost('new_full_name'), false, true);
-        $new_pass = createPassword();
-        $iNewUID = User::insertUser($new_user, $new_pass, $new_full_name, Yii::app()->session['loginID'], $new_email);
+
+        $new_pass = $presetPassword ?? createPassword();
+        $iNewUID = User::insertUser($new_user, $new_pass, $new_full_name, Yii::app()->session['loginID'], $new_email, $expires, $status);
         if (!$iNewUID) {
             $oEvent->set('errorCode', self::ERROR_ALREADY_EXISTING_USER);
             $oEvent->set('errorMessageTitle', '');
@@ -56,7 +90,7 @@ class Authdb extends AuthPluginBase
             return;
         }
 
-        Permission::model()->setGlobalPermission($iNewUID, 'auth_db');
+        @Permission::model()->setGlobalPermission($iNewUID, 'auth_db');
 
         $oEvent->set('newUserID', $iNewUID);
         $oEvent->set('newPassword', $new_pass);
@@ -105,8 +139,8 @@ class Authdb extends AuthPluginBase
         }
 
         $this->getEvent()->getContent($this)
-                ->addContent(CHtml::tag('span', array(), "<label for='user'>".gT("Username")."</label>".CHtml::textField('user', $sUserName, array('size'=>40, 'maxlength'=>40, 'class'=>"form-control"))))
-                ->addContent(CHtml::tag('span', array(), "<label for='password'>".gT("Password")."</label>".CHtml::passwordField('password', $sPassword, array('size'=>40, 'maxlength'=>40, 'class'=>"form-control"))));
+                ->addContent(CHtml::tag('span', array(), "<label for='user'>" . gT("Username") . "</label>" . CHtml::textField('user', $sUserName, array('size' => 240, 'maxlength' => 240, 'class' => "form-control ls-important-field"))))
+                ->addContent(CHtml::tag('span', array(), "<label for='password'>" . gT("Password") . "</label>" . CHtml::passwordField('password', $sPassword, array('size' => 240, 'maxlength' => 240, 'class' => "form-control ls-important-field"))));
     }
 
     public function newUserSession()
@@ -144,9 +178,13 @@ class Authdb extends AuthPluginBase
             $this->setAuthFailure(self::ERROR_USERNAME_INVALID);
             return;
         }
+        if ($user->isExpired()) {
+            // TODO: Should we show the actual error? Taking a conservative approach of not revealing the actual cause for now.
+            $this->setAuthFailure(self::ERROR_USERNAME_INVALID);
+            return;
+        }
 
-
-        if ($onepass != '' && $this->api->getConfigKey('use_one_time_passwords') && md5($onepass) == $user->one_time_pw) {
+        if ($onepass != '' && $this->api->getConfigKey('use_one_time_passwords') && hash('sha256', $onepass) == $user->one_time_pw) {
             $user->one_time_pw = '';
             $user->save();
             $this->setAuthSuccess($user);
@@ -157,6 +195,7 @@ class Authdb extends AuthPluginBase
             $this->setAuthFailure(self::ERROR_PASSWORD_INVALID);
             return;
         }
+
         $this->setAuthSuccess($user);
     }
 
@@ -188,7 +227,7 @@ class Authdb extends AuthPluginBase
             case 'xls':
                 $label = gT("Microsoft Excel");
                 if (!function_exists('iconv')) {
-                    $label .= '<font class="warningtitle">'.gT("(Iconv Library not installed)").'</font>';
+                    $label .= '<font class="warningtitle">' . gT("(Iconv Library not installed)") . '</font>';
                 }
                 $event->set('label', $label);
                 break;
@@ -202,7 +241,9 @@ class Authdb extends AuthPluginBase
             case 'html':
                 $event->set('label', gT("HTML"));
                 break;
-            case 'json':    // Not in the interface, only for RPC
+            case 'json':
+                $event->set('label', gT("JSON"));
+                break;
             default:
                 break;
         }
@@ -217,7 +258,7 @@ class Authdb extends AuthPluginBase
         $exports = $event->get('exportplugins');
 
         // Yes we overwrite existing classes if available
-        $className = get_class();
+        $className = get_class($this);
         $exports['csv'] = $className;
         $exports['xls'] = $className;
         $exports['pdf'] = $className;
@@ -259,5 +300,14 @@ class Authdb extends AuthPluginBase
         }
 
         $event->set('writer', $writer);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public static function getAuthMethodName()
+    {
+        // Using string literal here so it can be picked by translation bot
+        return gT('LimeSurvey internal database');
     }
 }

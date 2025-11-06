@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -21,11 +20,11 @@
  * @property string $language Question language code. Note: There is a unique key on qid & language columns combined
  * @property string $question Question display text. The actual question.
  * @property string $help Question help-text for display
+ * @property string $script Question script to be executed on runtime
  *
  */
 class QuestionL10n extends LSActiveRecord
 {
-
     /** @inheritdoc */
     public function tableName()
     {
@@ -42,10 +41,10 @@ class QuestionL10n extends LSActiveRecord
      * @inheritdoc
      * @return QuestionL10n
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -57,7 +56,7 @@ class QuestionL10n extends LSActiveRecord
             //'question' => array(self::BELONGS_TO, 'Question', 'qid'),
         );
     }
-    
+
     /**
      * This defaultScope indexes the ActiveRecords given back by language
      * Important: This does not work if you want to retrieve records for more than one question at a time.
@@ -66,19 +65,35 @@ class QuestionL10n extends LSActiveRecord
      */
     public function defaultScope()
     {
-        return array('index'=>'language');
+        return array('index' => 'language');
     }
 
     /** @inheritdoc */
     public function rules()
     {
-        return array(
+        $rules = array(
             ['qid,language', 'required'],
-            ['qid', 'numerical', 'integerOnly'=>true],
+            ['qid', 'numerical', 'integerOnly' => true],
             array('question', 'LSYii_Validators'),
             array('help', 'LSYii_Validators'),
-            array('language', 'length', 'min' => 2, 'max'=>20), // in array languages ?
+            array('script', 'safe'),
+            array('language', 'length', 'min' => 2, 'max' => 20), // in array languages ?
+            /* Add rules for existing unique index : idx1_question_ls ['qid', 'language'] */
+            array('qid', 'unique', 'criteria' => array(
+                    'condition' => 'language=:language',
+                    'params' => array(':language' => $this->language)
+                ),
+                'message' => sprintf(
+                    // Usage of {attribute} need attributeLabels, {value} never exist in message
+                    gT("Question ID '%s' is already in use for language '%s'."),
+                    $this->qid,
+                    $this->language
+                ),
+            ),
         );
+        if (!Yii::app()->user->isScriptUpdateAllowed()) {
+            $rules[] = array('script', 'LSYii_NoUpdateValidator');
+        }
+        return $rules;
     }
-
 }

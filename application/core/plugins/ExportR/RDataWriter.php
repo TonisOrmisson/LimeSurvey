@@ -1,4 +1,5 @@
 <?php
+
 Yii::import('application.helpers.admin.export.*');
 class RDataWriter extends CsvWriter
 {
@@ -17,7 +18,7 @@ class RDataWriter extends CsvWriter
         parent::init($survey, $sLanguageCode, $oOptions);
 
         // Change filename
-        $this->csvFilename = 'survey_'.$survey->id.'_R_data_file.csv';
+        $this->csvFilename = 'survey_' . $survey->id . '_R_data_file.csv';
         // Skip the first line with headers
         $this->doHeaders = true;
 
@@ -49,7 +50,7 @@ class RDataWriter extends CsvWriter
                 }
                 break;
 
-            case Question::QT_E_ARRAY_OF_INC_SAME_DEC_QUESTIONS:       // Increase/same/decrease
+            case Question::QT_E_ARRAY_INC_SAME_DEC:       // Increase/same/decrease
                 if ($value == 'I') {
                     return 1;
                 } elseif ($value == 'S') {
@@ -59,7 +60,7 @@ class RDataWriter extends CsvWriter
                 }
                 break;
 
-            case Question::QT_G_GENDER_DROPDOWN:       // Gender question
+            case Question::QT_G_GENDER:       // Gender question
                 if ($value == 'F') {
                     return 1;
                 } elseif ($value == 'M') {
@@ -71,7 +72,7 @@ class RDataWriter extends CsvWriter
             case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:
                 if (!empty($column) && isset($this->fieldmap[$column])) {
                     $aid = $this->fieldmap[$column]['aid'];
-                    if (substr($aid, -7) == 'comment' || substr($aid, -5) == 'other') {
+                    if (substr((string) $aid, -7) == 'comment' || substr((string) $aid, -5) == 'other') {
                         // Do not process comment or other fields
                         return $value;
                     }

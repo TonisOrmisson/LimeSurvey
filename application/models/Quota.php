@@ -1,6 +1,4 @@
-<?php if (!defined('BASEPATH')) {
-    exit('No direct script access allowed');
-}
+<?php
 
 /*
    * LimeSurvey
@@ -37,25 +35,24 @@
  */
 class Quota extends LSActiveRecord
 {
-
-    const ACTION_TERMINATE = 1;
-    const ACTION_CONFIRM_TERMINATE = 2;
+    public const TERMINATE_VISIBLE_QUOTA_QUESTIONS = 1;
+    public const SOFT_TERMINATE_VISIBLE_QUOTA_QUESTIONS = 2;
+    public const TERMINATE_VISIBLE_AND_HIDDEN_QUOTA_QUESTIONS = 3;
+    public const TERMINATE_ALL_PAGES = 4;
 
     /* Default attributes */
     public $active = 1;
-    public $action = self::ACTION_TERMINATE;
+    public $action = self::TERMINATE_VISIBLE_QUOTA_QUESTIONS;
 
     /**
      * Returns the static model of Settings table
      *
-     * @static
-     * @access public
-     * @param string $class
+     * @param string $className
      * @return CActiveRecord
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
-        return parent::model($class);
+        return parent::model($className);
     }
 
     /** @inheritdoc */
@@ -86,21 +83,23 @@ class Quota extends LSActiveRecord
         return array(
             array('name,qlimit,action', 'required'),
             array('name', 'LSYii_Validators'), // Maybe more restrictive
-            array('qlimit', 'numerical', 'integerOnly'=>true, 'min'=>'0', 'allowEmpty'=>true),
-            array('action', 'numerical', 'integerOnly'=>true, 'min'=>'1', 'max'=>'2', 'allowEmpty'=>true), // Default is null ?
-            array('active', 'numerical', 'integerOnly'=>true, 'min'=>'0', 'max'=>'1', 'allowEmpty'=>true),
-            array('autoload_url', 'numerical', 'integerOnly'=>true, 'min'=>'0', 'max'=>'1', 'allowEmpty'=>true),
+            array('name', 'LSYii_NonFormulaValidator'), // Avoid CSV injection
+            array('qlimit', 'numerical', 'integerOnly' => true, 'min' => '0', 'max' => 2147483647, 'allowEmpty' => true),
+            array('action', 'numerical', 'integerOnly' => true, 'min' => '1', 'max' => '4', 'allowEmpty' => true), // Default is null ?
+            array('active', 'numerical', 'integerOnly' => true, 'min' => '0', 'max' => '1', 'allowEmpty' => true),
+            array('autoload_url', 'numerical', 'integerOnly' => true, 'min' => '0', 'max' => '1', 'allowEmpty' => true),
+            array('name', 'length', 'min' => 0, 'max' => 255),
         );
     }
 
     public function attributeLabels()
     {
         return array(
-            'name'=> gT("Quota name"),
-            'active'=> gT("Active"),
-            'qlimit'=> gT("Limit"),
-            'autoload_url'=> gT("Autoload URL"),
-            'action'=> gT("Quota action"),
+            'name' => gT("Quota name"),
+            'active' => gT("Active"),
+            'qlimit' => gT("Limit"),
+            'autoload_url' => gT("Autoload URL"),
+            'action' => gT("Quota action"),
         );
     }
 
@@ -109,9 +108,9 @@ class Quota extends LSActiveRecord
      * @return bool|int
      * @deprecated at 2018-01-29 use $model->attributes = $data && $model->save()
      */
-    function insertRecords($data)
+    public function insertRecords($data)
     {
-        $quota = new self;
+        $quota = new self();
         foreach ($data as $k => $v) {
             $quota->$k = $v;
         }
@@ -127,7 +126,7 @@ class Quota extends LSActiveRecord
      * @param mixed|bool $condition
      * @param bool $recursive
      */
-    function deleteQuota($condition = false, $recursive = true)
+    public function deleteQuota($condition = false, $recursive = true)
     {
         if ($recursive == true) {
             $oResult = Quota::model()->findAllByAttributes($condition);
@@ -146,7 +145,6 @@ class Quota extends LSActiveRecord
     public function getMainLanguagesetting()
     {
         return $this->languagesettings[$this->survey->language];
-
     }
 
     public function getCompleteCount()
@@ -174,9 +172,9 @@ class Quota extends LSActiveRecord
                 $aQuotaColumns[$member->memberInfo['fieldname']][] = $member->memberInfo['value'];
             }
 
-            $oCriteria = new CDbCriteria;
+            $oCriteria = new CDbCriteria();
             $oCriteria->condition = new CDbExpression("submitdate IS NOT NULL");
-            foreach ($aQuotaColumns as $sColumn=>$aValue) {
+            foreach ($aQuotaColumns as $sColumn => $aValue) {
                 if (count($aValue) == 1) {
                     $oCriteria->compare(Yii::app()->db->quoteColumnName($sColumn), $aValue); // NO need params : compare bind
                 } else {
@@ -195,7 +193,7 @@ class Quota extends LSActiveRecord
         $languageSettings = $this->currentLanguageSetting;
         $members = array();
         foreach ($this->quotaMembers as $quotaMember) {
-        $members[] = $quotaMember->memberInfo;
+            $members[] = $quotaMember->memberInfo;
         }
         $attributes = $this->attributes;
 
@@ -211,7 +209,7 @@ class Quota extends LSActiveRecord
         $oQuotaLanguageSettings = QuotaLanguageSetting::model()
             ->findByAttributes(array(
                 'quotals_quota_id' => $this->id,
-                'quotals_language'=>Yii::app()->getLanguage(),
+                'quotals_language' => Yii::app()->getLanguage(),
             ));
         if ($oQuotaLanguageSettings) {
             return $oQuotaLanguageSettings;
@@ -220,5 +218,61 @@ class Quota extends LSActiveRecord
         return $this->getMainLanguagesetting();
     }
 
-
+    public function getButtons()
+    {
+        $permissionQuotaEdit = Permission::model()->hasSurveyPermission($this->sid, 'quotas', 'update');
+        $permissionQuotaDelete = Permission::model()->hasSurveyPermission($this->sid, 'quotas', 'delete');
+        $dropdownItems = [];
+        $dropdownItems[] = [
+            'title'            => gT('Edit quota'),
+            'iconClass'        => 'ri-pencil-fill',
+            'url'              => App()->createUrl(
+                "quotas/editQuota/surveyid/" . $this->survey->sid,
+                array(
+                    'quota_id' => $this->primaryKey,
+                    )
+            ),
+            'enabledCondition' => $permissionQuotaEdit
+        ];
+        $deletePostData = json_encode(['surveyid' => $this->sid, 'quota_id' => $this->primaryKey]);
+        $dropdownItems[] = [
+            'title'            => gT('Delete'),
+            'tooltip'          => gT('Delete quotas'),
+            'iconClass'        => 'ri-delete-bin-fill text-danger',
+            'enabledCondition' => $permissionQuotaDelete,
+            'linkAttributes'   => [
+                'data-bs-toggle' => "modal",
+                'data-post-url'  => App()->createUrl("quotas/deleteQuota/"),
+                'data-message'   => gT("Are you sure you want to delete the selected quotas?"),
+                'data-bs-target' => "#confirmation-modal",
+                'data-btnclass'  => 'btn-danger',
+                'data-btntext'   => gT('Delete'),
+                'data-post-datas' => $deletePostData
+            ]
+        ];
+        $dropdownItems[] = [
+            'title'            => gT('Validation'),
+            'tooltip'          => sprintf(gT("Validation of quota %s"), htmlentities($this->name)),
+            'iconClass'        => 'ri-bar-chart-horizontal-fill',
+            'enabledCondition' => $permissionQuotaEdit,
+            'linkClass'             => 'selector__quota_open_validation',
+            'linkAttributes'   => [
+                'data-bs-toggle' => "modal",
+                'data-message'   => gT("Are you sure you want to delete the selected quotas?"),
+                'data-bs-target' => "quotaValidation",
+                'data-remote-link' => App()->createUrl(
+                    'admin/validate/',
+                    [
+                        "sa" => 'quota',
+                        'sid' => $this->sid,'quota' => $this->id
+                    ]
+                )
+            ]
+        ];
+        return App()->getController()->widget(
+            'ext.admin.grid.GridActionsWidget.GridActionsWidget',
+            ['dropdownItems' => $dropdownItems],
+            true
+        );
+    }
 }

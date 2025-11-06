@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey
  * Copyright (C) 2007-2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -18,19 +17,18 @@
  * Class UserInGroup
  * @property integer $ugid UserGroup ID
  * @property int $uid User ID
- *
- *
+ * @property User $users Group ownre user
+ * @property UserGroup $group
  */
 class UserInGroup extends LSActiveRecord
 {
-
     /**
      * @inheritdoc
      * @return CActiveRecord
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
-        return parent::model($class);
+        return parent::model($className);
     }
 
     /** @inheritdoc */
@@ -46,12 +44,23 @@ class UserInGroup extends LSActiveRecord
     }
 
     /** @inheritdoc */
+    public function rules()
+    {
+        return array(
+            array('uid, ugid', 'required'),
+            array('uid, ugid', 'numerical', 'integerOnly' => true),
+        );
+    }
+
+    /** @inheritdoc */
     public function relations()
     {
         // NOTE: you may need to adjust the relation name and the related
         // class name for the relations automatically generated below.
         return array(
-            'user' => array(self::BELONGS_TO, 'User', '', 'on' => 't.uid = users.uid')
+            // TODO should be singular
+            'users' => array(self::BELONGS_TO, 'User', 'uid'),
+            'group' => array(self::BELONGS_TO, 'UserGroup', 'ugid'),
         );
     }
 
@@ -94,5 +103,4 @@ class UserInGroup extends LSActiveRecord
         $data = $user->queryRow();
         return $data;
     }
-
 }

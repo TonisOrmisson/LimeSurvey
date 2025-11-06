@@ -2,7 +2,6 @@
 
 class PgsqlSchema extends CPgsqlSchema
 {
-
     public function __construct($conn)
     {
         parent::__construct($conn);
@@ -12,6 +11,8 @@ class PgsqlSchema extends CPgsqlSchema
         $this->columnTypes['autoincrement'] = 'serial';
         $this->columnTypes['longbinary'] = 'bytea';
         $this->columnTypes['decimal'] = 'numeric (10,0)'; // Same default than MySql (not used)
+        $this->columnTypes['mediumtext'] = 'text';
+        $this->columnTypes['longtext'] = 'text';
     }
 
     /**
@@ -22,17 +23,17 @@ class PgsqlSchema extends CPgsqlSchema
     public function getColumnType($type)
     {
         if (isset($this->columnTypes[$type])) {
-// Direct : get it
+            // Direct : get it
             $sResult = $this->columnTypes[$type];
         } elseif (preg_match('/^([a-zA-Z ]+)\((.+?)\)(.*)$/', $type, $matches)) {
-// With params : some test to do
+            // With params : some test to do
             $baseType = parent::getColumnType($matches[1]);
-            if (preg_match('/^([a-zA-Z ]+)\((.+?)\)(.*)$/', $baseType, $baseMatches)) {
-// Replace the default Yii param
-                $sResult = preg_replace('/\(.+\)/', "(".$matches[2].")", parent::getColumnType($matches[1]." ".$matches[3]));
+            if (preg_match('/^([a-zA-Z ]+)\((.+?)\)(.*)$/', (string) $baseType, $baseMatches)) {
+                // Replace the default Yii param
+                $sResult = preg_replace('/\(.+\)/', "(" . $matches[2] . ")", (string) parent::getColumnType($matches[1] . " " . $matches[3]));
             } else {
-// Get the base type and join
-                $sResult = join(" ", array($baseType, "(".$matches[2].")", $matches[3]));
+                // Get the base type and join
+                $sResult = join(" ", array($baseType, "(" . $matches[2] . ")", $matches[3]));
             }
         } else {
             $sResult = parent::getColumnType($type);
@@ -47,15 +48,15 @@ class PgsqlSchema extends CPgsqlSchema
         foreach ($columns as $name => $type) {
             if (is_array($type) && $name == 'composite_pk') {
                 // ...except this line.
-                $cols[] = "\t".$this->getCompositePrimaryKey($table, $type);
+                $cols[] = "\t" . $this->getCompositePrimaryKey($table, $type);
             } elseif (is_string($name)) {
-                $cols[] = "\t".$this->quoteColumnName($name).' '.$this->getColumnType($type);
+                $cols[] = "\t" . $this->quoteColumnName($name) . ' ' . $this->getColumnType($type);
             } else {
-                $cols[] = "\t".$type;
+                $cols[] = "\t" . $type;
             }
         }
-        $sql = "CREATE TABLE ".$this->quoteTableName($table)." (\n".implode(",\n", $cols)."\n)";
-        return $options === null ? $sql : $sql.' '.$options;
+        $sql = "CREATE TABLE " . $this->quoteTableName($table) . " (\n" . implode(",\n", $cols) . "\n)";
+        return $options === null ? $sql : $sql . ' ' . $options;
     }
 
     /**
@@ -73,4 +74,14 @@ class PgsqlSchema extends CPgsqlSchema
             implode(', ', $columns)
         );
     }
+
+	/**
+	 * Creates a command builder for the database.
+	 * This method may be overridden by child classes to create a DBMS-specific command builder.
+	 * @return LSPgsqlDbCommandBuilder command builder instance
+	 */
+	protected function createCommandBuilder()
+	{
+		return new LSPgsqlDbCommandBuilder($this);
+	}
 }

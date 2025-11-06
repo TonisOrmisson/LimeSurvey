@@ -1,100 +1,159 @@
 <?php
 
-
+/**
+ * Service class to activate survey.
+ * @todo Move to models/services/survey/ folder.
+ */
 class SurveyActivator
 {
     /** @var Survey */
     protected $survey;
+
     /** @var array  */
     protected $tableDefinition = [];
+
     /** @var array  */
     protected $timingsTableDefinition = [];
-    /** @var array  */
-    protected $fieldMap;
-    /** @var string */
-    protected $collation;
-    /** @var PluginEvent */
-    protected $event;
+
     /** @var string */
     protected $error;
+
     /** @var bool */
     protected $createSurveyDir = false;
 
-
     /** @var boolean */
-    public $isSimulation;
-
+    public $isSimulation = false;
 
     /**
      * @param Survey $survey
      */
-    public function __construct($survey)
+    public function __construct($survey = null)
     {
         $this->survey = $survey;
     }
 
     /**
+     * @param Survey $survey
+     * @return SurveyActivator
+     */
+    public function setSurvey(Survey $survey)
+    {
+        $this->survey = $survey;
+        return $this;
+    }
+
+    /**
+     * Sets a survey into "activate" state.
+     * Creates necessary tables "responseTable", "timingTable".
+     * Fires events "beforeSurveyActivate" and "afterSurveyActivation"
+     *
      * @return array
      * @throws CException
      */
     public function activate()
     {
+        EmCacheHelper::init(['sid' => $this->survey->sid, 'active' => 'Y']);
+        EmCacheHelper::flush();
 
-        $this->event = new PluginEvent('beforeSurveyActivate');
-        $this->event->set('surveyId', $this->survey->primaryKey);
-        $this->event->set('simulate', $this->isSimulation);
-        App()->getPluginManager()->dispatchEvent($this->event);
+        $event = new PluginEvent('beforeSurveyActivate');
+        $event->set('surveyId', $this->survey->primaryKey);
+        $event->set('simulate', $this->isSimulation);
+        App()->getPluginManager()->dispatchEvent($event);
 
-        if (!$this->showEventMessages()) {
-            return ['error'=>'plugin'];
+        $this->setMySQLDefaultEngine(Yii::app()->getConfig('mysqlEngine'));
+
+        if (!$this->showEventMessages($event)) {
+            return ['error' => 'plugin'];
         }
 
         $this->prepareResponsesTable();
 
         if ($this->isSimulation) {
-            return array('dbengine'=>Yii::app()->db->getDriverName(), 'dbtype'=>Yii::app()->db->driverName, 'fields'=>$this->tableDefinition);
+            return array(
+                'dbengine' => Yii::app()->db->getDriverName(),
+                'dbtype' => Yii::app()->db->driverName,
+                'fields' => $this->tableDefinition
+            );
         }
 
-        if (!$this->createParticipantsTable()) {
-            return ['error'=>$this->error];
+        if (!$this->createResponseTable()) {
+            return ['error' => $this->error];
         }
 
         if (!$this->createTimingsTable()) {
-            return ['error'=>'timingstablecreation'];
+            return ['error' => 'timingstablecreation'];
         }
 
         if (!empty($this->error)) {
-            return ['error'=>$this->error];
+            return ['error' => $this->error];
         }
 
-        Yii::app()->db->createCommand()->update(
-                Survey::model()->tableName(),
-                ['active'=>'Y'], 'sid=:sid',
-                [':sid'=>$this->survey->primaryKey]
-            );
+        $survey = Survey::model()->findByAttributes(array('sid' => $this->survey->primaryKey));
+        $survey->scenario = 'activationStateChange';
+        $survey->active = 'Y';
+        $survey->save();
 
         $aResult = array(
             'status' => 'OK',
-            'pluginFeedback' => $this->event->get('pluginFeedback')
+            'pluginFeedback' => $event->get('pluginFeedback'),
+            'isAllowRegister' => $survey->isAllowRegister
         );
         if (!$this->createSurveyDirectory()) {
             $aResult['warning'] = 'nouploadsurveydir';
         }
 
+        LimeExpressionManager::SetDirtyFlag();
+
+        $event = new PluginEvent('afterSurveyActivate');
+        $event->set('surveyId', $this->survey->sid);
+        $event->set('simulate', $this->isSimulation);
+        App()->getPluginManager()->dispatchEvent($event);
+
         return $aResult;
     }
 
-
+    /**
+     * See bug #09828: Ranking question : update allowed can broke Survey DB
+     * If max_subquestions is not set or is invalid : set it to actual answers numbers
+     *
+     * @return void
+     */
+    public function fixQuestionAttributeForRanking($sFieldMap)
+    {
+        foreach ($sFieldMap as $aRow) {
+            switch ($aRow['type']) {
+                case Question::QT_R_RANKING:
+                    $nrOfAnswers = Answer::model()->countByAttributes(
+                        array('qid' => $aRow['qid'])
+                    );
+                    $oQuestionAttribute = QuestionAttribute::model()->find(
+                        "qid = :qid AND attribute = 'max_subquestions'",
+                        array(':qid' => $aRow['qid'])
+                    );
+                    if (empty($oQuestionAttribute)) {
+                        $oQuestionAttribute = new QuestionAttribute();
+                        $oQuestionAttribute->qid = $aRow['qid'];
+                        $oQuestionAttribute->attribute = 'max_subquestions';
+                        $oQuestionAttribute->value = $nrOfAnswers;
+                        $oQuestionAttribute->save();
+                    } elseif (intval($oQuestionAttribute->value) < 1) {
+                        // Fix it if invalid : disallow 0, but need a sub question minimum for EM
+                        $oQuestionAttribute->value = $nrOfAnswers;
+                        $oQuestionAttribute->save();
+                    }
+            }
+        }
+    }
 
     /**
      * For each question, create the appropriate field(s)
+     *
+     * @param string $collation
      * @return void
      */
-    protected function prepareTableDefinition()
+    protected function prepareTableDefinition(string $collation, array $sFieldMap)
     {
-        $sFieldMap = $this->fieldMap;
-
-        foreach ($sFieldMap as $j=>$aRow) {
+        foreach ($sFieldMap as $aRow) {
             switch ($aRow['type']) {
                 case 'seed':
                     $aTableDefinition[$aRow['fieldname']] = "string(31)";
@@ -115,47 +174,47 @@ class SurveyActivator
                 case "lastpage":
                     $aTableDefinition[$aRow['fieldname']] = "integer";
                     break;
-                case "N":  //Numerical
-                case "K":  //Multiple Numerical
-                    $aTableDefinition[$aRow['fieldname']] = "decimal (30,10)";
+                case Question::QT_N_NUMERICAL:
+                case Question::QT_K_MULTIPLE_NUMERICAL:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "decimal (30,10)");
                     break;
-                case "S":  //SHORT TEXT
-                    $aTableDefinition[$aRow['fieldname']] = "text";
+                case Question::QT_S_SHORT_FREE_TEXT:
+                    $aTableDefinition[$aRow['fieldname']] = isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "text";
                     break;
-                case "L":  //LIST (RADIO)
-                case "!":  //LIST (DROPDOWN)
-                case "M":  //Multiple choice
-                case "P":  //Multiple choice with comment
-                case "O":  //DROPDOWN LIST WITH COMMENT
-                    if ($aRow['aid'] != 'other' && strpos($aRow['aid'], 'comment') === false && strpos($aRow['aid'], 'othercomment') === false) {
-                        $aTableDefinition[$aRow['fieldname']] = "string(5)";
+                case Question::QT_L_LIST:
+                case Question::QT_EXCLAMATION_LIST_DROPDOWN:
+                case Question::QT_M_MULTIPLE_CHOICE:
+                case Question::QT_P_MULTIPLE_CHOICE_WITH_COMMENTS:
+                case Question::QT_O_LIST_WITH_COMMENT:
+                    if ($aRow['aid'] != 'other' && strpos((string) $aRow['aid'], 'comment') === false && strpos((string) $aRow['aid'], 'othercomment') === false) {
+                        $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(5)") ;
                     } else {
                         $aTableDefinition[$aRow['fieldname']] = "text";
                     }
                     break;
-                case "U":  //Huge text
-                case "Q":  //Multiple short text
-                case "T":  //LONG TEXT
-                case ";":  //Multi Flexi
-                case ":":  //Multi Flexi
-                    $aTableDefinition[$aRow['fieldname']] = "text";
+                case Question::QT_U_HUGE_FREE_TEXT:
+                case Question::QT_Q_MULTIPLE_SHORT_TEXT:
+                case Question::QT_T_LONG_FREE_TEXT:
+                case Question::QT_SEMICOLON_ARRAY_TEXT:
+                case Question::QT_COLON_ARRAY_NUMBERS:
+                    $aTableDefinition[$aRow['fieldname']] = isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "text";
                     break;
-                case "D":  //DATE
-                    $aTableDefinition[$aRow['fieldname']] = "datetime";
+                case Question::QT_D_DATE:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "datetime");
                     break;
-                case "5":  //5 Point Choice
-                case "G":  //Gender
-                case "Y":  //YesNo
-                case "X":  //Boilerplate
-                    $aTableDefinition[$aRow['fieldname']] = "string(1)";
+                case Question::QT_5_POINT_CHOICE:
+                case Question::QT_G_GENDER:
+                case Question::QT_Y_YES_NO_RADIO:
+                case Question::QT_X_TEXT_DISPLAY:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(1)");
                     break;
-                case "I":  //Language switch
-                    $aTableDefinition[$aRow['fieldname']] = "string(20)";
+                case Question::QT_I_LANGUAGE:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(20)");
                     break;
-                case "|":
+                case Question::QT_VERTICAL_FILE_UPLOAD:
                     $this->createSurveyDir = true;
-                    if (strpos($aRow['fieldname'], "_")) {
-                        $aTableDefinition[$aRow['fieldname']] = "integer";
+                    if (strpos((string) $aRow['fieldname'], "_")) {
+                        $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "integer");
                     } else {
                         $aTableDefinition[$aRow['fieldname']] = "text";
                     }
@@ -171,46 +230,21 @@ class SurveyActivator
                     }
                     break;
                 case "token":
-                    $aTableDefinition[$aRow['fieldname']] = 'string(35)'.$this->collation;
+                    $aTableDefinition[$aRow['fieldname']] = 'string(' . Token::MAX_LENGTH . ')' . $collation;
                     break;
-                case '*': // Equation
-                    $aTableDefinition[$aRow['fieldname']] = "text";
+                case Question::QT_ASTERISK_EQUATION:
+                    $aTableDefinition[$aRow['fieldname']] = isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "text";
                     break;
-                case 'R':
-                    /**
-                     * See bug #09828: Ranking question : update allowed can broke Survey DB
-                     * If max_subquestions is not set or is invalid : set it to actual answers numbers
-                     */
-
-                    $nrOfAnswers = Answer::model()->countByAttributes(
-                        array('qid' => $aRow['qid'])
-                    );
-                    $oQuestionAttribute = QuestionAttribute::model()->find(
-                        "qid = :qid AND attribute = 'max_subquestions'",
-                        array(':qid' => $aRow['qid'])
-                    );
-                    if (empty($oQuestionAttribute)) {
-                        $oQuestionAttribute = new QuestionAttribute();
-                        $oQuestionAttribute->qid = $aRow['qid'];
-                        $oQuestionAttribute->attribute = 'max_subquestions';
-                        $oQuestionAttribute->value = $nrOfAnswers;
-                        $oQuestionAttribute->save();
-                    } elseif (intval($oQuestionAttribute->value) < 1) {
-                        // Fix it if invalid : disallow 0, but need a sub question minimum for EM
-                        $oQuestionAttribute->value = $nrOfAnswers;
-                        $oQuestionAttribute->save();
-                    }
-                    $aTableDefinition[$aRow['fieldname']] = "string(5)";
-                    break;
-                default:
-                    $aTableDefinition[$aRow['fieldname']] = "string(5)";
+                case Question::QT_R_RANKING:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(5)");
+                    break;                                                                                                                                                                                                                                                                 default:
+                    $aTableDefinition[$aRow['fieldname']] = (array_key_exists('encrypted', $aRow) && $aRow['encrypted'] == 'Y') ? "text" : (isset($aRow['answertabledefinition']) && !empty($aRow['answertabledefinition']) ? $aRow['answertabledefinition'] : "string(5)");
             }
             if (!$this->survey->isAnonymized && !array_key_exists('token', $aTableDefinition)) {
-                $aTableDefinition['token'] = 'string(35)'.$this->collation;
+                $aTableDefinition['token'] = 'string(' . Token::MAX_LENGTH . ')' . $collation;
             }
         }
         $this->tableDefinition = $aTableDefinition;
-
     }
 
     /**
@@ -218,32 +252,40 @@ class SurveyActivator
      */
     protected function prepareTimingsTable()
     {
-        $timingsfieldmap = createTimingsFieldMap($this->survey->primaryKey, "full", false, false, $this->survey->language);
+        $timingsfieldmap = createTimingsFieldMap(
+            $this->survey->primaryKey,
+            "full",
+            false,
+            false,
+            $this->survey->language
+        );
         $aTimingTableDefinition = array();
         $aTimingTableDefinition['id'] = $this->tableDefinition['id'];
-        foreach ($timingsfieldmap as $field=>$fielddata) {
+        foreach (array_keys($timingsfieldmap) as $field) {
             $aTimingTableDefinition[$field] = 'FLOAT';
         }
         $this->timingsTableDefinition = $aTimingTableDefinition;
     }
 
-
-
     /**
-     * @return void
+     * @return string
      */
-    protected function prepareCollation()
+    protected function getCollation()
     {
         // Specify case sensitive collations for the token
-        $this->collation = '';
+        $collation = '';
         if (Yii::app()->db->driverName == 'mysqli' || Yii::app()->db->driverName == 'mysql') {
-            $this->collation = " COLLATE 'utf8mb4_bin'";
+            $collation = " COLLATE 'utf8mb4_bin'";
         }
-        if (Yii::app()->db->driverName == 'sqlsrv' || Yii::app()->db->driverName == 'dblib' || Yii::app()->db->driverName == 'mssql') {
-            $this->collation = " COLLATE SQL_Latin1_General_CP1_CS_AS";
+        if (
+            Yii::app()->db->driverName == 'sqlsrv'
+            || Yii::app()->db->driverName == 'dblib'
+            || Yii::app()->db->driverName == 'mssql'
+        ) {
+            $collation = " COLLATE SQL_Latin1_General_CP1_CS_AS";
         }
+        return $collation;
     }
-
 
     /**
      * @return void
@@ -261,38 +303,39 @@ class SurveyActivator
             $arrSim[] = array($type);
             $this->tableDefinition = $arrSim;
         }
-
     }
-
 
     /**
      * @return void
      */
     protected function prepareResponsesTable()
     {
-        $this->prepareCollation();
+        /** @var string */
+        $collation = $this->getCollation();
         //Check for any additional fields for this survey and create necessary fields (token and datestamp)
         $this->survey->fixInvalidQuestions();
         //Get list of questions for the base language
-        $this->fieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
-        $this->prepareTableDefinition();
+        $sFieldMap = createFieldMap($this->survey, 'full', true, false, $this->survey->language);
+        $this->fixQuestionAttributeForRanking($sFieldMap);
+        $this->prepareTableDefinition($collation, $sFieldMap);
         $this->prepareSimulateQuery();
     }
-
 
     /**
      * @return boolean
      * @throws CDbException
      * @throws CException
      */
-    protected function createParticipantsTable()
+    protected function createResponseTable()
     {
         $sTableName = $this->survey->responsesTableName;
         Yii::app()->loadHelper("database");
         try {
             Yii::app()->db->createCommand()->createTable($sTableName, $this->tableDefinition);
-            Yii::app()->db->schema->getTable($sTableName, true); // Refresh schema cache just in case the table existed in the past
+            // Refresh schema cache just in case the table existed in the past
+            Yii::app()->db->schema->getTable($sTableName, true);
         } catch (Exception $e) {
+                $this->error = 'surveytablecreation';
             if (App()->getConfig('debug')) {
                 $this->error = $e->getMessage();
             } else {
@@ -301,34 +344,36 @@ class SurveyActivator
             return false;
         }
         try {
-            if (isset($aTableDefinition['token'])) {
-                Yii::app()->db->createCommand()->createIndex("idx_survey_token_{$this->survey->primaryKey}_".rand(1, 50000), $sTableName, 'token');
+            if (isset($this->tableDefinition['token'])) {
+                Yii::app()->db->createCommand()->createIndex(
+                    "idx_survey_token_{$this->survey->primaryKey}_" . rand(1, 50000),
+                    $sTableName,
+                    'token'
+                );
             }
         } catch (\Exception $e) {
         }
 
-        $this->createParticipantsTableKeys();
+        $this->createResponseTableKeys();
         return true;
-
     }
 
-
     /**
+     * @param PluginEvent $event
      * @return boolean
      */
-    protected function showEventMessages()
+    protected function showEventMessages($event)
     {
-        $success = $this->event->get('success');
-        $message = $this->event->get('message');
+        $success = $event->get('success');
+        $message = $event->get('message');
 
         if ($success === false) {
             Yii::app()->user->setFlash('error', $message);
             return false;
-        } else if (!empty($message)) {
+        } elseif (!empty($message)) {
             Yii::app()->user->setFlash('info', $message);
         }
         return true;
-
     }
 
     /**
@@ -336,26 +381,25 @@ class SurveyActivator
      * @throws CDbException
      * @throws CException
      */
-    protected function createParticipantsTableKeys()
+    protected function createResponseTableKeys()
     {
+
         $iAutoNumberStart = Yii::app()->db->createCommand()
             ->select('autonumber_start')
             ->from(Survey::model()->tableName())
-            ->where('sid=:sid', [':sid'=>$this->survey->primaryKey])
+            ->where('sid=:sid', [':sid' => $this->survey->primaryKey])
             ->queryScalar();
 
         //if there is an autonumber_start field, start auto numbering here
         if ($iAutoNumberStart !== false && $iAutoNumberStart > 0) {
             if (Yii::app()->db->driverName == 'mssql' || Yii::app()->db->driverName == 'sqlsrv' || Yii::app()->db->driverName == 'dblib') {
-                mssql_drop_primary_index($this->survey->responsesTableName);
-                mssql_drop_constraint('id', $this->survey->responsesTableName);
-                $sQuery = "ALTER TABLE {$this->survey->responsesTableName} drop column id ";
-                Yii::app()->db->createCommand($sQuery)->execute();
+                Yii::app()->loadHelper("admin.activate"); // needed for mssql_drop_column_with_constraints
+                mssql_drop_column_with_constraints($this->survey->responsesTableName, 'id');
                 $sQuery = "ALTER TABLE {$this->survey->responsesTableName} ADD [id] int identity({$iAutoNumberStart},1)";
                 Yii::app()->db->createCommand($sQuery)->execute();
                 // Add back the primaryKey
 
-                Yii::app()->db->createCommand()->addPrimaryKey('PRIMARY_'.rand(1, 50000), $this->survey->responsesTableName, 'id');
+                Yii::app()->db->createCommand()->addPrimaryKey('PRIMARY_' . rand(1, 50000), $this->survey->responsesTableName, 'id');
             } elseif (Yii::app()->db->driverName == 'pgsql') {
                 $sQuery = "SELECT setval(pg_get_serial_sequence('{$this->survey->responsesTableName}', 'id'),{$iAutoNumberStart},false);";
                 // FIXME @ not good
@@ -366,7 +410,6 @@ class SurveyActivator
                 @Yii::app()->db->createCommand($sQuery)->execute();
             }
         }
-
     }
 
     /**
@@ -374,20 +417,26 @@ class SurveyActivator
      */
     protected function createTimingsTable()
     {
-        if ($this->survey->isSaveTimings) {
+        /**
+         * CT-1121: Needed a fix because $this->survey->isSaveTimings is incorrectly N even if it's Y in the database
+         * We will need to look into that problem later and restore the earlier code changed in 28bdcc3fde1e758756d2f4a4984e29a4105d3950
+         * once $this->survey->isSaveTimings becomes reliable again
+         * The idea for the fix was to load this value from the database for the time being until the session creation at the Question Editor is fixed
+         */
+        $prow = $this->survey->find('sid = :sid', array(':sid' => $this->survey->sid));
+        if ($prow->savetimings == "Y") {
             $this->prepareTimingsTable();
             $sTableName = $this->survey->timingsTableName;
             try {
                 Yii::app()->db->createCommand()->createTable($sTableName, $this->timingsTableDefinition);
-                Yii::app()->db->schema->getTable($sTableName, true); // Refresh schema cache just in case the table existed in the past
+                // Refresh schema cache just in case the table existed in the past
+                Yii::app()->db->schema->getTable($sTableName, true);
             } catch (\Exception $e) {
                 throw $e;
             }
-
         }
         return true;
     }
-
 
     /**
      * @return bool
@@ -397,16 +446,48 @@ class SurveyActivator
         $iSurveyID = $this->survey->primaryKey;
         // create the survey directory where the uploaded files can be saved
         if ($this->createSurveyDir) {
-            if (!file_exists(Yii::app()->getConfig('uploaddir')."/surveys/".$iSurveyID."/files")) {
-                if (!(mkdir(Yii::app()->getConfig('uploaddir')."/surveys/".$iSurveyID."/files", 0777, true))) {
+            if (!file_exists(Yii::app()->getConfig('uploaddir') . "/surveys/" . $iSurveyID . "/files")) {
+                if (!(mkdir(Yii::app()->getConfig('uploaddir') . "/surveys/" . $iSurveyID . "/files", 0777, true))) {
                     return false;
                 } else {
-                    file_put_contents(Yii::app()->getConfig('uploaddir')."/surveys/".$iSurveyID."/files/index.html", '<html><head></head><body></body></html>');
+                    file_put_contents(Yii::app()->getConfig('uploaddir') . "/surveys/" . $iSurveyID . "/files/index.html", '<html><head></head><body></body></html>');
                 }
             }
         }
         return true;
-
     }
 
+    /**
+     * Set the default_storage_engine for mysql DB
+     * @param string $dbEngine
+     */
+    private function setMySQLDefaultEngine($dbEngine)
+    {
+        /* empty dbEngine : out */
+        if (empty($dbEngine)) {
+            return;
+        }
+        $db = Yii::app()->db;
+        /* not DB : out */
+        if (empty($db)) {
+            return;
+        }
+        /* not mysql : out */
+        if (!in_array($db->driverName, [InstallerConfigForm::DB_TYPE_MYSQL, InstallerConfigForm::DB_TYPE_MYSQLI])) {
+            return;
+        }
+        /* seems OK, sysadmin allowed to broke system */
+        $db->createCommand(new CDbExpression(sprintf('SET default_storage_engine=%s;', $dbEngine)))
+            ->execute();
+    }
+
+    /**
+     * Checks if the survey is in close access mode.
+     *
+     * @return bool
+     */
+    public function isCloseAccessMode()
+    {
+        return $this->survey->access_mode === 'C';
+    }
 }

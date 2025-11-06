@@ -1,6 +1,5 @@
-<?php if (!defined('BASEPATH')) {
-    die('No direct script access allowed');
-}
+<?php
+
 /*
  * LimeSurvey (tm)
  * Copyright (C) 2011 The LimeSurvey Project Team / Carsten Schmitz
@@ -23,7 +22,6 @@
  * @property string $code
  * @property string $title
  * @property integer $sortorder
- * @property string $language
  * @property integer $assessment_value
  */
 class Label extends LSActiveRecord
@@ -45,15 +43,15 @@ class Label extends LSActiveRecord
     {
         return 'id';
     }
-     
+
     /**
      * @inheritdoc
      * @return Label
      */
-    public static function model($class = __CLASS__)
+    public static function model($className = __CLASS__)
     {
         /** @var self $model */
-        $model = parent::model($class);
+        $model = parent::model($className);
         return $model;
     }
 
@@ -61,14 +59,21 @@ class Label extends LSActiveRecord
     public function rules()
     {
         return array(
-            array('lid', 'numerical', 'integerOnly'=>true),
-            array('code', 'unique', 'caseSensitive'=>true, 'criteria'=>array(
-                            'condition'=>'lid = :lid',
-                            'params'=>array(':lid'=>$this->lid)
+            array('lid', 'numerical', 'integerOnly' => true),
+            array('code', 'unique', 'caseSensitive' => true, 'criteria' => array(
+                            'condition' => 'lid = :lid',
+                            'params' => array(':lid' => $this->lid)
                     ),
-                    'message'=>'{attribute} "{value}" is already in use.'),
-            array('sortorder', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
-            array('assessment_value', 'numerical', 'integerOnly'=>true, 'allowEmpty'=>true),
+                    'message' => '{attribute} "{value}" is already in use.'),
+            // Only alphanumeric
+            array(
+                'code',
+                'match',
+                'pattern' => '/^[[:alnum:]]*$/',
+                'message' => gT('Label codes may only contain alphanumeric characters.'),
+            ),
+            array('sortorder', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
+            array('assessment_value', 'numerical', 'integerOnly' => true, 'allowEmpty' => true),
         );
     }
 
@@ -79,14 +84,19 @@ class Label extends LSActiveRecord
         // class name for the relations automatically generated below.
         return array(
             'labelset' => array(self::BELONGS_TO, 'LabelSet', 'lid'),
-            'labelL10ns' => array(self::HAS_MANY, 'LabelL10n', 'label_id')
+            'labell10ns' => array(self::HAS_MANY, 'LabelL10n', 'label_id')
         );
     }
-    
-    public function defaultScope()
+
+    public function getTranslated($sLanguage)
     {
-        return array('order'=>'sortorder', 'index'=>'id');
-    }    
+        $ol10N = $this->labell10ns;
+        if (isset($ol10N[$sLanguage])) {
+            return array_merge($this->attributes, $ol10N[$sLanguage]->attributes);
+        }
+
+        return [];
+    }
 
     /**
      * @param integer $lid
@@ -103,11 +113,10 @@ class Label extends LSActiveRecord
      */
     public function insertRecords($data)
     {
-        $lbls = new self;
+        $lbls = new self();
         foreach ($data as $k => $v) {
                     $lbls->$k = $v;
         }
         $lbls->save();
     }
-
 }

@@ -1,4 +1,5 @@
 <?php
+
 class SurveyDao
 {
     /**
@@ -13,7 +14,7 @@ class SurveyDao
      * @param int $id
      * @return SurveyObj
      */
-    public function loadSurveyById($id, $lang = null)
+    public function loadSurveyById($id, $lang = null, FormattingOptions $oOptions = null)
     {
         $survey = new SurveyObj();
 
@@ -41,19 +42,24 @@ class SurveyDao
             safeDie("An invalid survey ID was encountered");
         }
 
-        $survey->groups = QuestionGroup::model()->findAll(array("condition" => 'sid='.$intId, 'order'=>'group_order'));
-        $survey->questions = Question::model()->findAll(array("condition" => 'sid='.$intId, 'order'=>'question_order'));
-        $aAnswers = Answer::model()->with('question', array('condition'=>'sid='.$intId))->findAll(array('order' => 'question.question_order, t.scale_id, sortorder'));
+        $survey->groups = QuestionGroup::model()->findAll(array("condition" => 'sid=' . $intId, 'order' => 'group_order'));
+        $survey->questions = Question::model()->findAll(array("condition" => 'sid=' . $intId, 'order' => 'question_order'));
+        $aAnswers = Answer::model()->with('answerl10ns', 'question')->findAll(array('condition' => 'question.sid=' . $intId . ' AND ' . Yii::app()->db->quoteTableName('answerl10ns') . '.language = \'' . $lang . '\'', 'order' => 'question.question_order, t.scale_id'));
         foreach ($aAnswers as $aAnswer) {
-            $survey->answers[$aAnswer['qid']][$aAnswer['scale_id']][$aAnswer['code']] = $aAnswer;
+            if (!empty($oOptions->stripHtmlCode) && $oOptions->stripHtmlCode == 1) {
+                $answer = stripTagsFull($aAnswer->answerl10ns[$lang]->answer);
+            } else {
+                $answer = $aAnswer->answerl10ns[$lang]->answer;
+            }
+            $survey->answers[$aAnswer->question->qid][$aAnswer->scale_id][$aAnswer->code] = $answer;
         }
         //Load language settings for requested language
-        $sQuery = 'SELECT * FROM {{surveys_languagesettings}} WHERE surveyls_survey_id = '.$intId.' AND surveyls_language = \''.$lang.'\';';
+        $sQuery = 'SELECT * FROM {{surveys_languagesettings}} WHERE surveyls_survey_id = ' . $intId . ' AND surveyls_language = \'' . $lang . '\';';
         $recordSet = Yii::app()->db->createCommand($sQuery)->query();
         $survey->languageSettings = $recordSet->read();
         $recordSet->close();
 
-        if (tableExists('tokens_'.$survey->id) && array_key_exists('token', SurveyDynamic::model($survey->id)->attributes) && Permission::model()->hasSurveyPermission($survey->id, 'tokens', 'read')) {
+        if (tableExists('tokens_' . $survey->id) && array_key_exists('token', SurveyDynamic::model($survey->id)->attributes) && Permission::model()->hasSurveyPermission($survey->id, 'tokens', 'read')) {
             // Now add the tokenFields
             $survey->tokenFields = getTokenFieldsAndNames($survey->id);
             unset($survey->tokenFields['token']);
@@ -75,9 +81,9 @@ class SurveyDao
      * @param string $completionState all, complete or incomplete
      * @param array $aFields If empty all, otherwise only select the selected fields from the survey response table
      * @param string $sResponsesId
-     * @throws CException
+     * @return CDbCommand
      */
-    public function loadSurveyResults(SurveyObj $survey, $iMinimum, $iMaximum, $sFilter = '', $completionState = 'all', $aFields = array(), $sResponsesId = null)
+    public function loadSurveyResults(SurveyObj $survey, $iMinimum, $iMaximum, $sFilter = '', $completionState = 'all', $aFields = array(), $sResponsesId = null): CDbCommand
     {
         $oSurvey = Survey::model()->findByPk($survey->id);
 
@@ -86,54 +92,54 @@ class SurveyDao
         if (!empty($aFields)) {
             $aSelectFields = array_intersect($aFields, $aSelectFields);
         }
-        // Allways add Table prefix : see bug #08396 . Don't use array_walk for PHP < 5.3 compatibility
+        // Always add Table prefix : see bug #08396 . Don't use array_walk for PHP < 5.3 compatibility
         foreach ($aSelectFields as &$sField) {
-            $sField = $oSurvey->responsesTableName.".".$sField;
+            $sField = $oSurvey->responsesTableName . "." . $sField;
         }
         $oRecordSet = Yii::app()->db->createCommand()->from($oSurvey->responsesTableName);
-        if (tableExists($oSurvey->tokensTableName)
+        if (
+            tableExists($oSurvey->tokensTableName)
             && array_key_exists('token', SurveyDynamic::model($oSurvey->primaryKey)->attributes)
-            && Permission::model()->hasSurveyPermission($oSurvey->primaryKey, 'tokens', 'read')) {
-
-            $oRecordSet->leftJoin($oSurvey->tokensTableName.' tokentable', $oSurvey->responsesTableName.'.token=tokentable.token');
+            && Permission::model()->hasSurveyPermission($oSurvey->primaryKey, 'tokens', 'read')
+        ) {
+            $oRecordSet->leftJoin($oSurvey->tokensTableName . ' tokentable', $oSurvey->responsesTableName . '.token=tokentable.token');
             $aTokenFields = Yii::app()->db->schema->getTable($oSurvey->tokensTableName)->getColumnNames();
             foreach ($aTokenFields as &$sField) {
-                $sField = "tokentable.".$sField;
+                $sField = "tokentable." . $sField;
             }
-            $aSelectFields = array_merge($aSelectFields, array_diff($aTokenFields, array('tokentable.token')));
+            $aSelectFields = array_merge($aSelectFields, array_diff($aTokenFields, ['tokentable.token']));
             //$aSelectFields=array_diff($aSelectFields, array('{{survey_{$survey->id}}}.token'));
             //$aSelectFields[]='{{survey_' . $survey->id . '}}.token';
         }
         if ($survey->info['savetimings'] == "Y") {
-            $oRecordSet->leftJoin("{{survey_".$survey->id."_timings}} survey_timings", "{{survey_".$survey->id."}}.id = survey_timings.id");
-            $aTimingFields = Yii::app()->db->schema->getTable("{{survey_".$survey->id."_timings}}")->getColumnNames();
+            $oRecordSet->leftJoin("{{survey_" . $survey->id . "_timings}} survey_timings", "{{survey_" . $survey->id . "}}.id = survey_timings.id");
+            $aTimingFields = Yii::app()->db->schema->getTable("{{survey_" . $survey->id . "_timings}}")->getColumnNames();
             foreach ($aTimingFields as &$sField) {
-                $sField = "survey_timings.".$sField;
+                $sField = "survey_timings." . $sField;
             }
-            $aSelectFields = array_merge($aSelectFields, array_diff($aTimingFields, array('survey_timings.id')));
+            $aSelectFields = array_merge($aSelectFields, array_diff($aTimingFields, ['survey_timings.id']));
             //$aSelectFields=array_diff($aSelectFields, array('{{survey_{$survey->id}}}.id'));
             //$aSelectFields[]='{{survey_' . $survey->id . '}}.id';
         }
-        if ( empty($sResponsesId)) {
-            $aParams = array(
-                'min'=>$iMinimum,
-                'max'=>$iMaximum
-            );
-            $selection = $oSurvey->responsesTableName.'.id >= :min AND '.$oSurvey->responsesTableName.'.id <= :max';
+        if (empty($sResponsesId)) {
+            $aParams = [
+                'min' => $iMinimum,
+                'max' => $iMaximum
+            ];
+            $selection = $oSurvey->responsesTableName . '.id >= :min AND ' . $oSurvey->responsesTableName . '.id <= :max';
             $oRecordSet->where($selection, $aParams);
         } else {
             $aResponsesId = explode(',', $sResponsesId);
 
             foreach ($aResponsesId as $i => $iResponseId) {
-
-                $iResponseId = (int) $iResponseId;
-                $selection = $oSurvey->responsesTableName.'.id = :id'.$i;
+                $iResponseId = (int)$iResponseId;
+                $selection = $oSurvey->responsesTableName . '.id = :id' . $i;
 
 
                 if ($i === 0) {
-                    $oRecordSet->where($selection, array('id'.$i=>$iResponseId));
+                    $oRecordSet->where($selection, ['id' . $i => $iResponseId]);
                 } else {
-                    $oRecordSet->orWhere($selection, array('id'.$i=>$iResponseId));
+                    $oRecordSet->orWhere($selection, ['id' . $i => $iResponseId]);
                 }
             }
         }
@@ -158,7 +164,8 @@ class SurveyDao
                 // Do nothing, all responses
                 break;
         }
-        $oRecordSet->order = $oSurvey->responsesTableName.'.id ASC';
-        $survey->responses = $oRecordSet->select($aSelectFields)->query();
+        $oRecordSet->order = $oSurvey->responsesTableName . '.id ASC';
+        $oRecordSet->select($aSelectFields);
+        return $oRecordSet;
     }
 }
