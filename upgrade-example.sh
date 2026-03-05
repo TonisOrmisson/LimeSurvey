@@ -22,5 +22,8 @@ fi
 echo "Checking out latest TO tag: ${LATEST_TO_TAG}"
 git checkout "${LATEST_TO_TAG}"
 
+echo "Running database upgrade command..."
+php application/commands/console.php updatedb
+
 echo "Done. Current tag:"
 git describe --tags --exact-match
