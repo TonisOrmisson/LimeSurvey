@@ -2,6 +2,7 @@
 
 ## Purpose
 Track all customizations carried in the `to/stable` branch on top of upstream LimeSurvey, so upgrades do not lose local functionality.
+Versioning/tagging rules are documented in `docs/to-versioning.md`.
 
 ## Release Model
 - Upstream base: latest stable upstream release tag (example: `6.16.10+260223`)
