@@ -5,21 +5,22 @@ Track all customizations carried in the `to/stable` branch on top of upstream Li
 Versioning/tagging rules are documented in `docs/to-versioning.md`.
 
 ## Release Model
-- Upstream base: latest stable upstream release tag (example: `6.16.10+260223`)
+- Upstream base: latest stable upstream release tag (example: `6.16.12+260309`)
 - Custom branch: `to/stable`
 - Custom tags: `vX.Y.Z-to.N`
   - Example: `v6.16.10-to.1`, `v6.16.10-to.2`
 
 ## Current Base
 - Branch: `to/stable`
-- Base upstream tag: `6.16.10+260223`
-- Base commit: `571bab902e`
+- Base upstream tag: `6.16.12+260309`
+- Base commit: `a93f5d1751`
 
 ## Active Customizations
 | ID | Area | Description | Local Commit(s) | Upstream PR/Issue | Keep Until |
 |---|---|---|---|---|---|
 | TO-0001 | RemoteControl API | Add `list_response_exports` discovery endpoint | `da3614f98a` | PR #4731 | Merged upstream and released |
 | TO-0002 | RemoteControl API | Make `list_response_exports` global (remove survey param) | `1fb5bca3c9` | PR #4731 | Merged upstream and released |
+| TO-0003 | Survey copy | Preserve survey-scoped plugin setting values when copying surveys | `c98373d079`, `1b11c0982e`, `6500ae7efb` | Issue #20462 | Merged upstream and released |
 
 ## Upgrade Checklist (Upstream -> TO)
 1. Fetch upstream and identify latest stable tag.
