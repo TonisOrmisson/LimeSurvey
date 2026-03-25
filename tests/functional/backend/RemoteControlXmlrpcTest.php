@@ -8,6 +8,8 @@ class RemoteControlXmlrpcTest extends TestBaseClassWeb
 {
     private static $tmpBaseUrl;
     private static $tmpRPCType;
+    private static $tmpRpcXmlEnabled;
+    private static $hadRpcXmlEnabled;
 
     private static $client;
 
@@ -22,6 +24,13 @@ class RemoteControlXmlrpcTest extends TestBaseClassWeb
         $serverUrl = $urlMan->createUrl('/admin/remotecontrol');
 
         self::$tmpRPCType = Yii::app()->getConfig('RPCInterface');
+        $rpcXmlEnabled = \SettingGlobal::model()->findByPk('rpc_xml_enabled');
+        self::$hadRpcXmlEnabled = $rpcXmlEnabled !== null;
+        self::$tmpRpcXmlEnabled = $rpcXmlEnabled ? $rpcXmlEnabled->stg_value : null;
+
+        if (self::$hadRpcXmlEnabled) {
+            \SettingGlobal::model()->deleteByPk('rpc_xml_enabled');
+        }
 
         if (self::$tmpRPCType !== 'xml') {
             \SettingGlobal::setSetting('RPCInterface', 'xml');
@@ -42,6 +51,12 @@ class RemoteControlXmlrpcTest extends TestBaseClassWeb
         $urlMan->setBaseUrl(self::$tmpBaseUrl);
 
         \SettingGlobal::setSetting('RPCInterface', self::$tmpRPCType);
+
+        if (self::$hadRpcXmlEnabled) {
+            \SettingGlobal::setSetting('rpc_xml_enabled', self::$tmpRpcXmlEnabled);
+        } else {
+            \SettingGlobal::model()->deleteByPk('rpc_xml_enabled');
+        }
     }
 
     public function testGetSessionKey()

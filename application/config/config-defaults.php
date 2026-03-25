@@ -631,6 +631,9 @@ $config['restrictToLanguages'] = '';
 * @var string
 */
 $config['RPCInterface'] = 'off';
+$config['rpc_json_enabled'] = '0';
+$config['rpc_xml_enabled'] = '0';
+$config['rpc_toon_enabled'] = '0';
 $config['add_access_control_header'] = 1;
 
 /**

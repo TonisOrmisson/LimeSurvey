@@ -429,7 +429,25 @@ class GlobalSettings extends SurveyCommonAction
         SettingGlobal::setSetting('googleanalyticsapikey', Yii::app()->getRequest()->getPost('googleanalyticsapikey'));
         SettingGlobal::setSetting('googletranslateapikey', Yii::app()->getRequest()->getPost('googletranslateapikey'));
         SettingGlobal::setSetting('surveyPreview_require_Auth', Yii::app()->getRequest()->getPost('surveyPreview_require_Auth'));
-        SettingGlobal::setSetting('RPCInterface', Yii::app()->getRequest()->getPost('RPCInterface'));
+
+        $rpcInterface = Yii::app()->getRequest()->getPost('RPCInterface');
+        $rpcJsonEnabled = Yii::app()->getRequest()->getPost('rpc_json_enabled');
+        $rpcXmlEnabled = Yii::app()->getRequest()->getPost('rpc_xml_enabled');
+        $rpcToonEnabled = Yii::app()->getRequest()->getPost('rpc_toon_enabled');
+
+        // Prevent invalid config: if a default RPC interface is selected, ensure it is enabled.
+        if ($rpcInterface === 'json') {
+            $rpcJsonEnabled = '1';
+        } elseif ($rpcInterface === 'xml') {
+            $rpcXmlEnabled = '1';
+        } elseif ($rpcInterface === 'toon') {
+            $rpcToonEnabled = '1';
+        }
+
+        SettingGlobal::setSetting('RPCInterface', $rpcInterface);
+        SettingGlobal::setSetting('rpc_json_enabled', $rpcJsonEnabled);
+        SettingGlobal::setSetting('rpc_xml_enabled', $rpcXmlEnabled);
+        SettingGlobal::setSetting('rpc_toon_enabled', $rpcToonEnabled);
         SettingGlobal::setSetting('rpc_publish_api', Yii::app()->getRequest()->getPost('rpc_publish_api'));
         SettingGlobal::setSetting('add_access_control_header', Yii::app()->getRequest()->getPost('add_access_control_header'));
         SettingGlobal::setSetting('characterset', Yii::app()->getRequest()->getPost('characterset'));

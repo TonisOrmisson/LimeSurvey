@@ -13,15 +13,21 @@
 *
 */
 
+use LimeSurvey\RemoteControl\JsonRpcServer;
+use LimeSurvey\RemoteControl\RpcConfiguration;
+use LimeSurvey\RemoteControl\XmlRpcServer;
+use LimeSurvey\RemoteControl\ToonRpcServer;
+use LimeSurvey\RemoteControl\RpcServerInterface;
+
 class RemoteControl extends SurveyCommonAction
 {
     /**
-     * @var Zend_XmlRpc_Server
+     * @var RpcServerInterface
      */
-    protected $xmlrpc;
+    protected $rpcServer;
 
     /**
-     * This is the XML-RPC server routine
+     * This is the RPC server routine
      *
      * @access public
      * @return void
@@ -36,40 +42,31 @@ class RemoteControl extends SurveyCommonAction
         }
 
         $oHandler = new remotecontrol_handle($this->controller);
-        $RPCType = Yii::app()->getConfig("RPCInterface");
+
         if (Yii::app()->getRequest()->isPostRequest) {
-            if ($RPCType == 'xml') {
-                $cur_path = get_include_path();
-                set_include_path($cur_path . PATH_SEPARATOR . APPPATH . 'helpers');
-                // Yii::import was causing problems for some odd reason
-                $this->xmlrpc = new Zend_XmlRpc_Server();
-                $this->xmlrpc->sendArgumentsToAllMethods(false);
-                Yii::import('application.libraries.LSZend_XmlRpc_Response_Http');
-                $this->xmlrpc->setResponseClass('LSZend_XmlRpc_Response_Http');
-                $this->xmlrpc->setClass($oHandler);
-                $result = $this->xmlrpc->handle();
-                if ($result instanceof LSZend_XmlRpc_Response_Http) {
-                    $result->printXml();
-                } else {
-                    // a Zend_XmlRpc_Server_Fault with exception message from XMLRPC
-                    echo $result;
+            $format = $this->determineFormat();
+            $this->rpcServer = $this->getRpcServer($format);
+
+            if ($this->rpcServer) {
+                $handled = $this->rpcServer->handle($oHandler);
+                if ($handled === false) {
+                    header("HTTP/1.1 400 Bad Request");
+                    echo "Invalid or disabled RPC format requested.";
                 }
-            } elseif ($RPCType == 'json') {
-                Yii::app()->loadLibrary('LSjsonRPCServer');
-                if (!isset($_SERVER['CONTENT_TYPE'])) {
-                    $serverContentType = explode(';', (string) $_SERVER['HTTP_CONTENT_TYPE']);
-                    $_SERVER['CONTENT_TYPE'] = reset($serverContentType);
-                }
-                LSjsonRPCServer::handle($oHandler);
+            } else {
+                header("HTTP/1.1 400 Bad Request");
+                echo "Invalid or disabled RPC format requested.";
             }
+
             foreach (App()->log->routes as $route) {
                 $route->enabled = $route->enabled && !($route instanceof CWebLogRoute);
             }
             Yii::app()->session->destroy();
             exit;
         } else {
+            $enabledFormats = RpcConfiguration::getEnabledFormats();
             // Disabled output of API methods for now
-            if (Yii::app()->getConfig("rpc_publish_api") == true && in_array($RPCType, array('xml', 'json'))) {
+            if (Yii::app()->getConfig("rpc_publish_api") == true && !empty($enabledFormats)) {
                 $reflector = new ReflectionObject($oHandler);
                 foreach ($reflector->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                     /* @var $method ReflectionMethod */
@@ -81,11 +78,79 @@ class RemoteControl extends SurveyCommonAction
                     }
                 }
                 ksort($list);
-                $aData['method'] = $RPCType;
+                $aData['transports'] = array_map([RpcConfiguration::class, 'getTransportLabel'], $enabledFormats);
                 $aData['list'] = $list;
                 $this->renderWrappedTemplate('remotecontrol', array('index_view'), $aData);
             }
         }
+    }
+
+    /**
+     * Determine the requested RPC format based on headers, query params, or global default.
+     *
+     * @return string
+     */
+    protected function determineFormat()
+    {
+        // 1. Check query parameter
+        $format = strtolower((string) Yii::app()->getRequest()->getParam('format', ''));
+        if (in_array($format, ['json', 'xml', 'toon'], true)) {
+            return $format;
+        }
+
+        // 2. Check Content-Type header
+        $contentType = Yii::app()->getRequest()->getContentType();
+        if (stripos((string) $contentType, 'application/json') !== false) {
+            return 'json';
+        }
+        if (stripos((string) $contentType, 'application/xml') !== false || stripos((string) $contentType, 'text/xml') !== false) {
+            return 'xml';
+        }
+        if (stripos((string) $contentType, 'application/toon') !== false) {
+            return 'toon';
+        }
+
+        // 3. Fallback to global default
+        return Yii::app()->getConfig("RPCInterface");
+    }
+
+    /**
+     * Get the appropriate RPC server implementation.
+     *
+     * @param string $format
+     * @return RpcServerInterface|null
+     */
+    protected function getRpcServer($format)
+    {
+        if (!in_array($format, ['json', 'xml', 'toon'], true)) {
+            return null;
+        }
+
+        if (!$this->isRpcFormatEnabled($format)) {
+            return null;
+        }
+
+        switch ($format) {
+            case 'json':
+                return new JsonRpcServer();
+            case 'xml':
+                return new XmlRpcServer();
+            case 'toon':
+                return new ToonRpcServer();
+        }
+
+        return null;
+    }
+
+    /**
+     * Keep JSON/XML RPC backward compatible for installs that only configured RPCInterface.
+     *
+     * @param string $format
+     * @return bool
+     */
+    protected function isRpcFormatEnabled($format)
+    {
+        return RpcConfiguration::isFormatEnabled($format);
     }
 
     /**

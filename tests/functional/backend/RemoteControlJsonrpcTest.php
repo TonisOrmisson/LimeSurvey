@@ -8,6 +8,8 @@ class RemoteControlJsonrpcTest extends TestBaseClassWeb
 {
     private static $tmpBaseUrl;
     private static $tmpRPCType;
+    private static $tmpRpcJsonEnabled;
+    private static $hadRpcJsonEnabled;
 
     private static $client;
 
@@ -22,6 +24,13 @@ class RemoteControlJsonrpcTest extends TestBaseClassWeb
         $serverUrl = $urlMan->createUrl('/admin/remotecontrol');
 
         self::$tmpRPCType = Yii::app()->getConfig('RPCInterface');
+        $rpcJsonEnabled = \SettingGlobal::model()->findByPk('rpc_json_enabled');
+        self::$hadRpcJsonEnabled = $rpcJsonEnabled !== null;
+        self::$tmpRpcJsonEnabled = $rpcJsonEnabled ? $rpcJsonEnabled->stg_value : null;
+
+        if (self::$hadRpcJsonEnabled) {
+            \SettingGlobal::model()->deleteByPk('rpc_json_enabled');
+        }
 
         if (self::$tmpRPCType !== 'json') {
             \SettingGlobal::setSetting('RPCInterface', 'json');
@@ -39,6 +48,12 @@ class RemoteControlJsonrpcTest extends TestBaseClassWeb
         $urlMan->setBaseUrl(self::$tmpBaseUrl);
 
         \SettingGlobal::setSetting('RPCInterface', self::$tmpRPCType);
+
+        if (self::$hadRpcJsonEnabled) {
+            \SettingGlobal::setSetting('rpc_json_enabled', self::$tmpRpcJsonEnabled);
+        } else {
+            \SettingGlobal::model()->deleteByPk('rpc_json_enabled');
+        }
     }
 
     public function testGetSessionKey()
