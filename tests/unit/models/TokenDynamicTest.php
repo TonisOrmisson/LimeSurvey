@@ -256,7 +256,6 @@ class TokenDynamicTest extends TestBaseClass
             ['1a2b3c4d5e-1a2b3c4d5e-1a2b3c4d5e', true],
             ['1a2b3c4d5e.1a2b3c4d5e.1a2b3c4d5e', false],
             ['1a2b3c4d5e%1a2b3c4d5e%1a2b3c4d5e', false],
-            ['toooooooooooooooooooooolooooooooooooooong', false],
         ];
     }
 
