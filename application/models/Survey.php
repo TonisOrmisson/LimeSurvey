@@ -208,7 +208,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
         $this->htmlemail = 'Y';
         $this->format = 'G';
         $this->tokenencryptionoptions = '';
-
+        $this->showregisterpolicy = 'I';
+        $this->showtokenpolicy = 'I';
         // Default setting is to use the global Google Analytics key If one exists
         $globalKey = App()->getConfig('googleanalyticsapikey');
         if ($globalKey != "") {
@@ -534,6 +535,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
             array('shownoanswer', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => true),
             array('showwelcome', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => true),
             array('showsurveypolicynotice', 'in', 'range' => array('0', '1', '2'), 'allowEmpty' => true),
+            array('showregisterpolicy', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => false),
+            array('showtokenpolicy', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => false),
             array('showprogress', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => true),
             array('questionindex', 'numerical', 'min' => -1, 'max' => 2, 'allowEmpty' => false),
             array('nokeyboard', 'in', 'range' => array('Y', 'N', 'I'), 'allowEmpty' => true),
@@ -735,7 +738,9 @@ class Survey extends LSActiveRecord implements PermissionInterface
                     'mandatory' => 'N',
                     'encrypted' => 'N',
                     'show_register' => 'N',
-                    'cpdbmap' => ''
+                    'cpdbmap' => '',
+                    'type' => 'TB', // TB = text input (default)
+                    'type_options' => [],
                 ), $aValues);
             }
         }
@@ -1514,7 +1519,11 @@ class Survey extends LSActiveRecord implements PermissionInterface
      */
     public function getButtons(): string
     {
-
+        try {
+            $surveyTitle = $this->currentLanguageSettings->surveyls_title;
+        } catch (\Exception $e) {
+            $surveyTitle = '';
+        }
         $dropdownItems = [];
         $dropdownItems[] = [
             'title' => gT('General settings'),
@@ -1538,10 +1547,13 @@ class Survey extends LSActiveRecord implements PermissionInterface
             'enabledCondition' => Permission::model()->hasSurveyPermission($this->sid, 'survey', 'read'),
         ];
         $dropdownItems[] = [
-            'submenu' => true,
             'title' => gT('Copy'),
             'enabledCondition' => Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'read'),
-            'submenu_items' => $this->getSubmenuItemsCopy(Permission::model()->hasSurveyPermission($this->sid, 'surveycontent', 'update')),
+            'linkAttributes'   => [
+                'data-bs-toggle' => "modal",
+                'data-bs-target' => "#copySurvey_modal",
+                'onclick' => "copySurveyOptions(" . (int)$this->sid . ", " . json_encode(sprintf(gT('%s - Copy', 'unescaped'), $surveyTitle)) . ", " . json_encode($this->sid . ' - ' . $surveyTitle) . ")",
+            ],
         ];
         $dropdownItems[] = [
             'title' => gT('Add user'),
@@ -1558,25 +1570,7 @@ class Survey extends LSActiveRecord implements PermissionInterface
         return App()->getController()->widget('ext.admin.grid.GridActionsWidget.GridActionsWidget', ['dropdownItems' => $dropdownItems], true);
     }
 
-    private function getSubmenuItemsCopy($enableCondition = true)
-    {
-        $submenuItems = [];
-        $submenuItems[] = [
-            'title' => gT('Quick copy'),
-            'url' => App()->createUrl("/surveyAdministration/copySimple", ['surveyIdToCopy' => $this->sid]),
-            'enabledCondition' => $enableCondition,
-        ];
-        $submenuItems[] = [
-            'title' => gT('Custom copy'),
-            'linkAttributes'   => [
-                'data-bs-toggle' => "modal",
-                'data-bs-target' => "#copySurvey_modal",
-                'onclick' => "copySurveyOptions(" . (int)$this->sid . ")",
-            ],
-            'enabledCondition' => $enableCondition,
-        ];
-        return $submenuItems;
-    }
+
 
     /**
      * Returns buttons for gridview.
@@ -1740,7 +1734,8 @@ class Survey extends LSActiveRecord implements PermissionInterface
      *
      * $options = [
      *  'pageSize' => 10,
-     *  'currentPage' => 1
+     *  'currentPage' => 1,
+     *  'skipCacheFlush' => false  // Set to true to skip cache flush (useful for AJAX/modal queries)
      * ];
      *
      * @param array $options
@@ -1750,7 +1745,9 @@ class Survey extends LSActiveRecord implements PermissionInterface
     {
         $options = $options ?? [];
         // Flush cache to get proper counts for partial/complete/total responses
-        if (method_exists(Yii::app()->cache, 'flush')) {
+        // Skip flush for AJAX/modal queries to avoid overhead (e.g., Select2 survey picker)
+        $skipCacheFlush = isset($options['skipCacheFlush']) && $options['skipCacheFlush'];
+        if (!$skipCacheFlush && method_exists(Yii::app()->cache, 'flush')) {
             Yii::app()->cache->flush();
         }
         $pagination = [
@@ -2261,15 +2258,12 @@ class Survey extends LSActiveRecord implements PermissionInterface
     /**
      * Get the final label for survey ID
      * @param string $dataSecurityNoticeLabel current label
-     * @param integer $surveyId unused
+     * @param integer $surveyId
+     * @deprecated 6.16.1 replaced by private function in LSETwigViewRenderer
      * @return string
      */
     public static function replacePolicyLink($dataSecurityNoticeLabel, $surveyId)
     {
-        /* @var string[] to go to automatic translation */
-        $translation = [
-            gT("Show policy")
-        ];
         return App()->twigRenderer->renderPartial(
             '/subviews/privacy/privacy_datasecurity_notice_label.twig',
             [
