@@ -91,6 +91,7 @@ jobs:
 
           chmod -R 777 ./tmp
           sudo chown -R www-data:docker ./tmp
+          mkdir -p ./upload/themes/survey ./upload/themes/question
           chmod -R 777 ./upload
           chmod -R 777 ./themes  # Need 777 so both console and web server can cd into the folder.
           chmod -R 777 ./tests/tmp
