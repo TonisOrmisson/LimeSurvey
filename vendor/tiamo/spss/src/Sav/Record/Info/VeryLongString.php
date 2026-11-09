@@ -23,11 +23,11 @@ class VeryLongString extends Info
     public function write(Buffer $buffer)
     {
         if ($this->data) {
-            // SPSS only recognises entries terminated by NUL + tab, including the last one.
-            $data = '';
+            $data = [];
             foreach ($this->data as $key => $value) {
-                $data .= sprintf('%s=%05d%c', $key, $value, 0) . self::DELIMITER;
+                $data[] = sprintf('%s=%05d%c', $key, $value, 0);
             }
+            $data = implode(self::DELIMITER, $data);
             $this->dataCount = \strlen($data);
             parent::write($buffer);
             $buffer->writeString($data);
